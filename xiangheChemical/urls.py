@@ -1,23 +1,18 @@
-"""
-URL configuration for xiangheChemical project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
+# 引入 production 的 views
+from production.views import InventoryListView, InventoryActionView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('production.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
+
+    # 首页 -> 库存列表
+    path('', InventoryListView.as_view(), name='index'),
+
+    # 库存列表
+    path('inventory/', InventoryListView.as_view(), name='inventory_list'),
+
+    # 库存操作 (POST 接口)
+    path('inventory/action/', InventoryActionView.as_view(), name='inventory_action'),
 ]

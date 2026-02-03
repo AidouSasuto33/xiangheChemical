@@ -1,0 +1,157 @@
+/* static/css/base.css */
+
+/* 全局重置与字体 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f5f7fa;
+    overflow-x: hidden;
+}
+
+/* ================= Wrapper ================= */
+#wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+    min-height: 100vh;
+}
+
+/* ================= Sidebar (侧边栏) ================= */
+#sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background: #2c3e50;
+    color: #fff;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Logo 区域核心修复 --- */
+.sidebar-header {
+    height: 70px;
+    background: #1a252f;
+    border-bottom: 1px solid #34495e;
+    /* 强制 Flex 布局，垂直居中 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    overflow: hidden; /* 防止内容溢出 */
+}
+
+/* 状态 A: 完整模式 (图 + 文) */
+.logo-full {
+    display: flex; /* 内部也用 flex 保证在同一行 */
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap; /* 核心：禁止换行！ */
+}
+
+.logo-img {
+    height: 35px;
+    width: auto;
+    margin-right: 10px;
+    /* 修复：柔化边框 */
+    border-radius: 6px;
+    opacity: 0.95;
+}
+
+.logo-text {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* 状态 B: 折叠模式 (仅文字) */
+.logo-mini {
+    display: none; /* 默认隐藏 */
+    font-size: 1.4rem; /* 稍微大一点 */
+    font-weight: bold;
+    color: #fff;
+    letter-spacing: 2px;
+}
+
+/* --- Sidebar 折叠状态 --- */
+#sidebar.collapsed {
+    min-width: 70px; /* 稍微宽一点点，放“相和”二字更舒服 */
+    max-width: 70px;
+}
+
+/* 折叠时的 Logo 互斥逻辑 */
+#sidebar.collapsed .logo-full {
+    display: none !important; /* 强制隐藏完整版 */
+}
+
+#sidebar.collapsed .logo-mini {
+    display: block !important; /* 强制显示迷你版 */
+}
+
+/* 折叠时隐藏导航文字 */
+#sidebar.collapsed .sidebar-text {
+    display: none;
+}
+
+/* 折叠时导航居中 */
+#sidebar.collapsed .nav-link {
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#sidebar.collapsed .nav-icon {
+    margin-right: 0;
+}
+
+/* ================= 导航链接 ================= */
+#sidebar ul.components {
+    padding: 20px 0;
+    border-bottom: 1px solid #47748b;
+    list-style: none;
+    margin: 0;
+}
+
+#sidebar ul li a {
+    padding: 15px 20px;
+    font-size: 1.0rem;
+    display: block;
+    color: #aebcd0;
+    text-decoration: none;
+    transition: 0.2s;
+    border-left: 4px solid transparent;
+}
+
+#sidebar ul li a:hover {
+    color: #fff;
+    background: #34495e;
+}
+
+#sidebar ul li.active > a {
+    color: #fff;
+    background: #34495e;
+    border-left-color: #3498db;
+}
+
+.nav-icon {
+    font-size: 1.2rem;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+/* ================= Main Content ================= */
+#content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s;
+}
+
+.main-navbar {
+    padding: 10px 20px;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}

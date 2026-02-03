@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}主画板 - 相和化工{% endblock %}
+{% block page_title %}主画板{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-3 align-items-center">
+                    <div class="col-auto">
+                        <label class="col-form-label">搜索条件:</label>
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="form-control" placeholder="批次号 / 备注">
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary">确认</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="height: 70vh;"> <div class="card-header bg-white">
+                <div class="d-flex justify-content-between">
+                    <span>生产批次总览</span>
+                    </div>
+            </div>
+            <div class="card-body text-center text-muted d-flex align-items-center justify-content-center">
+                <div>
+                    <h4>暂无数据展示</h4>
+                    <p>请点击左侧导航栏进入具体工序或库存页面。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
