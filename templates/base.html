@@ -14,7 +14,8 @@
 <div id="wrapper">
     <nav id="sidebar">
         <div class="sidebar-header">
-            <a href="{% url 'index' %}" style="text-decoration: none; color: inherit; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <a href="{% url 'index' %}"
+               style="text-decoration: none; color: inherit; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                 <div class="logo-full">
                     <img src="{% static 'img/xianghe_logo.png' %}" alt="Logo" class="logo-img"
                          onerror="this.style.display='none'">
@@ -33,13 +34,15 @@
                     <!-- 展开状态显示收起图标 (Arrow Bar Left) -->
                     <span id="icon-collapse">
                         <svg class="nav-icon" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd" d="M12.5 15a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5ZM10 8a.5.5 0 0 1-.5.5H3.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L3.707 7.5H9.5a.5.5 0 0 1 .5.5Z"/>
+                            <path fill-rule="evenodd"
+                                  d="M12.5 15a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5ZM10 8a.5.5 0 0 1-.5.5H3.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L3.707 7.5H9.5a.5.5 0 0 1 .5.5Z"/>
                         </svg>
                     </span>
                     <!-- 折叠状态显示展开图标 (List / Hamburger) -->
                     <span id="icon-expand" style="display: none;">
                         <svg class="nav-icon" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+                            <path fill-rule="evenodd"
+                                  d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
                         </svg>
                     </span>
                     <span class="sidebar-text">折叠菜单</span>
@@ -80,15 +83,44 @@
             <hr style="border-top: 1px solid #47748b; margin: 10px 0;">
 
             <li>
-                <a href="#" class="nav-link">
-                    <svg class="nav-icon" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2l-2.218-.887zm3.564 1.426L5.596 5 8 5.961 14.154 3.5l-2.404-.961zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"/></svg>
+                <a href="{% url 'inventory_list' %}" class="nav-link">
+                    <svg class="nav-icon" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2l-2.218-.887zm3.564 1.426L5.596 5 8 5.961 14.154 3.5l-2.404-.961zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"/>
+                    </svg>
                     <span class="sidebar-text">实时库存</span>
                 </a>
             </li>
 
             <li>
+                <a href="{% url 'kettle_dashboard' %}" class="nav-link">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                         stroke-width="0.9">
+                        <!-- 釜体 -->
+                        <path d="M4 4h8v6a2 2 0 0 1-8 0V4Z"/>
+
+                        <!-- 温度计 -->
+                        <path d="M11 6v-1.5" stroke-width="0.6"/>
+                        <circle cx="11" cy="3" r="0.8" fill="currentColor"/>
+
+                        <!-- 搅拌桨 -->
+                        <circle cx="8" cy="7" r="1.3" stroke-width="0.6"/>
+                        <line x1="6.7" y1="7" x2="9.3" y2="7" stroke-width="0.6"/>
+                        <line x1="8" y1="5.7" x2="8" y2="8.3" stroke-width="0.6"/>
+
+                        <!-- 支架 -->
+                        <path d="M2 13h12" stroke-width="1.2"/>
+                        <line x1="5" y1="10.5" x2="5" y2="13" stroke-width="1"/>
+                        <line x1="11" y1="10.5" x2="11" y2="13" stroke-width="1"/>
+                    </svg>
+                    <span class="sidebar-text">釜皿管理</span>
+                </a>
+            </li>
+
+            <li>
                 <a href="#" class="nav-link">
-                    <svg class="nav-icon" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2zm1 12h2V2h-2v12zm-3 0V7H7v7h2zm-5 0v-3H2v3h2z"/></svg>
+                    <svg class="nav-icon" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2zm1 12h2V2h-2v12zm-3 0V7H7v7h2zm-5 0v-3H2v3h2z"/>
+                    </svg>
                     <span class="sidebar-text">图表数据</span>
                 </a>
             </li>

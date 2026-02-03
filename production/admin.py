@@ -8,6 +8,7 @@ from .models.cvn_distillation import CVNDistillation
 from .models.cva_synthesis import CVASynthesis
 from .models.cvc_synthesis import CVCSynthesis
 from .models.cvc_export import CVCExport
+from .models.kettle import Kettle
 
 
 # =========================================================
@@ -179,3 +180,29 @@ class CVCSynthesisAdmin(BaseProductionAdmin):
 class CVCExportAdmin(BaseProductionAdmin):
     list_display = ['batch_no', 'input_total_weight', 'premium_weight', 'created_at']
     search_fields = ['batch_no']
+
+
+@admin.register(Kettle)
+class KettleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'workshop', 'status', 'capacity', 'supported_processes', 'current_batch_no')
+    list_filter = ('status', 'workshop', 'supported_processes')
+    search_fields = ('name', 'current_batch_no')
+    list_editable = ('status',)  # 允许在列表页直接改状态 (方便快速测试)
+
+    def status_badge(self, obj):
+        """显示带颜色的状态"""
+        from django.utils.html import format_html
+        colors = {
+            'idle': 'green',
+            'running': 'red',
+            'to_clean': 'orange',
+            'maintenance': 'gray'
+        }
+        color = colors.get(obj.status, 'black')
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+
+    status_badge.short_description = "状态"

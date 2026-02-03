@@ -1,8 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 # 引入 production 的 views
-from production.views import InventoryListView, InventoryActionView
-from production.views import InventoryListView, InventoryActionView, InventoryHistoryView # 记得导入 HistoryView
+from production.views import InventoryListView, InventoryActionView, InventoryHistoryView, KettleDashboardView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -19,4 +18,9 @@ urlpatterns = [
     path('inventory/action/', InventoryActionView.as_view(), name='inventory_action'),
     # 历史记录
     path('inventory/history/', InventoryHistoryView.as_view(), name='inventory_history'),
+
+    #########
+    # 釜皿看板相关URL
+    #########
+    path('production/dashboard/kettle/', KettleDashboardView.as_view(), name='kettle_dashboard'),
 ]

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}釜皿看板{% endblock %}
+{% block page_title %}釜皿资源总览{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+{#        <h1 class="h3 mb-1 text-gray-800 fw-bold">釜皿资源总览</h1>#}
+        <p class="text-muted mb-0 small">全厂釜皿状态与负载情况</p>
+    </div>
+    <a href="{% url 'admin:production_kettle_changelist' %}" class="btn btn-primary shadow-sm">
+        <i class="bi bi-database-gear me-1"></i> 数据管理后台
+    </a>
+</div>
+
+<div class="row g-3">
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card shadow border-0 h-100">
+            <div class="card-header bg-danger text-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold">🔥 生产中</h6>
+                <span class="badge bg-white text-danger pill">{{ running_kettles|length }} 台</span>
+            </div>
+            <div class="card-body bg-light">
+                <div class="d-flex flex-wrap gap-2 justify-content-start align-content-start">
+                    {% for kettle in running_kettles %}
+                        {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='danger' %}
+                    {% empty %}
+                        <div class="text-center w-100 text-muted py-4">无生产任务</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card shadow border-0 h-100">
+            <div class="card-header bg-warning text-dark py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold">🧹 待清洁</h6>
+                <span class="badge bg-white text-warning border border-warning pill">{{ cleaning_kettles|length }} 台</span>
+            </div>
+            <div class="card-body bg-light">
+                <div class="d-flex flex-wrap gap-2 justify-content-start align-content-start">
+                    {% for kettle in cleaning_kettles %}
+                        {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='warning' %}
+                    {% empty %}
+                        <div class="text-center w-100 text-muted py-4">非常干净</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card shadow border-0 h-100">
+            <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold">🟢 空闲可用</h6>
+                <span class="badge bg-white text-success pill">{{ idle_kettles|length }} 台</span>
+            </div>
+            <div class="card-body bg-light">
+                <div class="d-flex flex-wrap gap-2 justify-content-start align-content-start">
+                    {% for kettle in idle_kettles %}
+                        {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='success' %}
+                    {% empty %}
+                        <div class="text-center w-100 text-muted py-4">全员忙碌中</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card shadow border-0 h-100">
+            <div class="card-header bg-secondary text-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold">🔧 维护/故障</h6>
+                <span class="badge bg-white text-dark pill">{{ maintenance_kettles|length }} 台</span>
+            </div>
+            <div class="card-body bg-light">
+                <div class="d-flex flex-wrap gap-2 justify-content-start align-content-start">
+                    {% for kettle in maintenance_kettles %}
+                        {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='secondary' %}
+                    {% empty %}
+                        <div class="text-center w-100 text-muted py-4">设备状况良好</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+        // 检测 Bootstrap 是否已加载
+        if (typeof bootstrap !== 'undefined') {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            console.log("Tooltip initialized for " + tooltipList.length + " items.");
+        } else {
+            console.error("Bootstrap JS not loaded!");
+        }
+    });
+</script>
+{% endblock %}

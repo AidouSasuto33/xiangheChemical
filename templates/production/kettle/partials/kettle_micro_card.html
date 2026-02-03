@@ -1,0 +1,111 @@
+<div class="kettle-card position-relative shadow-sm {{ status_class }}-theme"
+     data-bs-toggle="tooltip"
+     data-bs-html="true"
+     title="<div class='text-start'>
+            <strong>[{{ kettle.workshop }}] {{ kettle.name }}</strong><br>
+            <hr class='my-1'>
+            <small>容量: {{ kettle.capacity|floatformat:0 }}L</small><br>
+            <small>当前: {{ kettle.current_level|floatformat:0 }}L ({{ kettle.fill_percentage }}%)</small><br>
+            <small>工艺: {{ kettle.last_process|default:'-' }}</small><br>
+            <small>批次: {{ kettle.current_batch_no|default:'-' }}</small>
+            </div>">
+
+    <div class="liquid-container">
+        <div class="liquid" style="height: {{ kettle.fill_percentage }}%;"></div>
+    </div>
+
+    <div class="content-overlay d-flex flex-column justify-content-center align-items-center h-100">
+        <span class="kettle-name text-truncate px-1">{{ kettle.name }}</span>
+
+        {% if kettle.current_level > 0 %}
+        <span class="kettle-level-text">{{ kettle.fill_percentage }}%</span>
+        {% endif %}
+    </div>
+
+    {% if status_class == 'warning' %}
+    <span class="badge-dot bg-warning">!</span>
+    {% endif %}
+</div>
+
+<style>
+/* === 容器基础样式 === */
+.kettle-card {
+    width: 64px;       /* 稍微加大一点点，容纳文字 */
+    height: 72px;      /* 拉长一点，像个罐子 */
+    border-radius: 6px;
+    background-color: #fff;
+    border: 1px solid #e3e6f0;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+.kettle-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    z-index: 10;
+}
+
+/* === 颜色主题定义 === */
+.danger-theme { border-color: #e74a3b; background-color: #fff5f5; }
+.danger-theme .liquid { background: rgba(231, 74, 59, 0.25); border-top: 2px solid #e74a3b; }
+.danger-theme .kettle-name { color: #be2617; }
+
+.warning-theme { border-color: #f6c23e; background-color: #fffcf0; }
+.warning-theme .liquid { background: rgba(246, 194, 62, 0.3); border-top: 2px solid #f6c23e; }
+.warning-theme .kettle-name { color: #856404; }
+
+.success-theme { border-color: #1cc88a; background-color: #f0fff9; }
+.success-theme .liquid { background: rgba(28, 200, 138, 0.2); border-top: 2px solid #1cc88a; } /* 空闲通常没液位，如果有就是淡绿 */
+.success-theme .kettle-name { color: #0f6848; }
+
+.secondary-theme { border-color: #858796; background-color: #eaecf4; opacity: 0.8; }
+.secondary-theme .liquid { background: #b7b9cc; }
+.secondary-theme .kettle-name { color: #5a5c69; }
+
+/* === 内部元素 === */
+.liquid-container {
+    position: absolute;
+    bottom: 0; left: 0; right: 0; top: 0;
+    z-index: 0;
+}
+.liquid {
+    position: absolute;
+    bottom: 0; left: 0; width: 100%;
+    transition: height 0.5s ease-out;
+}
+
+.content-overlay {
+    position: relative;
+    z-index: 2; /* 保证文字在液体上面 */
+    pointer-events: none; /* 让鼠标事件穿透到 card */
+}
+
+.kettle-name {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+    max-width: 100%;
+}
+
+.kettle-level-text {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 1px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-weight: 700;
+}
+
+/* 待清洗的小圆点 */
+.badge-dot {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    font-size: 8px;
+    line-height: 12px;
+    text-align: center;
+    color: #fff;
+    font-weight: bold;
+    z-index: 3;
+}
+</style>
