@@ -76,8 +76,12 @@ WSGI_APPLICATION = 'xiangheChemical.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'xiangheChemical',        # 数据库名称
+        'USER': 'wxxxx',     # ⚠️ 默认用户通常是 postgres，如果你的用户名不同，请修改此处
+        'PASSWORD': '361323',   # 你的密码
+        'HOST': '127.0.0.1',    # 本地开发通常填 127.0.0.1 或 localhost
+        'PORT': '5432',
     }
 }
 

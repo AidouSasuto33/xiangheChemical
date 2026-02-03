@@ -13,6 +13,22 @@ class Inventory(models.Model):
         ('product', '成品'),  # CVC合格品...
     ]
 
+    # 单位
+    UNIT_CHOICES = [
+        ('kg', '千克 (kg)'),
+        ('ton', '吨 (Ton)'),
+        ('L', '升 (L)'),
+        ('m3', '立方米 (m³)'),
+        ('batch', '批/釜'),
+        ('piece', '件/个'),
+    ]
+    unit = models.CharField(
+        "计量单位",
+        max_length=20,
+        choices=UNIT_CHOICES,
+        default='kg'
+    )
+
     # 核心字段
     key = models.CharField("物料代码", max_length=50, unique=True, help_text="程序调用唯一标识，如 raw_dcb")
     name = models.CharField("物料名称", max_length=50)
