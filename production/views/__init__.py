@@ -1,1 +1,1 @@
-from .inventory_view import InventoryListView, InventoryActionView
+from .inventory_view import InventoryListView, InventoryActionView, InventoryHistoryView

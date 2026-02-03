@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}变动记录 - {{ current_item.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <span class="text-primary">{{ current_item.name }}</span> 
+                <span class="text-muted fs-6">({{ current_item.key }})</span>
+            </h4>
+            <p class="text-muted mb-0">当前实时库存: <strong>{{ current_item.quantity }} {{ current_item.unit }}</strong></p>
+        </div>
+        <div>
+            <div class="btn-group me-2">
+                <a href="?id={{ prev_item.id }}" class="btn btn-outline-secondary" title="上一个: {{ prev_item.name }}">
+                    &lt;
+                </a>
+                <a href="?id={{ next_item.id }}" class="btn btn-outline-secondary" title="下一个: {{ next_item.name }}">
+                    &gt;
+                </a>
+            </div>
+            <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
+                返回列表
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body py-3">
+            <form method="get" class="row g-2 align-items-end">
+                <input type="hidden" name="id" value="{{ current_item.id }}">
+                
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">操作类型</label>
+                    <select name="action" class="form-select form-select-sm">
+                        <option value="">-- 全部类型 --</option>
+                        <option value="purchase" {% if request.GET.action == 'purchase' %}selected{% endif %}>购入 / 入库</option>
+                        <option value="sale" {% if request.GET.action == 'sale' %}selected{% endif %}>销售 / 领用</option>
+                        <option value="correction" {% if request.GET.action == 'correction' %}selected{% endif %}>盘点修正</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">查询备注</label>
+                    <input type="text" name="q" class="form-control form-control-sm" placeholder="关键词空格隔开..." value="{{ request.GET.q }}">
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">开始日期</label>
+                    <input type="date" name="date_start" class="form-control form-control-sm" value="{{ request.GET.date_start }}">
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">结束日期</label>
+                    <input type="date" name="date_end" class="form-control form-control-sm" value="{{ request.GET.date_end }}">
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">查询记录</button>
+                    <a href="?id={{ current_item.id }}" class="btn btn-outline-secondary btn-sm">重置</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 20%;">操作时间</th>
+                        <th style="width: 15%;">类型</th>
+                        <th style="width: 15%;">变动数量</th>
+                        <th style="width: 15%;">变动后结存</th>
+                        <th style="width: 10%;">操作人</th>
+                        <th class="text-muted">备注 / 关联单据</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="ps-4 text-muted font-monospace">
+                            {{ log.created_at|date:"Y-m-d H:i:s" }}
+                        </td>
+                        <td>
+                            {% if log.action_type == 'purchase' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">购入入库</span>
+                            {% elif log.action_type == 'sale' %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">销售/领用</span>
+                            {% elif log.action_type == 'production' %}
+                                <span class="badge bg-info text-dark bg-opacity-10 border border-info border-opacity-25">生产消耗</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark bg-opacity-10 border border-warning border-opacity-25">盘点修正</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.change_amount > 0 %}
+                                <span class="text-success fw-bold">+{{ log.change_amount|floatformat:2 }}</span>
+                            {% elif log.change_amount < 0 %}
+                                <span class="text-danger fw-bold">{{ log.change_amount|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                            <small class="text-muted">{{ current_item.unit }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ log.quantity_after|floatformat:2 }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                {{ log.operator.last_name }}{{ log.operator.first_name }}
+                            </span>
+                        </td>
+                        <td class="text-muted small text-truncate" style="max-width: 200px;" title="{{ log.note }}">
+                            {{ log.note|default:"-" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            该时间段内无变动记录。
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if is_paginated %}
+        <div class="card-footer bg-white py-2">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?id={{ current_item.id }}&page={{ page_obj.previous_page_number }}&action={{ request.GET.action }}&q={{ request.GET.q }}&date_start={{ request.GET.date_start }}&date_end={{ request.GET.date_end }}">上一页</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">第 {{ page_obj.number }} 页</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?id={{ current_item.id }}&page={{ page_obj.next_page_number }}&action={{ request.GET.action }}&q={{ request.GET.q }}&date_start={{ request.GET.date_start }}&date_end={{ request.GET.date_end }}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

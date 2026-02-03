@@ -13,7 +13,7 @@
     .badge-soft-success { background-color: #d1e7dd; color: #0f5132; }
     .badge-soft-warning { background-color: #fff3cd; color: #664d03; }
     .badge-soft-danger  { background-color: #f8d7da; color: #842029; }
-    
+
     /* 按钮组悬停效果 */
     .btn-icon {
         padding: 0.25rem 0.5rem;
@@ -25,20 +25,22 @@
 </style>
 {% endblock %}
 
+
+
 {% block content %}
 <div class="row">
     <div class="col-12">
-        
+
         <div class="card mb-4 shadow-sm border-0">
             <div class="card-body py-3">
                 <form method="get" class="row g-3 align-items-center">
                     <div class="col-md-4">
                         <div class="input-group">
                             <span class="input-group-text bg-white"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg></span>
-                            <input type="text" name="q" class="form-control border-start-0" placeholder="搜索物料名称 / 代码..." value="{{ request.GET.q }}">
+                            <input type="text" name="q" class="form-control border-start-0" placeholder="搜索物料名称 / 代码..." value="{{ request.GET.q|default:'' }}">
                         </div>
                     </div>
-                    
+
                     <div class="col-md-3">
                         <select name="cat" class="form-select" onchange="this.form.submit()">
                             <option value="">-- 所有分类 --</option>
@@ -50,12 +52,13 @@
 
                     <div class="col-md-2">
                         <select name="sort" class="form-select" onchange="this.form.submit()">
-                            <option value="key">按代码排序</option>
-                            <option value="-quantity">按库存量(降序)</option>
-                            <option value="quantity">按库存量(升序)</option>
+                            <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>按名称排序</option>
+                            <option value="category" {% if request.GET.sort == 'category' %}selected{% endif %}>按分类排序</option>
+                            <option value="quantity" {% if request.GET.sort == 'quantity' %}selected{% endif %}>按库存量(升序)</option>
+                            <option value="-quantity" {% if request.GET.sort == '-quantity' %}selected{% endif %}>按库存量(降序)</option>
                         </select>
                     </div>
-                    
+
                     <div class="col-md-3 text-end">
                         <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">重置筛选</a>
                     </div>
@@ -74,7 +77,8 @@
                                 <th>当前库存</th>
                                 <th>状态</th>
                                 <th>安全库存</th>
-                                <th class="text-end pe-4">快捷操作</th>
+                                <th class="text-end">快捷操作</th>
+                                <th class="text-center pe-4">变动记录</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -89,13 +93,13 @@
                                         <span class="badge bg-success">成品</span>
                                     {% endif %}
                                 </td>
-                                
+
                                 <td>
                                     <strong>{{ item.name }}</strong>
                                     <br>
                                     <small class="text-muted font-monospace">{{ item.key }}</small>
                                 </td>
-                                
+
                                 <td>
                                     <span class="fs-5 fw-bold {% if item.quantity < item.safe_stock %}text-danger{% endif %}">
                                         {{ item.quantity|floatformat:2 }}
@@ -117,31 +121,40 @@
                                     ≥ {{ item.safe_stock|floatformat:0 }} {{ item.unit }}
                                 </td>
 
-                                <td class="text-end pe-4">
+                                <td class="text-end">
                                     <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-outline-success btn-icon" 
+                                        <button type="button" class="btn btn-outline-success btn-icon"
                                                 onclick="openActionModal('{{ item.id }}', '{{ item.name }}', '{{ item.unit }}', 'purchase')"
                                                 title="购入/入库">
                                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
                                         </button>
 
-                                        <button type="button" class="btn btn-outline-primary btn-icon" 
+                                        <button type="button" class="btn btn-outline-danger btn-icon"
                                                 onclick="openActionModal('{{ item.id }}', '{{ item.name }}', '{{ item.unit }}', 'sale')"
                                                 title="销售/领用">
                                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/></svg>
                                         </button>
 
-                                        <button type="button" class="btn btn-outline-warning btn-icon" 
+                                        <button type="button" class="btn btn-outline-warning btn-icon"
                                                 onclick="openActionModal('{{ item.id }}', '{{ item.name }}', '{{ item.unit }}', 'correction')"
                                                 title="库存盘点修正">
                                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
                                         </button>
                                     </div>
                                 </td>
+                                <td class="text-center pe-4">
+                                    <a href="{% url 'inventory_history' %}?id={{ item.id }}" class="btn btn-sm btn-outline-secondary" title="查看历史变动">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="bi bi-journal-text">
+                                            <path d="M5 10.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
+                                            <path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2z"/>
+                                            <path d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1z"/>
+                                        </svg>
+                                    </a>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     暂无库存数据，请检查初始化脚本或筛选条件。
                                 </td>
                             </tr>
@@ -160,18 +173,18 @@
         <div class="modal-content">
             <form method="post" action="{% url 'inventory_action' %}">
                 {% csrf_token %}
-                
+
                 <input type="hidden" name="inventory_id" id="modal_inventory_id">
                 <input type="hidden" name="action_type" id="modal_action_type">
 
                 <div class="modal-header text-white" id="modal_header_bg">
                     <h5 class="modal-title">
-                        <span id="modal_action_label">操作</span> - 
+                        <span id="modal_action_label">操作</span> -
                         <span id="modal_item_name" class="fw-bold"></span>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
+
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label for="modal_amount" class="form-label fw-bold" id="modal_amount_label">数量</label>
@@ -187,7 +200,7 @@
                         <textarea name="note" id="modal_note" class="form-control" rows="2" placeholder="可选：填写操作原因、客户名或单号"></textarea>
                     </div>
                 </div>
-                
+
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="submit" class="btn btn-primary" id="modal_submit_btn">确认提交</button>
@@ -215,9 +228,9 @@
         },
         'sale': {
             label: '销售/领用',
-            headerClass: 'bg-primary',
+            headerClass: 'bg-danger',
             amountLabel: '出库数量',
-            btnClass: 'btn-primary',
+            btnClass: 'btn-danger',
             helpText: '请输入正数，系统会自动扣减'
         },
         'correction': {
@@ -231,22 +244,22 @@
 
     function openActionModal(id, name, unit, type) {
         const config = ACTION_CONFIG[type];
-        
+
         // 1. 填充数据
         document.getElementById('modal_inventory_id').value = id;
         document.getElementById('modal_action_type').value = type;
         document.getElementById('modal_item_name').innerText = name;
         document.getElementById('modal_unit_display').innerText = unit;
-        
+
         // 2. 更新 UI 文案
         document.getElementById('modal_action_label').innerText = config.label;
         document.getElementById('modal_amount_label').innerText = config.amountLabel;
         document.getElementById('modal_help_text').innerText = config.helpText;
-        
+
         // 3. 更新颜色 (移除旧类，添加新类)
         const header = document.getElementById('modal_header_bg');
         header.className = 'modal-header text-white ' + config.headerClass;
-        
+
         const submitBtn = document.getElementById('modal_submit_btn');
         submitBtn.className = 'btn ' + config.btnClass;
 
@@ -256,7 +269,7 @@
 
         // 5. 显示模态框
         actionModal.show();
-        
+
         // 自动聚焦数量框 (稍微延迟一下等待动画)
         setTimeout(() => {
             document.getElementById('modal_amount').focus();
