@@ -6,6 +6,12 @@ from .core import BaseProductionStep
 # 引入 Step 3 (CVA合成) 作为原料来源
 from .cva_synthesis import CVASynthesis
 from ..utils.batch_generator import generate_batch_number
+# 引入常量
+from .. import constants
+# 引入库存模型
+from .inventory import Inventory
+from .audit import InventoryLog
+
 
 # =========================================================
 # 工艺第四步： CVC合成
@@ -73,6 +79,15 @@ class CVCSynthesis(BaseProductionStep):
     # 这里的库存将被：1. 销售发货 2. Step 5 (外销精制) 领用
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False)
 
+    # =========================================================
+    # 5. 库存映射配置
+    # =========================================================
+    INVENTORY_MAPPING = {
+        'raw_socl2': constants.KEY_RAW_SOCL2,
+        'distillation_head_weight': constants.KEY_WASTE_HEAD,
+        'product_weight': constants.KEY_PROD_CVC_NX,
+    }
+
     class Meta(BaseProductionStep.Meta):
         verbose_name = "4-CVC合成(内销)"
         verbose_name_plural = verbose_name
@@ -135,27 +150,168 @@ class CVCSynthesis(BaseProductionStep):
         if not self.id and not self.batch_no:
             self.batch_no = generate_batch_number(CVCSynthesis, "CVC-NX")
 
-        # 1. 归还 Step 3 旧库存
+        # 1. 获取旧对象以计算差值
+        old_instance = None
         if self.pk:
-            old_instance = CVCSynthesis.objects.get(pk=self.pk)
+            try:
+                old_instance = self.__class__.objects.get(pk=self.pk)
+            except self.__class__.DoesNotExist:
+                pass
+
+        # =========================================================
+        # Part A: 处理 JSON 投入 (input_cva_sources) -> 消耗 CVA粗品
+        # =========================================================
+        
+        # A.1 计算新旧总投入量
+        current_input_total = 0
+        for item in self.input_cva_sources:
+            current_input_total += float(item.get('use_weight', 0))
+        
+        old_input_total = 0
+        if old_instance:
             for item in old_instance.input_cva_sources:
-                CVASynthesis.objects.filter(batch_no=item.get('batch_no')).update(
-                    consumed_weight=models.F('consumed_weight') - float(item.get('use_weight', 0))
+                old_input_total += float(item.get('use_weight', 0))
+        
+        # A.2 计算差异 (消耗量变化)
+        input_diff = current_input_total - old_input_total
+        
+        # A.3 更新 Inventory 表 (CVA粗品)
+        if input_diff != 0:
+            try:
+                inv_crude = Inventory.objects.get(key=constants.KEY_INTER_CVA_CRUDE)
+                # 投入是消耗，所以库存减去 diff
+                inv_crude.quantity -= input_diff
+                inv_crude.save()
+                
+                InventoryLog.objects.create(
+                    inventory=inv_crude,
+                    action_type='production',
+                    change_amount=-input_diff,
+                    quantity_after=inv_crude.quantity,
+                    note=f"生产批次 {self.batch_no} 自动消耗 (input_cva_sources)"
+                )
+            except Inventory.DoesNotExist:
+                pass
+
+        # A.4 更新源头批次 (CVASynthesis) 的 consumed_weight
+        # 先“归还”旧的库存
+        if old_instance:
+            for item in old_instance.input_cva_sources:
+                batch_no = item.get('batch_no')
+                weight = float(item.get('use_weight', 0))
+                CVASynthesis.objects.filter(batch_no=batch_no).update(
+                    consumed_weight=models.F('consumed_weight') - weight
                 )
 
-        # 2. 扣减 Step 3 新库存
+        # 再扣减新的库存
         for item in self.input_cva_sources:
-            CVASynthesis.objects.filter(batch_no=item.get('batch_no')).update(
-                consumed_weight=models.F('consumed_weight') + float(item.get('use_weight', 0))
+            batch_no = item.get('batch_no')
+            weight = float(item.get('use_weight', 0))
+            CVASynthesis.objects.filter(batch_no=batch_no).update(
+                consumed_weight=models.F('consumed_weight') + weight
             )
+
+        # =========================================================
+        # Part B: 处理普通映射 (INVENTORY_MAPPING)
+        # =========================================================
+        for field_name, inventory_key in self.INVENTORY_MAPPING.items():
+            current_val = getattr(self, field_name, 0) or 0
+            old_val = getattr(old_instance, field_name, 0) or 0 if old_instance else 0
+            
+            diff = current_val - old_val
+
+            if diff != 0:
+                try:
+                    inv = Inventory.objects.get(key=inventory_key)
+                    
+                    # 判断是投入(消耗)还是产出(增加)
+                    is_input = field_name.startswith('raw_')
+                    
+                    if is_input:
+                        # 投入：消耗库存，所以减去 diff
+                        change_amount = -diff
+                    else:
+                        # 产出：增加库存，所以加上 diff
+                        change_amount = diff
+
+                    inv.quantity += change_amount
+                    inv.save()
+
+                    InventoryLog.objects.create(
+                        inventory=inv,
+                        action_type='production',
+                        change_amount=change_amount,
+                        quantity_after=inv.quantity,
+                        note=f"生产批次 {self.batch_no} 自动变动 ({field_name})"
+                    )
+                except Inventory.DoesNotExist:
+                    pass
 
         super().save(*args, **kwargs)
 
     @transaction.atomic
     def delete(self, *args, **kwargs):
-        # 归还 Step 3 库存
+        """
+        删除逻辑：
+        1. 归还源头批次 (CVASynthesis) 的 consumed_weight。
+        2. 归还 Inventory 表中的 CVA粗品库存。
+        3. 回滚 Inventory 表中的普通原料消耗和CVC成品产出。
+        """
+        # 1. 归还源头批次
         for item in self.input_cva_sources:
-            CVASynthesis.objects.filter(batch_no=item.get('batch_no')).update(
-                consumed_weight=models.F('consumed_weight') - float(item.get('use_weight', 0))
+            batch_no = item.get('batch_no')
+            weight = float(item.get('use_weight', 0))
+            CVASynthesis.objects.filter(batch_no=batch_no).update(
+                consumed_weight=models.F('consumed_weight') - weight
             )
+        
+        # 2. 归还 Inventory 表中的 CVA粗品库存 (相当于把消耗的加回去)
+        current_input_total = 0
+        for item in self.input_cva_sources:
+            current_input_total += float(item.get('use_weight', 0))
+            
+        if current_input_total > 0:
+            try:
+                inv_crude = Inventory.objects.get(key=constants.KEY_INTER_CVA_CRUDE)
+                inv_crude.quantity += current_input_total
+                inv_crude.save()
+                
+                InventoryLog.objects.create(
+                    inventory=inv_crude,
+                    action_type='correction',
+                    change_amount=current_input_total,
+                    quantity_after=inv_crude.quantity,
+                    note=f"删除批次 {self.batch_no} 回滚消耗 (CVA粗品)"
+                )
+            except Inventory.DoesNotExist:
+                pass
+
+        # 3. 回滚 Inventory 表中的普通原料消耗和CVC成品产出
+        for field_name, inventory_key in self.INVENTORY_MAPPING.items():
+            val = getattr(self, field_name, 0) or 0
+            if val != 0:
+                try:
+                    inv = Inventory.objects.get(key=inventory_key)
+                    is_input = field_name.startswith('raw_')
+                    
+                    if is_input:
+                        # 原来是消耗(减)，现在要加回去
+                        change_amount = val
+                    else:
+                        # 原来是产出(加)，现在要减回去
+                        change_amount = -val
+                        
+                    inv.quantity += change_amount
+                    inv.save()
+                    
+                    InventoryLog.objects.create(
+                        inventory=inv,
+                        action_type='correction',
+                        change_amount=change_amount,
+                        quantity_after=inv.quantity,
+                        note=f"删除批次 {self.batch_no} 回滚 ({field_name})"
+                    )
+                except Inventory.DoesNotExist:
+                    pass
+
         super().delete(*args, **kwargs)

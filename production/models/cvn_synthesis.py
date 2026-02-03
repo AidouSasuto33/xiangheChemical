@@ -74,7 +74,7 @@ class CVNSynthesis(BaseProductionStep):
     # --- 核心属性：剩余可用量 ---
     @property
     def remaining_weight(self):
-        """仓库里还剩多少没被精馏用掉"""
+        """批次里还剩多少粗蒸CVN"""
         return max(0, self.crude_weight - self.consumed_weight)
 
     # --- 核心逻辑：自动生成批号 + 库存扣减 ---

@@ -75,6 +75,15 @@ class CVNDistillation(BaseProductionStep):
     output_dcb_content = models.FloatField("精品-DCB含量%", null=True, blank=True)
     output_adn_content = models.FloatField("精品-己二腈含量%", null=True, blank=True)
 
+    # 库存核心字段：记录已被CVA合成工段领用了多少
+    consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False, help_text="系统自动更新，不可手改")
+
+    # --- 核心属性：剩余可用量 ---
+    @property
+    def remaining_weight(self):
+        """批次里还剩多少精馏CVM"""
+        return max(0, self.output_weight - self.consumed_weight)
+
     # =========================================================
     # 4. 固废 (Waste)
     # =========================================================
@@ -86,6 +95,7 @@ class CVNDistillation(BaseProductionStep):
     INVENTORY_MAPPING = {
         'output_weight': constants.KEY_INTER_CVN_PURE,
     }
+
 
     class Meta(BaseProductionStep.Meta):
         verbose_name = "2-CVN精馏"
@@ -178,15 +188,15 @@ class CVNDistillation(BaseProductionStep):
         current_input_total = 0
         for item in self.input_sources:
             current_input_total += float(item.get('use_weight', 0))
-        
+
         old_input_total = 0
         if old_instance:
             for item in old_instance.input_sources:
                 old_input_total += float(item.get('use_weight', 0))
-        
+
         # 3.2 计算差异 (消耗量变化)
         input_diff = current_input_total - old_input_total
-        
+
         # 3.3 更新 Inventory 表 (CVN粗品)
         if input_diff != 0:
             try:
@@ -194,7 +204,7 @@ class CVNDistillation(BaseProductionStep):
                 # 投入是消耗，所以库存减去 diff
                 inv_crude.quantity -= input_diff
                 inv_crude.save()
-                
+
                 InventoryLog.objects.create(
                     inventory=inv_crude,
                     action_type='production',
@@ -227,7 +237,7 @@ class CVNDistillation(BaseProductionStep):
         for field_name, inventory_key in self.INVENTORY_MAPPING.items():
             current_val = getattr(self, field_name, 0) or 0
             old_val = getattr(old_instance, field_name, 0) or 0 if old_instance else 0
-            
+
             diff = current_val - old_val
 
             if diff != 0:
@@ -265,21 +275,21 @@ class CVNDistillation(BaseProductionStep):
             CVNSynthesis.objects.filter(batch_no=batch_no).update(
                 consumed_weight=models.F('consumed_weight') - weight
             )
-        
+
         # 2. 归还 Inventory 表中的 CVN粗品库存 (相当于把消耗的加回去)
         current_input_total = 0
         for item in self.input_sources:
             current_input_total += float(item.get('use_weight', 0))
-            
+
         if current_input_total > 0:
             try:
                 inv_crude = Inventory.objects.get(key=constants.KEY_INTER_CVN_CRUDE)
                 inv_crude.quantity += current_input_total
                 inv_crude.save()
-                
+
                 InventoryLog.objects.create(
                     inventory=inv_crude,
-                    action_type='correction', # 删除操作视为修正
+                    action_type='correction',  # 删除操作视为修正
                     change_amount=current_input_total,
                     quantity_after=inv_crude.quantity,
                     note=f"删除批次 {self.batch_no} 回滚消耗"
@@ -293,7 +303,7 @@ class CVNDistillation(BaseProductionStep):
                 inv_pure = Inventory.objects.get(key=constants.KEY_INTER_CVN_PURE)
                 inv_pure.quantity -= self.output_weight
                 inv_pure.save()
-                
+
                 InventoryLog.objects.create(
                     inventory=inv_pure,
                     action_type='correction',
