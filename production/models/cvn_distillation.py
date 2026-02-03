@@ -84,6 +84,24 @@ class CVNDistillation(BaseProductionStep):
         """批次里还剩多少精馏CVM"""
         return max(0, self.output_weight - self.consumed_weight)
 
+    @property
+    def status_label(self):
+        """
+        批次生命周期状态 (针对 CVN精品)
+        """
+        if self.output_weight <= 0:
+            return "异常批次"
+
+        if self.consumed_weight <= 0:
+            return "🟢 全新待领"
+        elif self.remaining_weight <= 0:
+            return "⚫ 耗尽归档"
+        else:
+            return "🟡 部分领用"
+
+    status_label.fget.short_description = "当前状态"
+    status_label.fget.admin_order_field = 'consumed_weight'
+
     # =========================================================
     # 4. 固废 (Waste)
     # =========================================================

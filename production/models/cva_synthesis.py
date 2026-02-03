@@ -78,6 +78,27 @@ class CVASynthesis(BaseProductionStep):
     def remaining_weight(self):
         return max(0, self.crude_weight - self.consumed_weight)
 
+    @property
+    def status_label(self):
+        """
+        批次生命周期状态
+        逻辑：根据 crude_weight (产出) 和 consumed_weight (已领) 动态判断
+        """
+        # 容错：防止产出为0时的除法错误（虽然 clean 已校验）
+        if self.crude_weight <= 0:
+            return "异常批次"
+
+        if self.consumed_weight <= 0:
+            return "🟢 全新待领"
+        elif self.remaining_weight <= 0:  # 这里的 remaining_weight 已经在上面定义过了
+            return "⚫ 耗尽归档"
+        else:
+            return "🟡 部分领用"
+
+    # 让 Admin 后台可以按这个字段排序（按剩余量排序）
+    status_label.fget.short_description = "当前状态"
+    status_label.fget.admin_order_field = 'consumed_weight'
+
     # --- 校验逻辑 ---
     def clean(self):
         super().clean()
