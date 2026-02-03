@@ -15,6 +15,7 @@ class Command(BaseCommand):
         INIT_DATA = [
             # --- 原材料 ---
             {'key': k.KEY_RAW_DCB, 'name': '二氯丁烷', 'type': 'material', 'unit': 'kg', 'safe_stock': 1000},
+            {'key': k.KEY_RECYCLED_DCB,'name': '回收二氯丁烷','type': 'material','unit': 'L'},  # 模型中定义的是 L，这里保持一致'cat': 'raw'  # 分类归为原料，因为后续会再次投入使用},
             {'key': k.KEY_RAW_NACN, 'name': '液体氰化钠', 'type': 'material', 'unit': 'kg', 'safe_stock': 500},
             {'key': k.KEY_RAW_TBAB, 'name': 'TBAB催化剂', 'type': 'material', 'unit': 'kg', 'safe_stock': 100},
             {'key': k.KEY_RAW_ALKALI, 'name': '液碱', 'type': 'material', 'unit': 'kg', 'safe_stock': 2000},

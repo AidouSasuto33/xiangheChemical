@@ -21,6 +21,7 @@ KEY_INTER_CVA_CRUDE = 'inter_cva_crude'  # CVA粗品 (Step 3 产出)
 KEY_PROD_CVC_NX = 'prod_cvc_nx'    # CVC合格品/内销 (Step 4 产出)
 KEY_PROD_CVC_WX = 'prod_cvc_wx'    # CVC精品/外销 (Step 5 产出)
 KEY_WASTE_HEAD = 'waste_head'      # 前馏份/回收液 (Step 4/5 副产出)
+KEY_RECYCLED_DCB = 'recycled_dcb'  # 回收二氯丁烷
 
 # =========================================================
 # 2. 费用 Keys (Expense Keys) - 仅对应 CostConfig
