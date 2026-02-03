@@ -5,8 +5,8 @@ from django.db.models import JSONField
 # django用户管理库
 from django.contrib.auth.models import User
 
-
 import datetime
+
 
 # ==========================================
 # 0. 费用配置 (CostConfig)
@@ -28,11 +28,16 @@ class CostConfig(models.Model):
 
     # --- 2. 单位常量定义 ---
     UNIT_CHOICES = [
+        # --- 质量/重量 (基准: kg) ---
         ('kg', '千克 (kg)'),
-        ('ton', '吨 (Ton)'),
+        ('ton', '吨 (Ton)'),  # 如果选了吨，代码层计算成本时需 * 1000
+        # --- 体积 (基准: L) ---
         ('L', '升 (L)'),
-        ('batch', '批次/次 (Batch)'),
-        ('person_time', '人/小时 (Person/Time)'),  # 专门用于计件工资
+        ('m3', '立方米 (m³)'),  # 污水处理常见单位
+        # --- 计件/计时 ---
+        ('batch', '批/釜 (Batch)'),
+        ('hour', '小时 (Hour)'),
+        ('piece', '件/个 (Piece)'),  # 比如买桶的费用
     ]
 
     # --- 3. 字段定义 ---
