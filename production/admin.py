@@ -24,11 +24,69 @@ class InventoryAdmin(admin.ModelAdmin):
     ordering = ['category', 'key']
 
 
+
+# production/admin.py
+
+# ... (保持上面的 imports 不变) ...
+
+# =========================================================
+# 1. 基础设施 (Inventory, Config, Audit)
+# =========================================================
+
+# ... (InventoryAdmin 保持不变) ...
+
 @admin.register(CostConfig)
 class CostConfigAdmin(admin.ModelAdmin):
-    list_display = ['label', 'price', 'unit', 'category', 'key']
+    list_display = ['label', 'price', 'unit', 'category', 'key', 'updated_at']
     list_editable = ['price']
-    search_fields = ['label']
+    search_fields = ['label', 'key']
+    list_filter = ['category']
+    readonly_fields = ['key'] # 防止手滑改掉关键Key
+
+    # 【核心逻辑】重写保存方法，拦截修改动作
+    def save_model(self, request, obj, form, change):
+        """
+        request: 当前请求（包含 logged-in user）
+        obj: 修改后的对象（新价格）
+        change: Boolean, True表示修改，False表示新建
+        """
+        # 1. 如果是修改操作 (Change)，记录日志
+        if change:
+            try:
+                # 获取数据库里的旧对象
+                old_obj = CostConfig.objects.get(pk=obj.pk)
+                old_price = old_obj.price
+                new_price = obj.price
+
+                # 只有价格变了才记录
+                if old_price != new_price:
+                    CostConfigLog.objects.create(
+                        config=obj,
+                        operator=request.user,  # 只有在Admin里才能轻松拿到这个！
+                        old_price=old_price,
+                        new_price=new_price,
+                        reason="管理员后台修改"
+                    )
+            except CostConfig.DoesNotExist:
+                pass
+
+        # 2. 执行正常的保存
+        super().save_model(request, obj, form, change)
+
+
+# 【新增】注册 Config 审计日志，供查看
+@admin.register(CostConfigLog)
+class CostConfigLogAdmin(admin.ModelAdmin):
+    list_display = ['created_at', 'config_label', 'old_price', 'new_price', 'operator', 'reason']
+    list_filter = ['operator']
+    search_fields = ['config__label', 'reason']
+    readonly_fields = [field.name for field in CostConfigLog._meta.fields] # 全只读
+
+    def config_label(self, obj):
+        return obj.config.label
+    config_label.short_description = "配置项"
+
+# ... (InventoryLogAdmin 及后续代码保持不变) ...
 
 
 @admin.register(InventoryLog)
