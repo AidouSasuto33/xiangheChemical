@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 # 引入 production 的 views
 from production.views import InventoryListView, InventoryActionView, InventoryHistoryView, KettleDashboardView, \
-    CVNSynthesisCreateView
+    CVNSynthesisCreateView, CVNSynthesisUpdateView, CVNSynthesisListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,8 +26,15 @@ urlpatterns = [
     path('production/dashboard/kettle/', KettleDashboardView.as_view(), name='kettle_dashboard'),
 
     #########
-    # 釜皿看板相关URL
+    # CVN合成工单相关URL
     #########
-
     path('production/create/cvn-synthesis/', CVNSynthesisCreateView.as_view(), name='cvn_synthesis_create'),
+    # 注意：update 路由需要 pk 参数
+    path('production/update/cvn-synthesis/<int:pk>/', CVNSynthesisUpdateView.as_view(), name='cvn_synthesis_update'),
+
+    #########
+    # 工单列表相关URL
+    #########
+    path('production/list/cvn-synthesis/', CVNSynthesisListView.as_view(), name='cvn_synthesis_list'),
+    # ...
 ]

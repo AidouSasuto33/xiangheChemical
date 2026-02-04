@@ -137,7 +137,7 @@ class BaseProductionStep(models.Model):
     # --- 2. 时间管理 ---
     # 不使用 auto_now，完全由文员手动选择日历
     start_time = models.DateTimeField("开始时间")
-    end_time = models.DateTimeField("结束时间")
+    end_time = models.DateTimeField("结束时间", null=True, blank=True)
 
     # --- 3. 劳务成本记录 (核心变更) ---
     # 数据结构示例：

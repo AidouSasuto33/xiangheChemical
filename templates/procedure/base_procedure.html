@@ -73,8 +73,18 @@
                     <div class="col-md-4">
                         <label class="text-xs text-uppercase text-gray-500 font-weight-bold mb-1">生产批次 (Batch
                             No.)</label>
-                        <div class="batch-display">
-                            {{ form.instance.batch_no|default:"NEW-BATCH-..." }}
+                        <div class="batch-display d-flex align-items-center">
+                            <span>{{ form.instance.batch_no|default:"NEW-BATCH-..." }}</span>
+
+                            {% with s=form.instance.status|default:'new' %}
+                                {% if s == 'running' %}
+                                    <span class="badge bg-warning text-dark ms-2 fs-6">生产中</span>
+                                {% elif s == 'completed' %}
+                                    <span class="badge bg-success ms-2 fs-6">已完工</span>
+                                {% else %}
+                                    <span class="badge bg-primary ms-2 fs-6">新建</span>
+                                {% endif %}
+                            {% endwith %}
                         </div>
                     </div>
 
@@ -84,12 +94,16 @@
                                 <label class="small fw-bold text-muted">开始时间</label>
                                 <input type="datetime-local" name="start_time" class="form-control form-control-sm"
                                        required
-                                       value="{{ form.start_time.value|date:'Y-m-d\TH:i' }}">
+                                       value="{{ form.start_time.value|date:'Y-m-d\TH:i' }}"
+                                       {% if form.instance.status and form.instance.status != 'new' %}readonly{% endif %}>
                             </div>
                             <div class="col-md-6">
                                 <label class="small fw-bold text-muted">结束时间 (预计)</label>
                                 <input type="datetime-local" name="end_time" class="form-control form-control-sm"
-                                       value="{{ form.end_time.value|date:'Y-m-d\TH:i' }}">
+                                       value="{{ form.end_time.value|date:'Y-m-d\TH:i' }}"
+                                       {% if not form.instance.status or form.instance.status == 'new' %}disabled{% endif %}
+                                       {% if form.instance.status == 'completed' %}readonly{% endif %}>
+
                             </div>
                         </div>
                     </div>
@@ -146,13 +160,50 @@
                 </div>
                 <div>
                     <a href="javascript:history.back()" class="btn btn-secondary me-2">取消</a>
-                    <button type="submit" class="btn btn-primary px-4 fw-bold">
-                        <i class="bi bi-save me-1"></i> 确认开单
-                    </button>
+
+                    {% if not form.instance.pk %}
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">
+                            <i class="bi bi-check-lg me-1"></i>确认创建计划
+                        </button>
+
+                    {% elif form.instance.status == 'new' %}
+                        <button type="submit" name="action" value="save_draft"
+                                class="btn btn-outline-primary me-2 fw-bold">
+                            <i class="bi bi-save me-1"></i> 保存修改
+                        </button>
+
+                        <button type="submit" name="action" value="start_production"
+                                class="btn btn-primary px-4 fw-bold">
+                            <i class="bi bi-rocket-takeoff me-1"></i> 🚀 确认投产 (Start Production)
+                        </button>
+
+                    {% elif form.instance.status == 'running' %}
+                        <button type="submit" name="action" value="save_notes"
+                                class="btn btn-outline-warning text-dark me-2 fw-bold">
+                            <i class="bi bi-save me-1"></i> 保存记录
+                        </button>
+
+                        <button type="submit" name="action" value="finish_production"
+                                class="btn btn-warning px-4 fw-bold text-dark">
+                            <i class="bi bi-flag-fill me-1"></i> 🏁 完工录入 (Finish)
+                        </button>
+
+                    {% elif form.instance.status == 'completed' %}
+                        <a href="{% url 'cvn_synthesis_list' %}" class="btn btn-secondary px-4 fw-bold">
+                            <i class="bi bi-arrow-left me-1"></i> 🔙 返回列表
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </form>
+
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <strong>开单失败：</strong> 请检查以下错误
+            {{ form.errors }}
+        </div>
+        {% endif %}
 
 {% endblock %}
 

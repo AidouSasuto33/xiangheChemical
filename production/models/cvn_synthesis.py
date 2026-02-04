@@ -31,7 +31,7 @@ class CVNSynthesis(BaseProductionStep):
     # =========================================================
     # 2. 产出与质检 (Output & QC)
     # =========================================================
-    crude_weight = models.FloatField("产出-CVN粗品重量(kg)", default=0, help_text="物理称重")
+    crude_weight = models.FloatField("产出-CVN粗品重量(kg)", default=0, help_text="物理称重", blank=True, null=True)
 
     # 库存核心字段：记录已被精馏工段领用了多少
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False, help_text="系统自动更新，不可手改")
@@ -47,7 +47,7 @@ class CVNSynthesis(BaseProductionStep):
     # 3. 回收 (Recovery)
     # =========================================================
     # 注：无需再填日期和批号，直接关联本批次
-    recovered_dcb_amount = models.FloatField("回收-DCB数量(L)", default=0, help_text="单位：升")
+    recovered_dcb_amount = models.FloatField("回收-DCB数量(L)", default=0, help_text="单位：升", blank=True, null=True)
     recovered_dcb_purity = models.FloatField("回收-DCB纯度%", null=True, blank=True)
 
     # =========================================================

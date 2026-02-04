@@ -1,43 +1,47 @@
 <input type="hidden" name="kettle" id="id_kettle" required value="{{ form.kettle.value|default:'' }}">
 
-<div class="mb-3">
-    <small class="text-success fw-bold text-uppercase ls-1">🟢 空闲可用 (Ready)</small>
-    <div class="d-flex flex-wrap gap-2 mt-2">
-        {% for kettle in available_kettles %}
-            <div class="kettle-selectable"
-                 onclick="selectKettle(this, '{{ kettle.id }}', 'idle')"
-                 data-kettle-id="{{ kettle.id }}"
-                 data-last-process="{{ kettle.last_process }}">
+{% with is_locked=form.instance.is_locked %}
 
-                {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='success' %}
+    <div class="mb-3">
+        <small class="text-success fw-bold text-uppercase ls-1">🟢 空闲可用 (Ready)</small>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            {% for kettle in available_kettles %}
+                <div class="kettle-selectable {% if is_locked %}pe-none opacity-75{% endif %}"
+                     {% if not is_locked %}onclick="selectKettle(this, '{{ kettle.id }}', 'idle')"{% endif %}
+                     data-kettle-id="{{ kettle.id }}"
+                     data-last-process="{{ kettle.last_process }}">
 
-            </div>
-        {% empty %}
-            <div class="text-muted small fst-italic ms-1">无可用空闲设备</div>
-        {% endfor %}
+                    {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='success' %}
+
+                </div>
+            {% empty %}
+                <div class="text-muted small fst-italic ms-1">无可用空闲设备</div>
+            {% endfor %}
+        </div>
     </div>
-</div>
 
-<hr class="my-3 opacity-25">
+    <hr class="my-3 opacity-25">
 
-<div class="mb-3">
-    <small class="text-warning fw-bold text-uppercase ls-1">🟡 待清洁 (Cleaning Required)</small>
-    <div class="d-flex flex-wrap gap-2 mt-2">
-        {% for kettle in cleaning_kettles %}
-            <div class="kettle-selectable"
-                 onclick="selectKettle(this, '{{ kettle.id }}', 'to_clean')"
-                 data-kettle-id="{{ kettle.id }}"
-                 data-last-process="{{ kettle.last_process }}"
-                 data-last-product="{{ kettle.last_product_name }}">
+    <div class="mb-3">
+        <small class="text-warning fw-bold text-uppercase ls-1">🟡 待清洁 (Cleaning Required)</small>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            {% for kettle in cleaning_kettles %}
+                <div class="kettle-selectable {% if is_locked %}pe-none opacity-75{% endif %}"
+                     {% if not is_locked %}onclick="selectKettle(this, '{{ kettle.id }}', 'to_clean')"{% endif %}
+                     data-kettle-id="{{ kettle.id }}"
+                     data-last-process="{{ kettle.last_process }}"
+                     data-last-product="{{ kettle.last_product_name }}">
 
-                {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='warning' %}
+                    {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='warning' %}
 
-            </div>
-        {% empty %}
-            <div class="text-muted small fst-italic ms-1">无待清洁设备</div>
-        {% endfor %}
+                </div>
+            {% empty %}
+                <div class="text-muted small fst-italic ms-1">无待清洁设备</div>
+            {% endfor %}
+        </div>
     </div>
-</div>
+
+{% endwith %}
 
 <script>
     function selectKettle(element, kettleId, status) {
@@ -60,7 +64,7 @@
     }
 
     // 初始化：如果表单是编辑模式（已有值），自动高亮对应卡片
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         const currentVal = document.getElementById('id_kettle').value;
         if (currentVal) {
             const target = document.querySelector(`.kettle-selectable[data-kettle-id="${currentVal}"]`);

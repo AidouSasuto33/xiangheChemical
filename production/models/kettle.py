@@ -90,3 +90,8 @@ class Kettle(models.Model):
         if self.capacity > 0:
             return round((self.current_level / self.capacity) * 100)
         return 0
+
+    @property
+    def is_locked(self):
+        # 如果状态不是 'new'，则认为是锁定的
+        return self.status != 'new'
