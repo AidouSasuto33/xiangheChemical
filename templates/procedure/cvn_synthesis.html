@@ -1,0 +1,95 @@
+{% extends "procedure/base_procedure.html" %}
+
+{% block title %}开单：CVN合成{% endblock %}
+
+{% block process_details %}
+<div class="row g-3">
+    
+    <div class="col-12">
+        <label class="small text-muted fw-bold text-uppercase mb-2">
+            <i class="bi bi-box-seam me-1"></i> 原料投入 (Input Materials)
+        </label>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small">二氯丁烷 (DCB)</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" step="0.01" name="raw_dcb" class="form-control" 
+                           placeholder="标准投料量..." value="{{ form.raw_dcb.value|default:'' }}">
+                    <span class="input-group-text bg-light">kg</span>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label class="form-label small">氰化钠 (NaCN)</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" step="0.01" name="raw_nacn" class="form-control" 
+                           placeholder="0.00" value="{{ form.raw_nacn.value|default:'' }}">
+                    <span class="input-group-text bg-light">kg</span>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label small">四丁基溴化铵 (TBAB)</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" step="0.01" name="raw_tbab" class="form-control" 
+                           placeholder="0.00" value="{{ form.raw_tbab.value|default:'' }}">
+                    <span class="input-group-text bg-light">kg</span>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label small">液碱 (Liquid Alkali)</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" step="0.01" name="raw_alkali" class="form-control" 
+                           placeholder="0.00" value="{{ form.raw_alkali.value|default:'' }}">
+                    <span class="input-group-text bg-light">kg</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4 text-muted opacity-25">
+
+    <div class="col-12">
+        <label class="small text-success fw-bold text-uppercase mb-2">
+            <i class="bi bi-arrow-down-circle me-1"></i> 预计产出 (Output)
+        </label>
+        <div class="p-3 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
+            <div class="row align-items-end">
+                <div class="col-md-12">
+                    <label class="form-label fw-bold text-dark">CVN 粗品重量 (Crude Weight)</label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" name="crude_weight" class="form-control form-control-lg fw-bold text-success" 
+                               placeholder="称重后填入..." value="{{ form.crude_weight.value|default:'' }}">
+                        <span class="input-group-text bg-success text-white fw-bold">kg</span>
+                    </div>
+                    <div class="form-text small">请填写入库过磅重量，系统将据此计算收率。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 mt-4">
+        <label class="small text-secondary fw-bold text-uppercase mb-2">
+            <i class="bi bi-recycle me-1"></i> 环保数据 (Eco Record)
+        </label>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small text-muted">回收溶剂</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" step="0.01" name="recycle_solvent" class="form-control border-secondary" placeholder="非必填">
+                    <span class="input-group-text bg-light">kg</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small text-muted">废水排出量</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" step="0.01" name="waste_water" class="form-control border-secondary" placeholder="非必填">
+                    <span class="input-group-text bg-light">kg</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

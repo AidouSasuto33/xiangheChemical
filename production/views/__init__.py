@@ -1,2 +1,3 @@
 from .inventory_view import InventoryListView, InventoryActionView, InventoryHistoryView
 from .kettle_view import KettleDashboardView
+from .cvn_synthesis_view import CVNSynthesisCreateView

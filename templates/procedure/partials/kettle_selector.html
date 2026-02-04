@@ -1,0 +1,72 @@
+<input type="hidden" name="kettle" id="id_kettle" required value="{{ form.kettle.value|default:'' }}">
+
+<div class="mb-3">
+    <small class="text-success fw-bold text-uppercase ls-1">🟢 空闲可用 (Ready)</small>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+        {% for kettle in available_kettles %}
+            <div class="kettle-selectable"
+                 onclick="selectKettle(this, '{{ kettle.id }}', 'idle')"
+                 data-kettle-id="{{ kettle.id }}"
+                 data-last-process="{{ kettle.last_process }}">
+
+                {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='success' %}
+
+            </div>
+        {% empty %}
+            <div class="text-muted small fst-italic ms-1">无可用空闲设备</div>
+        {% endfor %}
+    </div>
+</div>
+
+<hr class="my-3 opacity-25">
+
+<div class="mb-3">
+    <small class="text-warning fw-bold text-uppercase ls-1">🟡 待清洁 (Cleaning Required)</small>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+        {% for kettle in cleaning_kettles %}
+            <div class="kettle-selectable"
+                 onclick="selectKettle(this, '{{ kettle.id }}', 'to_clean')"
+                 data-kettle-id="{{ kettle.id }}"
+                 data-last-process="{{ kettle.last_process }}"
+                 data-last-product="{{ kettle.last_product_name }}">
+
+                {% include 'production/kettle/partials/kettle_micro_card.html' with kettle=kettle status_class='warning' %}
+
+            </div>
+        {% empty %}
+            <div class="text-muted small fst-italic ms-1">无待清洁设备</div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function selectKettle(element, kettleId, status) {
+        // 1. 如果是“待清洁”状态，这里未来会触发 Modal
+        // 目前为了跑通流程，先允许直接选，但在控制台打印日志
+        if (status === 'to_clean') {
+            const lastProduct = element.getAttribute('data-last-product');
+            console.warn(`选中了待清洁设备: ${kettleId}, 上批次: ${lastProduct}`);
+            // TODO: 触发清洗确认弹窗
+        }
+
+        // 2. 视觉交互：移除所有选中态，给当前元素加选中态
+        document.querySelectorAll('.kettle-selectable').forEach(el => {
+            el.classList.remove('selected');
+        });
+        element.classList.add('selected');
+
+        // 3. 数据交互：赋值给隐藏域
+        document.getElementById('id_kettle').value = kettleId;
+    }
+
+    // 初始化：如果表单是编辑模式（已有值），自动高亮对应卡片
+    document.addEventListener("DOMContentLoaded", function() {
+        const currentVal = document.getElementById('id_kettle').value;
+        if (currentVal) {
+            const target = document.querySelector(`.kettle-selectable[data-kettle-id="${currentVal}"]`);
+            if (target) {
+                target.classList.add('selected');
+            }
+        }
+    });
+</script>

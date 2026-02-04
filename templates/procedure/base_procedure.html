@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}新建生产单{% endblock %}
+
+{% block extra_css %}
+    <style>
+        /* === 工业风表单样式微调 === */
+        .form-section-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #4e73df; /* 统一的主题色 */
+            border-left: 4px solid #4e73df;
+            padding-left: 10px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .batch-display {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2e343a;
+            letter-spacing: 1px;
+        }
+
+        /* 选中釜皿的高亮样式 (配合 JS) */
+        .kettle-selectable {
+            transition: all 0.2s ease;
+            border-radius: 6px; /* 匹配卡片圆角 */
+        }
+
+        .kettle-selectable:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 选中态：深蓝边框 + 阴影 */
+        .kettle-selectable.selected {
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.3);
+            transform: translateY(-3px);
+            position: relative;
+        }
+
+        /* 选中态：右下角打钩角标 */
+        .kettle-selectable.selected::after {
+            content: "✔";
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background-color: #0d6efd;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border: 2px solid white;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <form method="post" id="productionForm" class="h-100 d-flex flex-column">
+        {% csrf_token %}
+
+        <div class="card shadow-sm mb-4 border-top-primary">
+            <div class="card-body py-3">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <label class="text-xs text-uppercase text-gray-500 font-weight-bold mb-1">生产批次 (Batch
+                            No.)</label>
+                        <div class="batch-display">
+                            {{ form.instance.batch_no|default:"NEW-BATCH-..." }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="small fw-bold text-muted">开始时间</label>
+                                <input type="datetime-local" name="start_time" class="form-control form-control-sm"
+                                       required
+                                       value="{{ form.start_time.value|date:'Y-m-d\TH:i' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small fw-bold text-muted">结束时间 (预计)</label>
+                                <input type="datetime-local" name="end_time" class="form-control form-control-sm"
+                                       value="{{ form.end_time.value|date:'Y-m-d\TH:i' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="form-section-title">Step 1. 选择生产设备</h6>
+                        {% include "procedure/partials/kettle_selector.html" %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100 border-left-info">
+                    <div class="card-body">
+                        <h6 class="form-section-title">Step 2. 关键工艺参数与投入</h6>
+
+                        {% block process_details %}
+                            <div class="alert alert-warning">
+                                开发提示：请在子模板中覆盖 <code>block process_details</code> 以显示具体工艺字段。
+                            </div>
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 border-end">
+                        <h6 class="form-section-title">Step 3. 人工投入 (Labor)</h6>
+                        <div class="text-center text-muted py-4 bg-light rounded border border-dashed">
+                            <i class="bi bi-people me-2"></i> 工时录入组件开发中...
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="form-section-title">Step 4. 备注与异常</h6>
+                        <textarea name="remarks" class="form-control" rows="3"
+                                  placeholder="记录生产过程中的异常情况、设备问题等...">{{ form.remarks.value|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="small text-muted">
+                    操作员: <strong>{{ user.last_name }}{{ user.first_name }}</strong>
+                </div>
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-secondary me-2">取消</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">
+                        <i class="bi bi-save me-1"></i> 确认开单
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // 初始化 Bootstrap Tooltip
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+{% endblock %}

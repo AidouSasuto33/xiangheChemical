@@ -5,6 +5,8 @@ from django.db.models import JSONField
 # django用户管理库
 from django.contrib.auth.models import User
 
+from .kettle import Kettle
+
 import datetime
 
 
@@ -102,7 +104,35 @@ class BaseProductionStep(models.Model):
 
     # --- 1. 核心追踪 ---
     batch_no = models.CharField("生产批号", max_length=50, unique=True)
-    kettles = JSONField("使用釜号列表", default=list, help_text="支持多选，如 ['R101', 'R102']")
+    
+    STATUS_NEW = 'new'
+    STATUS_RUNNING = 'running'
+    STATUS_COMPLETED = 'completed'
+
+    STATUS_CHOICES = [
+        (STATUS_NEW, '新建/待投 (New)'),
+        (STATUS_RUNNING, '生产中 (Running)'),
+        (STATUS_COMPLETED, '已完工 (Completed)'),
+    ]
+    
+    status = models.CharField(
+        "状态",
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_NEW,
+        db_index=True,
+        help_text="生产状态流转：新建 -> 生产中(锁原料) -> 完工(入成品)"
+    )
+
+    kettle = models.ForeignKey(
+        Kettle,
+        on_delete=models.PROTECT,
+        related_name='%(class)s_related',
+        verbose_name="生产设备",
+        help_text="该生产步骤所使用的具体釜皿/设备",
+        null=True,
+        blank=True
+    )
 
     # --- 2. 时间管理 ---
     # 不使用 auto_now，完全由文员手动选择日历
