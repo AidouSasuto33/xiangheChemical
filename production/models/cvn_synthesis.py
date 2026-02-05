@@ -82,7 +82,7 @@ class CVNSynthesis(BaseProductionStep):
         """
         批次生命周期状态 (针对 CVA粗品)
         """
-        if self.crude_weight <= 0:
+        if self.crude_weight < 0:
             return "异常批次"
 
         if self.consumed_weight <= 0:
