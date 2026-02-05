@@ -36,6 +36,16 @@ def handle_inventory_action(user, inventory_id, action_type, amount_or_quantity,
                 change_amount = amount
                 inv.quantity += change_amount
 
+            elif action_type == 'safe_stock':
+                # 设置安全库存：不改变当前库存量，只更新阈值
+                # amount 代表新的安全库存警戒线
+                old_safe_stock = inv.safe_stock
+                inv.safe_stock = amount
+                change_amount = 0 # 库存数量未变
+                
+                # 自动追加备注
+                note = f"{note} [预警线调整: {old_safe_stock} -> {inv.safe_stock}]".strip()
+
             elif action_type == 'sale':
                 # 销售校验：库存不足
                 if inv.quantity < amount:
