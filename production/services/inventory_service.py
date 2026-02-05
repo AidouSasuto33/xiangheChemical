@@ -73,3 +73,29 @@ def handle_inventory_action(user, inventory_id, action_type, amount_or_quantity,
         return False, "无效的数量格式"
     except Exception as e:
         return False, f"系统错误: {str(e)}"
+
+
+def update_single_inventory(key, change_amount, note, user):
+    """
+    供其他业务Service调用的原子库存更新方法。
+    根据 constants KEY 更新库存，并记录日志。
+    """
+    try:
+        # 使用 select_for_update 锁行，防止并发数据不一致
+        inv = Inventory.objects.select_for_update().get(key=key)
+        inv.quantity += change_amount
+        inv.save()
+
+        InventoryLog.objects.create(
+            inventory=inv,
+            action_type='production',
+            change_amount=change_amount,
+            quantity_after=inv.quantity,
+            note=note,
+            operator=user
+        )
+        return True
+    except Inventory.DoesNotExist:
+        # 生产环境中建议记录 error log
+        print(f"[Inventory Error] Key '{key}' not found.")
+        return False

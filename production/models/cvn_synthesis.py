@@ -2,13 +2,8 @@
 from django.db import models
 # 表单基础模型
 from .core import BaseProductionStep
-# 批号生成器
-from ..utils.batch_generator import generate_batch_number
 # 引入常量
 from .. import constants
-# 引入库存模型
-from .inventory import Inventory
-from .audit import InventoryLog
 
 
 # =========================================================
@@ -23,10 +18,11 @@ class CVNSynthesis(BaseProductionStep):
     # =========================================================
     # 1. 投入原料 (Input)
     # =========================================================
-    raw_dcb = models.FloatField("投入-二氯丁烷(kg)", default=0)
-    raw_nacn = models.FloatField("投入-氰化钠(kg)", default=0)
-    raw_tbab = models.FloatField("投入-TBAB(kg)", default=0)
-    raw_alkali = models.FloatField("投入-液碱(kg)", default=0)
+    raw_dcb = models.FloatField("投入-二氯丁烷(kg)", default=0, null=True, blank=True)
+    input_recycled_dcb = models.FloatField("投入-回收二氯丁烷(kg/L)", default=0, help_text="套用回收溶剂", null=True, blank=True)
+    raw_nacn = models.FloatField("投入-氰化钠(kg)", default=0, null=True, blank=True)
+    raw_tbab = models.FloatField("投入-TBAB(kg)", default=0, null=True, blank=True)
+    raw_alkali = models.FloatField("投入-液碱(kg)", default=0, null=True, blank=True)
 
     # =========================================================
     # 2. 产出与质检 (Output & QC)
@@ -53,7 +49,7 @@ class CVNSynthesis(BaseProductionStep):
     # =========================================================
     # 4. 环保/排污 (Waste)
     # =========================================================
-    waste_batches = models.IntegerField("破氰废水处理(批次/釜)", default=0, help_text="填整数，用于计算排污费")
+    waste_batches = models.IntegerField("破氰废水处理(批次/釜)", default=0, help_text="填整数，用于计算排污费", blank=True, null=True)
 
     # =========================================================
     # 5. 库存映射配置
@@ -94,59 +90,3 @@ class CVNSynthesis(BaseProductionStep):
 
     status_label.fget.short_description = "当前状态"
     status_label.fget.admin_order_field = 'consumed_weight'
-
-    # --- 核心逻辑：自动生成批号 + 库存扣减 ---
-    def save(self, *args, **kwargs):
-        # 0. 自动生成批号
-        if not self.id and not self.batch_no:
-            self.batch_no = generate_batch_number(CVNSynthesis, "CVN-CU")
-
-        # 1. 获取旧对象以计算差值
-        old_instance = None
-        if self.pk:
-            try:
-                old_instance = self.__class__.objects.get(pk=self.pk)
-            except self.__class__.DoesNotExist:
-                pass
-
-        # 2. 遍历映射，处理库存
-        for field_name, inventory_key in self.INVENTORY_MAPPING.items():
-            current_val = getattr(self, field_name, 0) or 0
-            old_val = getattr(old_instance, field_name, 0) or 0 if old_instance else 0
-            
-            # 计算差异：本次操作导致的数值变化量
-            diff = current_val - old_val
-
-            if diff != 0:
-                try:
-                    inv = Inventory.objects.get(key=inventory_key)
-                    
-                    # 判断是投入(消耗)还是产出(增加)
-                    # 逻辑：字段名以 'raw_' 开头视为投入，否则视为产出(如 crude_weight)
-                    is_input = field_name.startswith('raw_')
-                    
-                    if is_input:
-                        # 投入：消耗库存，所以减去 diff
-                        # 例如：原来消耗100，现在消耗120 (diff=+20)，库存应 -20
-                        change_amount = -diff
-                    else:
-                        # 产出：增加库存，所以加上 diff
-                        # 例如：原来产出100，现在产出120 (diff=+20)，库存应 +20
-                        change_amount = diff
-
-                    inv.quantity += change_amount
-                    inv.save()
-
-                    # 记录日志
-                    InventoryLog.objects.create(
-                        inventory=inv,
-                        action_type='production',
-                        change_amount=change_amount,
-                        quantity_after=inv.quantity,
-                        note=f"生产批次 {self.batch_no} 自动变动 ({field_name})"
-                    )
-                except Inventory.DoesNotExist:
-                    pass # 忽略未初始化的库存
-
-        # 3. 执行原有保存
-        super().save(*args, **kwargs)

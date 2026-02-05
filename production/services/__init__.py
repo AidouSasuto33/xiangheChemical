@@ -1,1 +1,1 @@
-from .inventory_service import handle_inventory_action
+from .inventory_service import handle_inventory_action, update_single_inventory

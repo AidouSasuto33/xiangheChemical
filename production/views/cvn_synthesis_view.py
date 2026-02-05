@@ -9,11 +9,11 @@ from django.utils import timezone
 # === Models & Utils ===
 from production.models.cvn_synthesis import CVNSynthesis
 from production.models.kettle import Kettle
-from production.models.inventory import Inventory
 from production.models.audit import InventoryLog
 from production.models.core import BaseProductionStep
 from production.utils.batch_generator import generate_batch_number
 from production import constants
+from production.services import cvn_synthesis_service
 
 
 # ========================================================
@@ -31,7 +31,7 @@ class CVNSynthesisCreateView(LoginRequiredMixin, CreateView):
     template_name = 'procedure/cvn_synthesis.html'
     fields = [
         'start_time', 'end_time', 'kettle',
-        'raw_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
+        'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
         'remarks'  # 产出字段在新建时不可填
     ]
 
@@ -82,8 +82,11 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
     # 允许编辑所有字段，但前端会根据 status 锁定部分输入框
     fields = [
         'start_time', 'end_time', 'kettle',
-        'raw_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
-        'crude_weight', 'remarks'
+        'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
+        'crude_weight', 'remarks',
+        # 新增字段
+        'test_time', 'content_cvn', 'content_dcb', 'content_adn',
+        'recovered_dcb_amount', 'waste_batches'
     ]
 
     def get_context_data(self, **kwargs):
@@ -158,19 +161,8 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
         kettle.current_level = total_input
         kettle.save()
 
-        # 2. 扣减原料库存 (Inventory Deduction)
-        # 定义字段与Inventory Key的映射
-        materials_map = {
-            'raw_dcb': 'raw_dcb',
-            'raw_nacn': 'raw_nacn',
-            'raw_tbab': 'raw_tbab',
-            'raw_alkali': 'raw_liquid_alkali'
-        }
-
-        for field, key in materials_map.items():
-            qty = getattr(instance, field, 0) or 0
-            if qty > 0:
-                self._update_inventory(key, -qty, f"批次 {instance.batch_no} 投料消耗")
+        # 2. 扣减原料库存 (Inventory Deduction) - 使用 Service
+        cvn_synthesis_service.process_start(instance, self.request.user)
 
         # 3. 更新单据状态
         instance.status = BaseProductionStep.STATUS_RUNNING
@@ -195,42 +187,12 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
         kettle.last_product_name = "CVN粗品"
         kettle.save()
 
-        # 3. 增加成品库存 (Inventory Addition)
-        self._update_inventory('inter_cvn_crude', instance.crude_weight, f"批次 {instance.batch_no} 完工产出")
+        # 3. 增加成品库存 (Inventory Addition) - 使用 Service
+        cvn_synthesis_service.process_finish(instance, self.request.user)
 
-        # 4. 处理环保数据 (如果有临时字段)
-        recycle_val = self.request.POST.get('recycle_solvent')
-        if recycle_val:
-            notes = f"\n[环保] 回收溶剂: {recycle_val}kg"
-            instance.remarks = (instance.remarks or "") + notes
-            # 这里也可以增加回收溶剂的库存逻辑
-
-        # 5. 更新单据状态
+        # 4. 更新单据状态
         instance.status = BaseProductionStep.STATUS_COMPLETED
         form.save()
-
-    def _update_inventory(self, key, change_amount, note):
-        """库存变更通用助手"""
-        # 注意：这里假设 inventory 模块有按照 Key 查询的机制
-        # 如果 Key 不存在，抛出异常或记录错误
-        try:
-            # 假设 constants 里定义了具体的 key 字符串，这里直接用 key 变量查询
-            # 实际项目中建议使用 constants.KEY_XXX
-            inv = Inventory.objects.get(key=key)
-            inv.quantity += change_amount
-            inv.save()
-
-            InventoryLog.objects.create(
-                inventory=inv,
-                action_type='production',
-                change_amount=change_amount,
-                quantity_after=inv.quantity,
-                note=note,
-                operator=self.request.user
-            )
-        except Inventory.DoesNotExist:
-            # 暂时忽略或记录日志，防止因缺库存配置导致无法流转
-            print(f"Warning: Inventory key '{key}' not found.")
 
 
 # ========================================================

@@ -134,7 +134,7 @@
                         <th rowspan="2">釜皿</th>
                         <th rowspan="2">投产时间</th>
 
-                        <th colspan="4" class="border-start border-secondary border-opacity-50 text-primary">原料投入
+                        <th colspan="5" class="border-start border-secondary border-opacity-50 text-primary">原料投入
                             (Input)
                         </th>
                         <th colspan="1" class="border-start border-secondary border-opacity-50 text-success">产出
@@ -146,7 +146,10 @@
                     </tr>
                     <tr>
                         <th class="th-xs border-start border-secondary border-opacity-50 text-muted fw-normal bg-light">
-                            DCB
+                            DCB(新)
+                        </th>
+                        <th class="th-xs border-start text-success fw-normal bg-light">
+                            DCB(回)
                         </th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">NaCN</th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">TBAB</th>
@@ -194,6 +197,7 @@
                             <td class="text-center text-muted font-monospace py-3">{{ item.start_time|date:"m-d H:i"|default:"-" }}</td>
 
                             <td class="col-digit text-secondary border-start border-secondary border-opacity-50 py-3">{{ item.raw_dcb|floatformat:1|default:"-" }}</td>
+                            <td class="col-digit text-success border-start py-3">{{ item.input_recycled_dcb|floatformat:1|default:"-" }}</td>
                             <td class="col-digit text-secondary border-start py-3">{{ item.raw_nacn|floatformat:1|default:"-" }}</td>
                             <td class="col-digit text-secondary border-start py-3">{{ item.raw_tbab|floatformat:1|default:"-" }}</td>
                             <td class="col-digit text-secondary border-start py-3">{{ item.raw_alkali|floatformat:1|default:"-" }}</td>
@@ -235,7 +239,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="15" class="text-center py-5 text-muted">
+                            <td colspan="16" class="text-center py-5 text-muted">
                                 <div class="mb-2"><i class="bi bi-inbox fs-1 opacity-25"></i></div>
                                 <div>暂无数据</div>
                             </td>
