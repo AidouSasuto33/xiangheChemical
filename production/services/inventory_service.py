@@ -109,3 +109,27 @@ def update_single_inventory(key, change_amount, note, user):
         # 生产环境中建议记录 error log
         print(f"[Inventory Error] Key '{key}' not found.")
         return False
+
+
+def check_batch_availability(requirements):
+    """
+    批量库存预检 (Pre-flight Check)
+    :param requirements: list of (inventory_key, amount_needed, display_name)
+    :return: (is_valid, error_messages_list)
+    """
+    errors = []
+    # 逐个检查
+    for key, amount, name in requirements:
+        # 忽略无需扣减的项目
+        if not amount or amount <= 0:
+            continue
+            
+        try:
+            inv = Inventory.objects.get(key=key)
+            if inv.quantity < amount:
+                # 记录具体缺口：需 100, 存 80
+                errors.append(f"{name} (需 {amount}{inv.unit}, 存 {inv.quantity}{inv.unit})")
+        except Inventory.DoesNotExist:
+            errors.append(f"{name} (未找到库存项: {key})")
+            
+    return (len(errors) == 0), errors

@@ -106,8 +106,14 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
 
                 # 1. 投产 (Start)
                 if action == 'start_production' and current_status == BaseProductionStep.STATUS_NEW:
-                    self._handle_start_production(form)
-                    messages.success(self.request, f"批次 {form.instance.batch_no} 已投产！原料库存已扣减。")
+                    if self._handle_start_production(form):
+                        messages.success(self.request, f"批次 {form.instance.batch_no} 已投产！原料库存已扣减。")
+                    else:
+                        # 如果返回 False，说明投产失败（如库存不足），此时不应继续保存为 running
+                        # 但 form_valid 默认会 save()，所以我们需要在这里处理
+                        # 由于 _handle_start_production 内部已经处理了 status 回滚，
+                        # 这里我们只需要让 form_invalid 来重新渲染页面即可，或者 redirect
+                        return self.form_invalid(form)
 
                 # 2. 完工 (Finish)
                 elif action == 'finish_production' and current_status == BaseProductionStep.STATUS_RUNNING:
@@ -145,28 +151,44 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
     # -------------------------------------------------------------------------
 
     def _handle_start_production(self, form):
-        """处理投产逻辑：锁釜、扣料、变状态"""
-        instance = form.instance
+        """
+        处理投产逻辑：状态变更 + 库存扣减
+        """
+        try:
+            # 1. 锁定釜皿
+            instance = form.instance
+            kettle = instance.kettle
+            if kettle.status != 'idle' and kettle.current_batch_no != instance.batch_no:
+                raise ValueError(f"设备 {kettle.name} 当前非空闲，无法投产！")
 
-        # 1. 锁定釜皿
-        kettle = instance.kettle
-        if kettle.status != 'idle' and kettle.current_batch_no != instance.batch_no:
-            raise ValueError(f"设备 {kettle.name} 当前非空闲，无法投产！")
+            kettle.status = 'running'
+            kettle.current_batch_no = instance.batch_no
+            kettle.last_process = 'cvn_syn'
+            # 估算当前液位 = 所有原料之和
+            total_input = (instance.raw_dcb + instance.raw_nacn + instance.raw_tbab + instance.raw_alkali)
+            kettle.current_level = total_input
+            kettle.save()
 
-        kettle.status = 'running'
-        kettle.current_batch_no = instance.batch_no
-        kettle.last_process = 'cvn_syn'
-        # 估算当前液位 = 所有原料之和
-        total_input = (instance.raw_dcb + instance.raw_nacn + instance.raw_tbab + instance.raw_alkali)
-        kettle.current_level = total_input
-        kettle.save()
-
-        # 2. 扣减原料库存 (Inventory Deduction) - 使用 Service
-        cvn_synthesis_service.process_start(instance, self.request.user)
-
-        # 3. 更新单据状态
-        instance.status = BaseProductionStep.STATUS_RUNNING
-        form.save()
+            # 2. 调用Service进行扣料 (内部包含库存检查)
+            # 如果库存不足，Service会抛出 ValueError
+            cvn_synthesis_service.process_start(form.instance, self.request.user)
+            
+            # 3. 只有扣料成功，才变更状态
+            form.instance.status = 'running'
+            # 只有当 start_time 未设置时才自动填充，允许用户自定义
+            if not form.instance.start_time:
+                form.instance.start_time = timezone.now()
+            
+            form.save()
+            return True
+            
+        except ValueError as e:
+            # 4. 捕获库存不足异常 (第三道防线)
+            # 显示红色错误条
+            messages.error(self.request, f"⛔ {str(e)}")
+            # 状态必须回滚，防止变成 Running
+            form.instance.status = 'new'
+            return False
 
     def _handle_finish_production(self, form):
         """处理完工逻辑：释釜、入库、归档"""
