@@ -79,7 +79,7 @@
                 <small class="text-muted">管理所有CVN合成批次的生产与质检记录</small>
             </div>
         </div>
-        <a href="{% url 'cvn_synthesis_create' %}" class="btn btn-primary shadow fw-bold px-4">
+        <a href="{% url 'production:cvn_synthesis_create' %}" class="btn btn-primary shadow fw-bold px-4">
             <i class="bi bi-plus-lg me-1"></i> 新建工单
         </a>
     </div>
@@ -171,7 +171,7 @@
                     {% for item in procedures %}
                         <tr>
                             <td class="sticky-col-1 fw-bold font-monospace py-3">
-                                <a href="{% url 'cvn_synthesis_update' item.pk %}"
+                                <a href="{% url 'production:cvn_synthesis_update' item.pk %}"
                                    class="text-decoration-none text-dark">
                                     {{ item.batch_no }}
                                 </a>
@@ -217,19 +217,19 @@
 
                             <td class="text-center border-start py-3 px-2">
                                 {% if item.status == 'completed' %}
-                                    <a href="{% url 'cvn_synthesis_update' item.pk %}"
+                                    <a href="{% url 'production:cvn_synthesis_update' item.pk %}"
                                        class="btn btn-sm btn-outline-secondary py-0 px-2 small"
                                        style="font-size: 0.8rem;">
                                         查看
                                     </a>
                                 {% elif item.status == 'new' %}
-                                    <a href="{% url 'cvn_synthesis_update' item.pk %}"
+                                    <a href="{% url 'production:cvn_synthesis_update' item.pk %}"
                                        class="btn btn-sm btn-primary py-0 px-2 small shadow-sm"
                                        style="font-size: 0.8rem;">
                                         投产
                                     </a>
                                 {% else %}
-<a href="{% url 'cvn_synthesis_update' item.pk %}"
+<a href="{% url 'production:cvn_synthesis_update' item.pk %}"
    class="btn btn-sm btn-warning shadow-sm py-0 px-2"
    style="font-size: 0.8rem;">
     处理

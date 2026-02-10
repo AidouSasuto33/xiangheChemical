@@ -64,7 +64,7 @@ class CVNSynthesisCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         # 创建成功后，跳转到该单据的“编辑/流转”页面
         # 假设 URL 命名为 'cvn_synthesis_update'
-        return reverse('cvn_synthesis_update', kwargs={'pk': self.object.pk})
+        return reverse('production:cvn_synthesis_update', kwargs={'pk': self.object.pk})
 
 
 # ========================================================
@@ -144,7 +144,7 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         # 操作完停留在当前页面，或者跳转回看板（视需求而定）
-        return reverse('cvn_synthesis_update', kwargs={'pk': self.object.pk})
+        return reverse('production:cvn_synthesis_update', kwargs={'pk': self.object.pk})
 
     # -------------------------------------------------------------------------
     # 内部逻辑方法
