@@ -3,16 +3,17 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import redirect
 from django.db import transaction
+from django.db.models import Q
 from django.contrib import messages
 from django.utils import timezone
 
 # === Models & Utils ===
 from production.models.cvn_synthesis import CVNSynthesis
-from production.models.kettle import Kettle
-from inventory.models import InventoryLog
 from production.models.core import BaseProductionStep
+from production.models.kettle import Kettle
 from production.utils.batch_generator import generate_batch_number
 from production.services import cvn_synthesis_service
+from production.forms.cvn_synthesis_form import CVNSynthesisForm
 
 
 # ========================================================
@@ -27,25 +28,25 @@ class CVNSynthesisCreateView(LoginRequiredMixin, CreateView):
     注意：此阶段不扣库存，不锁死釜皿（仅逻辑占用）。
     """
     model = CVNSynthesis
-    template_name = 'procedure/cvn_synthesis.html'
-    fields = [
-        'start_time', 'end_time', 'kettle',
-        'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
-        'remarks'  # 产出字段在新建时不可填
-    ]
+    template_name = 'production/procedure/cvn_synthesis.html'
+    form_class = CVNSynthesisForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            kwargs['action_type'] = self.request.POST.get('action')
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # 筛选可用釜皿：支持 'cvn_syn' 工艺 且 状态为空闲
-        # 注意：实际生产中可能需要过滤掉已经被其他 'new' 状态单据占用的釜皿
-        relevant_kettles = Kettle.objects.filter(supported_processes__contains=['cvn_syn'])
-        context['available_kettles'] = relevant_kettles.filter(status='idle').order_by('name')
-        context['cleaning_kettles'] = relevant_kettles.filter(status='to_clean').order_by('name')
+        # Populate kettle lists for the selector
+        context['available_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_IDLE)
+        context['cleaning_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_CLEANING)
         return context
 
     def form_valid(self, form):
         # 1. 生成正式批次号 (仅在保存瞬间生成)
-        batch_no = generate_batch_number(CVNSynthesis, 'CVN-CU')
+        batch_no = generate_batch_number(CVNSynthesis, 'CVN-SYN')
         form.instance.batch_no = batch_no
 
         # 2. 强制初始状态为 'new'
@@ -77,23 +78,20 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
     3. 数据补录：完工时录入产出。
     """
     model = CVNSynthesis
-    template_name = 'procedure/cvn_synthesis.html'
-    # 允许编辑所有字段，但前端会根据 status 锁定部分输入框
-    fields = [
-        'start_time', 'end_time', 'kettle',
-        'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
-        'crude_weight', 'remarks',
-        # 新增字段
-        'test_time', 'content_cvn', 'content_dcb', 'content_adn',
-        'recovered_dcb_amount', 'waste_batches'
-    ]
+    template_name = 'production/procedure/cvn_synthesis.html'
+    form_class = CVNSynthesisForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            kwargs['action_type'] = self.request.POST.get('action')
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # 编辑页通常不需要重新选釜，但也传入列表以供显示（前端会锁定）
-        relevant_kettles = Kettle.objects.filter(supported_processes__contains=['cvn_syn'])
-        context['available_kettles'] = relevant_kettles.filter(status='idle')
-        context['cleaning_kettles'] = relevant_kettles.filter(status='to_clean')
+        # Populate kettle lists for the selector
+        context['available_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_IDLE)
+        context['cleaning_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_CLEANING)
         return context
 
     def form_valid(self, form):
@@ -105,18 +103,12 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
 
                 # 1. 投产 (Start)
                 if action == 'start_production' and current_status == BaseProductionStep.STATUS_NEW:
-                    if self._handle_start_production(form):
-                        messages.success(self.request, f"批次 {form.instance.batch_no} 已投产！原料库存已扣减。")
-                    else:
-                        # 如果返回 False，说明投产失败（如库存不足），此时不应继续保存为 running
-                        # 但 form_valid 默认会 save()，所以我们需要在这里处理
-                        # 由于 _handle_start_production 内部已经处理了 status 回滚，
-                        # 这里我们只需要让 form_invalid 来重新渲染页面即可，或者 redirect
-                        return self.form_invalid(form)
+                    cvn_synthesis_service.process_start(form.instance, self.request.user)
+                    messages.success(self.request, f"批次 {form.instance.batch_no} 已投产！原料库存已扣减。")
 
                 # 2. 完工 (Finish)
                 elif action == 'finish_production' and current_status == BaseProductionStep.STATUS_RUNNING:
-                    self._handle_finish_production(form)
+                    cvn_synthesis_service.process_finish(form.instance, self.request.user)
                     messages.success(self.request, f"批次 {form.instance.batch_no} 已完工！产出已入库，设备已释放。")
 
                 # 3. 保存草稿 (New 状态下的保存)
@@ -145,83 +137,13 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
         # 操作完停留在当前页面，或者跳转回看板（视需求而定）
         return reverse('production:cvn_synthesis_update', kwargs={'pk': self.object.pk})
 
-    # -------------------------------------------------------------------------
-    # 内部逻辑方法
-    # -------------------------------------------------------------------------
-
-    def _handle_start_production(self, form):
-        """
-        处理投产逻辑：状态变更 + 库存扣减
-        """
-        try:
-            # 1. 锁定釜皿
-            instance = form.instance
-            kettle = instance.kettle
-            if kettle.status != 'idle' and kettle.current_batch_no != instance.batch_no:
-                raise ValueError(f"设备 {kettle.name} 当前非空闲，无法投产！")
-
-            kettle.status = 'running'
-            kettle.current_batch_no = instance.batch_no
-            kettle.last_process = 'cvn_syn'
-            # 估算当前液位 = 所有原料之和
-            total_input = (instance.raw_dcb + instance.raw_nacn + instance.raw_tbab + instance.raw_alkali)
-            kettle.current_level = total_input
-            kettle.save()
-
-            # 2. 调用Service进行扣料 (内部包含库存检查)
-            # 如果库存不足，Service会抛出 ValueError
-            cvn_synthesis_service.process_start(form.instance, self.request.user)
-            
-            # 3. 只有扣料成功，才变更状态
-            form.instance.status = 'running'
-            # 只有当 start_time 未设置时才自动填充，允许用户自定义
-            if not form.instance.start_time:
-                form.instance.start_time = timezone.now()
-            
-            form.save()
-            return True
-            
-        except ValueError as e:
-            # 4. 捕获库存不足异常 (第三道防线)
-            # 显示红色错误条
-            messages.error(self.request, f"⛔ {str(e)}")
-            # 状态必须回滚，防止变成 Running
-            form.instance.status = 'new'
-            return False
-
-    def _handle_finish_production(self, form):
-        """处理完工逻辑：释釜、入库、归档"""
-        instance = form.instance
-
-        # 1. 校验产出
-        if (instance.crude_weight or 0) <= 0:
-            raise ValueError("完工必须填写有效的产出重量！")
-
-        if not instance.end_time:
-            instance.end_time = timezone.now()
-
-        # 2. 释放釜皿
-        kettle = instance.kettle
-        kettle.status = 'to_clean'  # 转入待清洗
-        kettle.current_batch_no = None  # 清空占用
-        kettle.current_level = 0
-        kettle.last_product_name = "CVN粗品"
-        kettle.save()
-
-        # 3. 增加成品库存 (Inventory Addition) - 使用 Service
-        cvn_synthesis_service.process_finish(instance, self.request.user)
-
-        # 4. 更新单据状态
-        instance.status = BaseProductionStep.STATUS_COMPLETED
-        form.save()
-
 
 # ========================================================
 # 3. 列表视图 (List View)
 # ========================================================
 class CVNSynthesisListView(LoginRequiredMixin, ListView):
     model = CVNSynthesis
-    template_name = 'procedure_list/procedure_list_cvn_synthesis.html'
+    template_name = 'production/procedure_list/procedure_list_cvn_synthesis.html'
     context_object_name = 'procedures'
     paginate_by = 20
     ordering = ['-start_time', '-id']  # 默认按时间倒序

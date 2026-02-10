@@ -92,18 +92,11 @@
                         <div class="row g-2">
                             <div class="col-md-6">
                                 <label class="small fw-bold text-muted">开始时间</label>
-                                <input type="datetime-local" name="start_time" class="form-control form-control-sm"
-                                       required
-                                       value="{{ form.start_time.value|date:'Y-m-d\TH:i' }}"
-                                       {% if form.instance.status and form.instance.status != 'new' %}readonly{% endif %}>
+                                {{ form.start_time }}
                             </div>
                             <div class="col-md-6">
                                 <label class="small fw-bold text-muted">结束时间 (预计)</label>
-                                <input type="datetime-local" name="end_time" class="form-control form-control-sm"
-                                       value="{{ form.end_time.value|date:'Y-m-d\TH:i' }}"
-                                       {% if not form.instance.status or form.instance.status == 'new' %}disabled{% endif %}
-                                       {% if form.instance.status == 'completed' %}readonly{% endif %}>
-
+                                {{ form.end_time }}
                             </div>
                         </div>
                     </div>
@@ -116,7 +109,7 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
                         <h6 class="form-section-title">Step 1. 选择生产设备</h6>
-                        {% include "procedure/partials/kettle_selector.html" %}
+                        {% include "production/procedure/partials/kettle_selector.html" %}
                     </div>
                 </div>
             </div>

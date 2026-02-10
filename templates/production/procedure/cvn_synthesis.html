@@ -1,0 +1,146 @@
+{% extends "production/procedure/base_procedure.html" %}
+
+{% block title %}开单：CVN合成{% endblock %}
+
+{% block process_details %}
+    <div class="row g-3">
+
+        <!-- 1. 原料投入 (Input Materials) -->
+        <div class="col-12">
+            <label class="small text-muted fw-bold text-uppercase mb-2">
+                📦 原料投入 (Input Materials)
+            </label>
+            <div class="row g-3">
+                <!-- Row 1: 溶剂相 (Solvents) -->
+                <div class="col-md-6">
+                    <label class="form-label small">二氯丁烷 (新鲜)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.raw_dcb }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small">二氯丁烷 (回收)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.input_recycled_dcb }}
+                        <span class="input-group-text bg-light">kg/L</span>
+                    </div>
+                </div>
+
+                <!-- Row 2: 固体/辅料 (Solids/Others) -->
+                <div class="col-md-4">
+                    <label class="form-label small">氰化钠 (NaCN)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.raw_nacn }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small">四丁基溴化铵 (TBAB)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.raw_tbab }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small">液碱 (Liquid Alkali)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.raw_alkali }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <!-- 2. 预计产出 (Output) -->
+        <div class="col-12">
+            <label class="small text-success fw-bold text-uppercase mb-2">
+                🎯 预计产出 (Output)
+            </label>
+            <div class="p-3 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
+                <div class="row align-items-end">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold text-dark">CVN 粗品重量 (Crude Weight)</label>
+                        <div class="input-group">
+                            {{ form.crude_weight }}
+                            <span class="input-group-text bg-success text-white fw-bold">kg</span>
+                        </div>
+                        <div class="form-text small">请填写入库过磅重量，系统将据此计算收率。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <!-- 3. 质检与回收 (QA & Recovery) -->
+        <div class="col-12">
+            <label class="small text-info fw-bold text-uppercase mb-2">
+                🧪 质检与回收 (QA & Recovery)
+            </label>
+            <div class="row g-3">
+                <!-- Row 1: Test Time -->
+                <div class="col-12">
+                    <label class="form-label small">送检时间 (Test Time)</label>
+                    {{ form.test_time }}
+                </div>
+
+                <!-- Row 2: Contents -->
+                <div class="col-md-4">
+                    <label class="form-label small">CVN 含量 (Content)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.content_cvn }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">DCB 残留 (Residue)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.content_dcb }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">己二腈含量 (ADN)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.content_adn }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+
+                <!-- Row 3: Recovered -->
+                <div class="col-12">
+                    <label class="form-label small">回收 DCB (Recovered)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.recovered_dcb_amount }}
+                        <span class="input-group-text bg-light">L</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <!-- 4. 环保数据 (Eco Record) -->
+        <div class="col-12">
+            <label class="small text-secondary fw-bold text-uppercase mb-2">
+                🚰 环保数据 (Eco Record)
+            </label>
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="form-label small text-muted">破氰废水处理 (Waste Batches)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.waste_batches }}
+                        <span class="input-group-text bg-light">批/釜</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}

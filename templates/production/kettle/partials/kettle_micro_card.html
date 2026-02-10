@@ -4,10 +4,10 @@
      title="<div class='text-start'>
             <strong>[{{ kettle.workshop }}] {{ kettle.name }}</strong><br>
             <hr class='my-1'>
-            <small>容量: {{ kettle.capacity|floatformat:0 }}L</small><br>
-            <small>当前: {{ kettle.current_level|floatformat:0 }}L ({{ kettle.fill_percentage }}%)</small><br>
-            <small>工艺: {{ kettle.last_process|default:'-' }}</small><br>
-            <small>批次: {{ kettle.current_batch_no|default:'-' }}</small>
+            <small>最大容量: {{ kettle.capacity|floatformat:0 }}L</small><br>
+            <small>当前容量: {{ kettle.current_level|floatformat:0 }}L ({{ kettle.fill_percentage }}%)</small><br>
+            <small>最后生产: {{ kettle.get_last_process_display|default:'-' }}</small><br>
+            <small>批次号码: {{ kettle.current_batch_no|default:'-' }}</small>
             </div>">
 
     <div class="liquid-container">
