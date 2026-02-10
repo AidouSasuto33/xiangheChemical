@@ -1,7 +1,7 @@
 <div class="modal fade" id="inventoryActionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form method="post" action="{% url 'inventory_action' %}">
+            <form method="post" action="{% url 'inventory:inventory_action' %}">
                 {% csrf_token %}
 
                 <input type="hidden" name="inventory_id" id="modal_inventory_id">

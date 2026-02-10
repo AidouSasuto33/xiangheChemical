@@ -1,5 +1,5 @@
 from .. import constants
-from . import inventory_service
+from inventory.services import inventory_service
 
 def process_start(cvn_obj, user):
     """

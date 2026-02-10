@@ -6,9 +6,8 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 
 # 引入你的 models 和 services
-from ..models.inventory import Inventory
-from ..models.audit import InventoryLog
-from ..services.inventory_service import handle_inventory_action
+from inventory.models import Inventory, InventoryLog
+from inventory.services.inventory_service import handle_inventory_action
 
 
 # ==========================================
@@ -20,7 +19,7 @@ class InventoryListView(LoginRequiredMixin, ListView):
     继承 ListView 后，Django 帮你处理了 get_queryset 和 template 渲染
     """
     model = Inventory
-    template_name = 'production/inventory/inventory_list.html'
+    template_name = 'inventory/inventory_list.html'
     context_object_name = 'inventory_items'  # 模板里使用的变量名
 
     # 默认排序
@@ -97,7 +96,7 @@ class InventoryActionView(LoginRequiredMixin, View):
 
         # 4. 重定向回列表页
         # 这里使用 reverse_lazy 或者直接写 url name 都可以，redirect 支持 url name
-        return redirect('inventory_list')
+        return redirect('inventory:inventory_list')
 
 
 # ==========================================
@@ -109,7 +108,7 @@ class InventoryHistoryView(LoginRequiredMixin, ListView):
     URL参数: ?id=1 (必填)
     """
     model = InventoryLog
-    template_name = 'production/inventory/inventory_history.html'
+    template_name = 'inventory/inventory_history.html'
     context_object_name = 'logs'
     paginate_by = 20  # 每页20条，防止数据太多卡顿
 

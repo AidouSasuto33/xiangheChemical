@@ -9,7 +9,7 @@ from django.utils import timezone
 # === Models & Utils ===
 from production.models.cvn_synthesis import CVNSynthesis
 from production.models.kettle import Kettle
-from production.models.audit import InventoryLog
+from inventory.models import InventoryLog
 from production.models.core import BaseProductionStep
 from production.utils.batch_generator import generate_batch_number
 from production import constants

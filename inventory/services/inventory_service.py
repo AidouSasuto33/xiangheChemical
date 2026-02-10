@@ -1,7 +1,6 @@
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
-from ..models.inventory import Inventory
-from ..models.audit import InventoryLog
+from inventory.models import Inventory, InventoryLog
 
 
 def handle_inventory_action(user, inventory_id, action_type, amount_or_quantity, note=""):
