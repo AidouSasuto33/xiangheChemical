@@ -108,8 +108,25 @@
             <div class="col-lg-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
-                        <h6 class="form-section-title">Step 1. 选择生产设备</h6>
-                        {% include "production/procedure/partials/kettle_selector.html" %}
+                        {% with status=form.instance.status|default:'new' %}
+                            <h6 class="form-section-title">
+                                {% if status == 'new' %}
+                                    Step 1. 选择生产设备 (Select Equipment)
+                                {% elif status == 'running' %}
+                                    Step 1. 正在使用的釜皿 (Operating Equipment)
+                                {% else %}
+                                    Step 1. 本批次使用的釜皿 (Equipment History)
+                                {% endif %}
+                            </h6>
+
+                            {% if status == 'new' %}
+                                {% include "production/procedure/partials/kettle_selector.html" %}
+                            {% elif status == 'running' %}
+                                {% include "production/kettle/partials/kettle_usage_card.html" with kettle=form.instance.kettle status='running' status_class='running' %}
+                            {% else %}
+                                {% include "production/kettle/partials/kettle_usage_card.html" with kettle=form.instance.kettle status='completed' status_class='completed' %}
+                            {% endif %}
+                        {% endwith %}
                     </div>
                 </div>
             </div>
@@ -142,7 +159,7 @@
                     <div class="col-md-6">
                         <h6 class="form-section-title">Step 4. 备注与异常</h6>
                         <textarea name="remarks" class="form-control" rows="3"
-                                  placeholder="记录生产过程中的异常情况、设备问题等...">{{ form.remarks.value|default:'' }}</textarea>
+                                  placeholder="记录生产过程中的异常情况、设备问题等...">{{ form.instance.remarks|default:'' }}</textarea>
                     </div>
                 </div>
             </div>

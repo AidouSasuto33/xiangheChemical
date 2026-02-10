@@ -1,0 +1,113 @@
+<div class="kettle-usage-card position-relative shadow-sm {{ status_class|default:'secondary' }}-theme">
+    <div class="visual-section position-relative">
+        <div class="liquid-container">
+            <div class="liquid" style="height: {{ kettle.fill_percentage|default:0 }}%;"></div>
+        </div>
+        <div class="visual-content d-flex flex-column justify-content-center align-items-center h-100">
+            <i class="fas fa-industry fa-2x mb-2 opacity-50"></i>
+            <span class="h4 font-weight-bold mb-0">{{ kettle.fill_percentage|default:0 }}<small>%</small></span>
+            <small class="opacity-75">液位 Level</small>
+        </div>
+    </div>
+
+    <div class="info-section p-3 flex-grow-1 d-flex flex-column justify-content-between">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h5 class="font-weight-bold text-dark mb-1">
+                    <span class="badge badge-light border mr-2 text-dark">{{ kettle.workshop }}</span>
+                    {{ kettle.name }}
+                </h5>
+                <div class="text-xs text-muted font-weight-bold">
+                    CAPACITY: {{ kettle.capacity }}L
+                </div>
+            </div>
+            {% if status == 'running' %}
+                <span class="badge bg-success text-white px-3 py-2 shadow-sm">
+                    <i class="fas fa-cog fa-spin mr-1"></i> 生产中
+                </span>
+            {% elif status == 'completed' %}
+                <span class="badge bg-secondary text-white px-3 py-2">
+                    <i class="fas fa-check-circle mr-1"></i> 已完工
+                </span>
+            {% else %}
+                 <span class="badge bg-light text-dark border px-3 py-2">
+                    {{ status|title }}
+                </span>
+            {% endif %}
+        </div>
+
+        <hr class="my-2 border-light">
+
+        <div class="row text-center my-1">
+            <div class="col-4 border-right border-light">
+                <div class="text-xs text-uppercase text-muted font-weight-bold">当前温度</div>
+                <div class="h5 font-weight-bold text-dark mb-0 mt-1">
+                    {% if status == 'running' %}65.4<small>°C</small>{% else %}-{% endif %}
+                </div>
+            </div>
+            <div class="col-4 border-right border-light">
+                <div class="text-xs text-uppercase text-muted font-weight-bold">釜内压力</div>
+                <div class="h5 font-weight-bold text-dark mb-0 mt-1">
+                    {% if status == 'running' %}0.2<small>MPa</small>{% else %}-{% endif %}
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-xs text-uppercase text-muted font-weight-bold">运行时长</div>
+                <div class="h5 font-weight-bold text-dark mb-0 mt-1">
+                    2<small>h</small> 15<small>m</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-2 pt-2 border-top border-light d-flex justify-content-between align-items-center">
+            <span class="text-xs text-muted">
+                <i class="fas fa-tag mr-1"></i> 批次号: <strong>{{ kettle.current_batch_no|default:'-' }}</strong>
+            </span>
+            {% if status == 'running' %}
+            <span class="text-xs text-success font-weight-bold">
+                <i class="fas fa-wifi mr-1"></i> 设备在线
+            </span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* === Big Card 专属样式 === */
+.kettle-usage-card {
+    display: flex;
+    flex-direction: row;
+    background-color: #fff;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    min-height: 140px; /* 保证足够高度展示信息 */
+}
+
+/* 左侧视觉区：固定宽度 */
+.kettle-usage-card .visual-section {
+    width: 120px;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(0,0,0,0.05);
+    background-color: #f8f9fc;
+}
+
+/* 颜色主题适配 (复用 micro card 的颜色逻辑，但调整背景透明度) */
+.running-theme { border-left: 4px solid #1cc88a; } /* 生产中用绿色 */
+.running-theme .liquid { background: rgba(28, 200, 138, 0.15); border-top: 2px solid #1cc88a; }
+.running-theme .visual-content { color: #0f6848; }
+
+.completed-theme { border-left: 4px solid #858796; } /* 完工用灰色 */
+.completed-theme .liquid { background: rgba(133, 135, 150, 0.1); border-top: 2px solid #858796; }
+.completed-theme .visual-content { color: #5a5c69; }
+
+/* 动画效果 */
+@keyframes wave {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+    100% { transform: translateY(0); }
+}
+.running-theme .liquid {
+    animation: wave 3s infinite ease-in-out;
+}
+</style>
