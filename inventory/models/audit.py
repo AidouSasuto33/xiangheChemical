@@ -53,3 +53,4 @@ class CostConfigLog(models.Model):
     class Meta:
         verbose_name = "价格变更记录"
         ordering = ['-changed_at']
+        verbose_name_plural = verbose_name

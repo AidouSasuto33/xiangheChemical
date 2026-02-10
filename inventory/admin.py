@@ -1,6 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Inventory, InventoryLog, CostConfig, CostConfigLog
+from .models.inventory import Inventory  # 假设文件名叫 inventory.py
+from .models.audit import InventoryLog, CostConfigLog
+from .models.cost_config import CostConfig
+
+
 
 @admin.register(Inventory)
 class InventoryAdmin(admin.ModelAdmin):
