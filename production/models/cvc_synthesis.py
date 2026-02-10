@@ -7,7 +7,7 @@ from .core import BaseProductionStep
 from .cva_synthesis import CVASynthesis
 from ..utils.batch_generator import generate_batch_number
 # 引入常量
-from .. import constants
+from core import constants
 
 
 

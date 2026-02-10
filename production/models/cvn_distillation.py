@@ -14,7 +14,7 @@ from django.db import transaction
 # Django异常处理
 from django.core.exceptions import ValidationError
 # 引入常量
-from .. import constants
+from core import constants
 
 
 

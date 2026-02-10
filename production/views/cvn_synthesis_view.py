@@ -12,7 +12,6 @@ from production.models.kettle import Kettle
 from inventory.models import InventoryLog
 from production.models.core import BaseProductionStep
 from production.utils.batch_generator import generate_batch_number
-from production import constants
 from production.services import cvn_synthesis_service
 
 

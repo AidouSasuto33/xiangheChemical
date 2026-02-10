@@ -1,4 +1,4 @@
-from .. import constants
+from core import constants
 from inventory.services import inventory_service
 
 def process_start(cvn_obj, user):

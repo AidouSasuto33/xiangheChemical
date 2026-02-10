@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.postgres', # 必须添加以使用 ArrayField
+    'core',
     'production',
     'inventory',
 ]

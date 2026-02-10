@@ -3,7 +3,7 @@ from django.db import models
 # 表单基础模型
 from .core import BaseProductionStep
 # 引入常量
-from .. import constants
+from core import constants
 
 
 # =========================================================
