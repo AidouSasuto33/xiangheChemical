@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
-from production.models.inventory import Inventory
-from production.models.core import CostConfig
+from inventory.models import Inventory
+from inventory.models import CostConfig
 from production import constants as k  # 引入我们刚才写的常量文件
 
 

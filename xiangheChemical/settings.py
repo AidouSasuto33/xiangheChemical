@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres', # 必须添加以使用 ArrayField
     'production',
+    'inventory',
 ]
 
 MIDDLEWARE = [
