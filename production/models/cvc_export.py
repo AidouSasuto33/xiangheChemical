@@ -1,12 +1,6 @@
-from django.db import models, transaction
-from django.db.models import JSONField, F
-from django.core.exceptions import ValidationError
-
+from django.db import models
 from .core import BaseProductionStep
-# 引入 Step 4 (CVC 内销) 作为原料来源
 from .cvc_synthesis import CVCSynthesis
-from ..utils.batch_generator import generate_batch_number
-# 引入常量
 from core import constants
 
 
@@ -18,109 +12,61 @@ class CVCExport(BaseProductionStep):
     Step 5: CVC 外销精制 (Wai Xiao)
     逻辑：投入CVC合格品(Step 4) -> 二次精馏 -> CVC精品
     """
-
-    # =========================================================
-    # 1. 投入 (Input)
-    # =========================================================
-    # 来源：Step 4 (CVC 内销合格品)
-    input_cvc_sources = JSONField(
-        "投入CVC合格品来源",
-        default=list,
-        help_text="""
-        结构：[{
-            "batch_no": "CVC-NX-2026...", 
-            "use_weight": 1000, 
-            "content_cvc": 99.1, 
-            "note": "..."
-        }]
-        """
-    )
-
     input_total_weight = models.FloatField("投入总重量(kg)", default=0)
 
-    # =========================================================
-    # 2. 产出 (Output) - 精品
-    # =========================================================
-    # 这是一个物理称重值，肯定会比投入总重量少（因为有损耗）
+    # 产出
     premium_weight = models.FloatField("产出-CVC精品重量(kg)", default=0, help_text="二次蒸馏后的实际装桶重量")
 
-    # =========================================================
-    # 3. 精品检测 (Premium QC)
-    # =========================================================
+    # 质检
     product_content_cvc = models.FloatField("精品-CVC含量%", null=True, blank=True)
     product_content_cva = models.FloatField("精品-CVA含量%", null=True, blank=True)
 
-    # =========================================================
-    # 4. 库存 (Inventory)
-    # =========================================================
-    # 如果系统还要管销售发货，这个字段依然需要
-    consumed_weight = models.FloatField("已领用/发货重量(kg)", default=0, editable=False)
+    # 库存
+    consumed_weight = models.FloatField("已发货重量(kg)", default=0, editable=False)
 
-    # =========================================================
-    # 5. 库存映射配置
-    # =========================================================
     INVENTORY_MAPPING = {
         'premium_weight': constants.KEY_PROD_CVC_WX,
     }
 
-    class Meta(BaseProductionStep.Meta):
+    class Meta:
         verbose_name = "5-CVC外销精制"
         verbose_name_plural = verbose_name
 
-    # --- 核心属性 ---
     @property
     def remaining_weight(self):
         return max(0, self.premium_weight - self.consumed_weight)
 
-    def clean(self):
-        super().clean()
+    @property
+    def status_label(self):
+        if self.premium_weight <= 0:
+            return "异常批次"
+        if self.consumed_weight <= 0:
+            return "🟢 全新待售"
+        elif self.remaining_weight <= 0:
+            return "⚫ 售罄发毕"
+        else:
+            return "🟡 部分发货"
 
-        calculated_total = 0
-        old_instance = None
-        if self.pk:
-            try:
-                old_instance = CVCExport.objects.get(pk=self.pk)
-            except CVCExport.DoesNotExist:
-                pass
+    status_label.fget.short_description = "当前状态"
+    status_label.fget.admin_order_field = 'consumed_weight'
 
-        # 校验 CVC 合格品来源
-        for item in self.input_cvc_sources:
-            batch_no = item.get('batch_no')
-            try:
-                use_weight = float(item.get('use_weight', 0))
-            except (ValueError, TypeError):
-                raise ValidationError(f"批号 {batch_no} 重量格式错误")
 
-            if use_weight <= 0:
-                raise ValidationError("投入重量必须大于0")
+class CVCExportInput(models.Model):
+    """CVC外销精制 投料明细表 (取代原 JSONField)"""
+    export = models.ForeignKey(
+        'CVCExport', on_delete=models.CASCADE, related_name='inputs', verbose_name="所属外销精制工单"
+    )
+    source_batch = models.ForeignKey(
+        'CVCSynthesis', on_delete=models.PROTECT, related_name='consumed_in_cvc_wx', verbose_name="CVC合格品来源"
+    )
+    use_weight = models.FloatField("投入重量(kg)")
 
-            calculated_total += use_weight
+    snapshot_cvc = models.FloatField("领用时CVC含量%", null=True, blank=True)
 
-            # 1. 查找源头 (Step 4)
-            try:
-                source_batch = CVCSynthesis.objects.get(batch_no=batch_no)
-            except CVCSynthesis.DoesNotExist:
-                raise ValidationError(f"CVC内销批号 {batch_no} 不存在")
+    class Meta:
+        verbose_name = "外销精制投入明细"
+        verbose_name_plural = verbose_name
+        unique_together = ('export', 'source_batch')
 
-            # 2. 计算库存可用量
-            recoverable = 0
-            if old_instance:
-                for old_item in old_instance.input_cvc_sources:
-                    if old_item.get('batch_no') == batch_no:
-                        recoverable = float(old_item.get('use_weight', 0))
-                        break
-
-            # 确保 Step 4 有 remaining_weight 属性
-            if hasattr(source_batch, 'remaining_weight'):
-                max_allowable = source_batch.remaining_weight + recoverable
-                if use_weight > max_allowable:
-                    raise ValidationError(f"批号 {batch_no} 库存不足。可用: {max_allowable}kg")
-
-        if abs(self.input_total_weight - calculated_total) > 0.1:
-            raise ValidationError("投入总重与明细不符")
-
-        # 逻辑校验：产出不能大于投入（物理定律）
-        if self.premium_weight > self.input_total_weight:
-            # 除非有极其特殊的情况，否则精馏不可能变重
-            # 用于确保文员填错警告
-            raise ValidationError("产出精品重量不能大于投入重量")
+    def __str__(self):
+        return f"{self.export.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"

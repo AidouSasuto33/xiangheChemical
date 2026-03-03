@@ -80,7 +80,7 @@
             </div>
         </div>
         <a href="{% url 'production:cvn_synthesis_create' %}" class="btn btn-primary shadow fw-bold px-4">
-            <i class="bi bi-plus-lg me-1"></i> 新建工单
+            <i class="bi bi-plus-lg me-1"></i> 新建粗蒸工单
         </a>
     </div>
 
@@ -129,7 +129,7 @@
                 <table class="table table-striped table-hover table-nowrap mb-0 align-middle">
                     <thead class="sticky-header text-center small fw-bold bg-light text-dark">
                     <tr>
-                        <th rowspan="2" class="sticky-col-1 py-3" style="min-width: 140px;">批次号</th>
+                        <th rowspan="2" class="sticky-col-1 py-3" style="min-width: 140px;">粗蒸批次号</th>
                         <th rowspan="2" style="width: 100px;">状态</th>
                         <th rowspan="2">釜皿</th>
                         <th rowspan="2">投产时间</th>
@@ -151,7 +151,7 @@
                         <th class="th-xs border-start text-success fw-normal bg-light">
                             DCB(回)
                         </th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">NaCN</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">氰化钠</th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">TBAB</th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">液碱</th>
 
@@ -164,7 +164,7 @@
                         </th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">CVN%</th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">DCB%</th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">ADN%</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">己二腈%</th>
                     </tr>
                     </thead>
                     <tbody class="small border-top-0">
@@ -181,7 +181,7 @@
                                 {% if item.status == 'new' %}
                                     <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 px-3">新建工单</span>
                                 {% elif item.status == 'running' %}
-<span class="badge rounded-pill text-bg-warning px-3 shadow-sm">
+                                    <span class="badge rounded-pill text-bg-warning px-3 shadow-sm">
     <span class="spinner-grow spinner-grow-sm me-1"
           style="width: 6px; height: 6px; animation-duration: 2s;"
           role="status">
@@ -229,11 +229,11 @@
                                         投产
                                     </a>
                                 {% else %}
-<a href="{% url 'production:cvn_synthesis_update' item.pk %}"
-   class="btn btn-sm btn-warning shadow-sm py-0 px-2"
-   style="font-size: 0.8rem;">
-    处理
-</a>
+                                    <a href="{% url 'production:cvn_synthesis_update' item.pk %}"
+                                       class="btn btn-sm btn-warning shadow-sm py-0 px-2"
+                                       style="font-size: 0.8rem;">
+                                        处理
+                                    </a>
                                 {% endif %}
                             </td>
                         </tr>

@@ -1,0 +1,173 @@
+{% extends "production/procedure/base_procedure.html" %}
+
+{% block title %}工单：CVN精馏{% endblock %}
+
+{% block process_details %}
+    <div class="row g-3">
+
+        <div class="col-12">
+            {% include "production/procedure/partials/_batch_source_input.html" %}
+
+            <div class="bg-light rounded p-3 mt-3 border border-light">
+                <label class="small text-muted fw-bold text-uppercase mb-2">
+                    <i class="bi bi-calculator me-1"></i> 精前组份汇总 (Pre-Distillation Summary)
+                </label>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">精前折干重量</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control bg-white text-primary fw-bold" 
+                                   value="{{ form.instance.dry_weight_pre|floatformat:1|default:'0.0' }}" readonly disabled>
+                            <span class="input-group-text bg-light text-muted">kg</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">CVN含量</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_cvn_content }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">DCB含量</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_dcb_content }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">己二腈(ADN)</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_adn_content }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <div class="col-12">
+            <label class="small text-success fw-bold text-uppercase mb-2">
+                🎯 精品产出 (Output)
+            </label>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small">精品重量</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.output_weight }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">CVN含量</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.output_cvn_content }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">DCB含量</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.output_dcb_content }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">己二腈(ADN)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.output_adn_content }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row g-2 mt-1">
+                <div class="col-md-3 offset-md-3">
+                    <div class="input-group input-group-sm opacity-75">
+                        <span class="input-group-text bg-transparent border-0 small text-muted pe-1">约</span>
+                        <input type="text" class="form-control form-control-sm border-0 bg-transparent text-success text-end px-1 font-monospace" readonly placeholder="-" id="calc_out_cvn">
+                        <span class="input-group-text bg-transparent border-0 small text-muted ps-1">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm opacity-75">
+                        <span class="input-group-text bg-transparent border-0 small text-muted pe-1">约</span>
+                        <input type="text" class="form-control form-control-sm border-0 bg-transparent text-secondary text-end px-1 font-monospace" readonly placeholder="-" id="calc_out_dcb">
+                        <span class="input-group-text bg-transparent border-0 small text-muted ps-1">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm opacity-75">
+                        <span class="input-group-text bg-transparent border-0 small text-muted pe-1">约</span>
+                        <input type="text" class="form-control form-control-sm border-0 bg-transparent text-secondary text-end px-1 font-monospace" readonly placeholder="-" id="calc_out_adn">
+                        <span class="input-group-text bg-transparent border-0 small text-muted ps-1">kg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <div class="col-12">
+            <label class="small text-danger fw-bold text-uppercase mb-2">
+                ♻️ 副产与固废 (Waste)
+            </label>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small">釜残重量</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.residue_weight }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // 实时计算精品中各成分的具体重量
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取Django生成的表单Input的ID (需要与Form类中定义的字段名一致)
+        const outWeight = document.getElementById('id_output_weight');
+        const outCvn = document.getElementById('id_output_cvn_content');
+        const outDcb = document.getElementById('id_output_dcb_content');
+        const outAdn = document.getElementById('id_output_adn_content');
+
+        // 获取用于显示的只读计算框
+        const calcCvn = document.getElementById('calc_out_cvn');
+        const calcDcb = document.getElementById('calc_out_dcb');
+        const calcAdn = document.getElementById('calc_out_adn');
+
+        function updateCalculatedWeights() {
+            const weight = parseFloat(outWeight?.value) || 0;
+            const cvnPercent = parseFloat(outCvn?.value) || 0;
+            const dcbPercent = parseFloat(outDcb?.value) || 0;
+            const adnPercent = parseFloat(outAdn?.value) || 0;
+
+            if (weight > 0) {
+                calcCvn.value = (weight * cvnPercent / 100).toFixed(1);
+                calcDcb.value = (weight * dcbPercent / 100).toFixed(1);
+                calcAdn.value = (weight * adnPercent / 100).toFixed(1);
+            } else {
+                calcCvn.value = '-';
+                calcDcb.value = '-';
+                calcAdn.value = '-';
+            }
+        }
+
+        // 监听所有相关输入框的修改事件
+        [outWeight, outCvn, outDcb, outAdn].forEach(el => {
+            if (el) el.addEventListener('input', updateCalculatedWeights);
+        });
+
+        // 页面加载完毕时初始化计算一次 (应对编辑页面的数据回显)
+        updateCalculatedWeights();
+    });
+</script>
+{% endblock %}

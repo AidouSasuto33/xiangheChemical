@@ -1,2 +1,3 @@
 from .kettle_view import KettleDashboardView
 from .cvn_synthesis_view import CVNSynthesisCreateView, CVNSynthesisUpdateView, CVNSynthesisListView
+from .cvn_distillation_view import CVNDistillationCreateView, CVNDistillationUpdateView,CVNDistillationListView

@@ -1,14 +1,7 @@
-from django.db import models, transaction
-from django.db.models import JSONField, F
-from django.core.exceptions import ValidationError
-
+from django.db import models
 from .core import BaseProductionStep
-# 引入 Step 3 (CVA合成) 作为原料来源
 from .cva_synthesis import CVASynthesis
-from ..utils.batch_generator import generate_batch_number
-# 引入常量
 from core import constants
-
 
 
 # =========================================================
@@ -19,67 +12,17 @@ class CVCSynthesis(BaseProductionStep):
     Step 4: CVC 合成 (内销/普通级)
     逻辑：投入CVA粗品(Step 3) + 二氯亚砜 -> 氯化反应(多点中控) -> 精馏 -> CVC成品
     """
-
-    # =========================================================
-    # 1. 投入 (Input)
-    # =========================================================
-    # 来源：Step 3 (CVA 合成)
-    input_cva_sources = JSONField(
-        "投入CVA粗品来源",
-        default=list,
-        help_text="""
-        结构：[{
-            "batch_no": "CVA-2026...", 
-            "use_weight": 500, 
-            "content_cva": 98.5, 
-            "note": "..."
-        }]
-        """
-    )
-
     input_total_cva_weight = models.FloatField("投入CVA总重(kg)", default=0)
-
-    # 关键辅料
     raw_socl2 = models.FloatField("投入-二氯亚砜(kg)", default=0)
 
-    # =========================================================
-    # 2. 过程监控 (IPC - In-Process Control)
-    # =========================================================
-    # 支持多条中控记录
-    ipc_logs = JSONField(
-        "合成中控记录",
-        default=list,
-        help_text="""
-        结构示例：
-        [
-            {"time": "10:00", "duration_hours": 2.5, "ipc_cvc": 85.5, "ipc_cva": 14.0, "note": "未反应完"},
-            {"time": "12:00", "duration_hours": 4.5, "ipc_cvc": 99.1, "ipc_cva": 0.2, "note": "合格停火"}
-        ]
-        """
-    )
-
-    # =========================================================
-    # 3. 产出 (Output) - 精馏后
-    # =========================================================
-    # 前馏份，精馏过程中先出来的头份，通常是不纯的，需要记录重量。可能回收或废弃？
-    distillation_head_weight = models.FloatField("产出-前馏份/头酒(kg)", default=0,
-                                                 help_text="精馏初期的不合格部分，通常回用或报废")
-
-    # 合格品 (真正的产量)
+    # 产出
+    distillation_head_weight = models.FloatField("产出-前馏份/头酒(kg)", default=0, help_text="精馏初期的不合格部分")
     product_weight = models.FloatField("产出-CVC合格品重量(kg)", default=0)
-
-    # 最终质检 (Final QC)
     product_content = models.FloatField("成品-CVC含量%", null=True, blank=True, help_text="精馏后的最终纯度")
 
-    # =========================================================
-    # 4. 库存逻辑
-    # =========================================================
-    # 这里的库存将被：1. 销售发货 2. Step 5 (外销精制) 领用
+    # 库存逻辑
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False)
 
-    # =========================================================
-    # 5. 库存映射配置
-    # =========================================================
     INVENTORY_MAPPING = {
         'raw_socl2': constants.KEY_RAW_SOCL2,
         'distillation_head_weight': constants.KEY_WASTE_HEAD,
@@ -90,54 +33,61 @@ class CVCSynthesis(BaseProductionStep):
         verbose_name = "4-CVC合成(内销)"
         verbose_name_plural = verbose_name
 
-    # --- 核心属性：剩余可用量 (供 Step 5 或 销售 使用) ---
     @property
     def remaining_weight(self):
         return max(0, self.product_weight - self.consumed_weight)
 
-    def clean(self):
-        super().clean()
+    @property
+    def status_label(self):
+        if self.product_weight <= 0:
+            return "异常批次"
+        if self.consumed_weight <= 0:
+            return "🟢 全新待领"
+        elif self.remaining_weight <= 0:
+            return "⚫ 耗尽归档"
+        else:
+            return "🟡 部分领用"
 
-        calculated_total = 0
-        old_instance = None
-        if self.pk:
-            try:
-                old_instance = CVCSynthesis.objects.get(pk=self.pk)
-            except CVCSynthesis.DoesNotExist:
-                pass
+    status_label.fget.short_description = "当前状态"
+    status_label.fget.admin_order_field = 'consumed_weight'
 
-        # 校验 CVA 来源
-        for item in self.input_cva_sources:
-            batch_no = item.get('batch_no')
-            try:
-                use_weight = float(item.get('use_weight', 0))
-            except (ValueError, TypeError):
-                raise ValidationError(f"批号 {batch_no} 重量格式错误")
 
-            if use_weight <= 0:
-                raise ValidationError("投入重量必须大于0")
+class CVCSynthesisInput(models.Model):
+    """CVC合成 投料明细表 (取代原 input_cva_sources JSONField)"""
+    synthesis = models.ForeignKey(
+        'CVCSynthesis', on_delete=models.CASCADE, related_name='inputs', verbose_name="所属CVC合成工单"
+    )
+    source_batch = models.ForeignKey(
+        'CVASynthesis', on_delete=models.PROTECT, related_name='consumed_in_cvc_nx', verbose_name="CVA粗品来源"
+    )
+    use_weight = models.FloatField("投入重量(kg)")
 
-            calculated_total += use_weight
+    snapshot_cva = models.FloatField("领用时CVA含量%", null=True, blank=True)
 
-            # 1. 查找源头 (Step 3)
-            try:
-                source_batch = CVASynthesis.objects.get(batch_no=batch_no)
-            except CVASynthesis.DoesNotExist:
-                raise ValidationError(f"CVA粗品批号 {batch_no} 不存在")
+    class Meta:
+        verbose_name = "CVC合成投入明细"
+        verbose_name_plural = verbose_name
+        unique_together = ('synthesis', 'source_batch')
 
-            # 2. 计算库存可用量
-            recoverable = 0
-            if old_instance:
-                for old_item in old_instance.input_cva_sources:
-                    if old_item.get('batch_no') == batch_no:
-                        recoverable = float(old_item.get('use_weight', 0))
-                        break
+    def __str__(self):
+        return f"{self.synthesis.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
 
-            # 确保 Step 3 有 remaining_weight 属性
-            if hasattr(source_batch, 'remaining_weight'):
-                max_allowable = source_batch.remaining_weight + recoverable
-                if use_weight > max_allowable:
-                    raise ValidationError(f"批号 {batch_no} 库存不足。可用: {max_allowable}kg")
 
-        if abs(self.input_total_cva_weight - calculated_total) > 0.1:
-            raise ValidationError("投入CVA总重与明细不符")
+class CVCSynthesisIPCLog(models.Model):
+    """合成过程监控记录表 (取代原 ipc_logs JSONField)"""
+    synthesis = models.ForeignKey(
+        'CVCSynthesis', on_delete=models.CASCADE, related_name='ipc_logs', verbose_name="所属工单"
+    )
+    log_time = models.DateTimeField("记录时间")
+    duration_hours = models.FloatField("反应时长(h)", null=True, blank=True)
+    ipc_cvc = models.FloatField("中控-CVC%", null=True, blank=True)
+    ipc_cva = models.FloatField("中控-CVA%", null=True, blank=True)
+    note = models.CharField("备注", max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "CVC合成中控记录"
+        verbose_name_plural = verbose_name
+        ordering = ['log_time']
+
+    def __str__(self):
+        return f"{self.synthesis.batch_no} IPC @ {self.log_time.strftime('%H:%M')}"
