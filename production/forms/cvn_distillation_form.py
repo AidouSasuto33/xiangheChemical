@@ -43,7 +43,7 @@ class CVNDistillationForm(forms.ModelForm):
 
         # 3.2 动态流转锁定
         if status == 'new':
-            # Case 'new' (or None): Disable all fields in output_group.
+            # 创建中：锁定产出信息，防止误填
             for field in output_group:
                 if field in self.fields:
                     self.fields[field].disabled = True
