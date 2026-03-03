@@ -74,7 +74,7 @@
                         <label class="text-xs text-uppercase text-gray-500 font-weight-bold mb-1">生产批次 (Batch
                             No.)</label>
                         <div class="batch-display d-flex align-items-center">
-                            <span>{{ form.instance.batch_no|default:"NEW-BATCH-..." }}</span>
+                            <span>{{ form.instance.batch_no|default:"新建工单...确认计划后生成批次号" }}</span>
 
                             {% with s=form.instance.status|default:'new' %}
                                 {% if s == 'running' %}
