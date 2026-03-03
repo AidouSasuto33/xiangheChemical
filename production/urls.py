@@ -18,6 +18,6 @@ urlpatterns = [
 
     # === CVN 精馏 (CVN Distillation) ===
     path('create/cvn-distillation/', CVNDistillationCreateView.as_view(), name='cvn_distillation_create'),
-    path('update/cvn-synthesis/<int:pk>/', CVNDistillationUpdateView.as_view(), name='cvn_synthesis_update'),
+    path('update/cvn-distillation/<int:pk>/', CVNDistillationUpdateView.as_view(), name='cvn_distillation_update'),
     path('list/cvn-distillation/', CVNDistillationListView.as_view(), name='cvn_distillation_list'),
 ]

@@ -7,35 +7,63 @@ from production.models.cvn_synthesis import CVNSynthesis
 
 
 class CVNDistillationForm(forms.ModelForm):
-    class Meta:
-        model = CVNDistillation
-        fields = [
-            'kettle',
-            'pre_cvn_content', 'pre_dcb_content', 'pre_adn_content',
-            'output_weight', 'output_cvn_content', 'output_dcb_content', 'output_adn_content',
-            'residue_weight',
-        ]
-        # widgets = {
-        #     'note': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
-        #     'kettle': forms.Select(attrs={'class': 'form-select'}),
-        # }
+
 
     def __init__(self, *args, **kwargs):
         # 提取从 View 传入的 action_type
         self.action_type = kwargs.pop('action_type', None)
         super().__init__(*args, **kwargs)
 
-        # 1. UI 控制：精前组份始终为只读（由前端/后端自动计算或通过专门的化验单录入）
+        # === 1. Widget 显式配置 ===
+        self.fields['start_time'].widget = forms.DateTimeInput(
+            attrs={'type': 'datetime-local', 'class': 'form-control'})
+        self.fields['end_time'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+        # if 'note' in self.fields:
+        #     self.fields['note'].widget = forms.Textarea(attrs={'rows': 2, 'class': 'form-control'})
+        if 'kettle' in self.fields:
+            self.fields['kettle'].widget.attrs['class'] = 'form-select'
+
+        # === 2. 定义字段分组 ===
+        input_group = ['start_time', 'kettle']
+        output_group = [
+            'end_time', 'output_weight',
+            'output_cvn_content', 'output_dcb_content', 'output_adn_content',
+            'residue_weight'
+        ]
+
+        status = self.instance.status if self.instance else 'new'
+
+        # === 3. 状态机 UI 锁定逻辑 ===
+        # 3.1 无论什么状态，精前组份始终只读 (由子表及化验单汇总而来)
         readonly_fields = ['pre_cvn_content', 'pre_dcb_content', 'pre_adn_content']
         for field in readonly_fields:
             if field in self.fields:
                 self.fields[field].widget.attrs['readonly'] = True
                 self.fields[field].widget.attrs['class'] = 'form-control bg-light'
 
-        # 2. 状态保护：如果不是新建状态，禁用釜皿选择
-        if self.instance and self.instance.status != 'new':
-            if 'kettle' in self.fields:
-                self.fields['kettle'].widget.attrs['disabled'] = True
+        # 3.2 动态流转锁定
+        if status == 'new':
+            # Case 'new' (or None): Disable all fields in output_group.
+            for field in output_group:
+                if field in self.fields:
+                    self.fields[field].disabled = True
+                    self.fields[field].required = False
+
+        elif status == 'running':
+            # 生产中：锁定开工投入信息，防止修改
+            for field in input_group:
+                if field in self.fields:
+                    self.fields[field].disabled = True
+                    self.fields[field].required = True
+                    self.fields[field].widget.attrs['class'] += ' bg-light'
+
+        elif status == 'completed':
+            # 结束生产：锁定所有核心输入输出信息
+            for field in input_group + output_group:
+                if field in self.fields:
+                    self.fields[field].disabled = True
+                    self.fields[field].required = True
+                    self.fields[field].widget.attrs['class'] += ' bg-light'
 
     def clean_output_weight(self):
         weight = self.cleaned_data.get('output_weight')
@@ -60,7 +88,7 @@ class CVNDistillationForm(forms.ModelForm):
         if self.instance.status != 'new':
             return cleaned_data
 
-        # 获取前端传来的动态数组
+        # 获取前端传来的动态数组 (由于这些字段不在 Meta.fields 中，必须从 self.data 直接提取)
         batch_nos = self.data.getlist('source_batch_no')
         use_weights = self.data.getlist('source_use_weight')
 
@@ -146,3 +174,12 @@ class CVNDistillationForm(forms.ModelForm):
                 ))
 
             CVNDistillationInput.objects.bulk_create(new_inputs)
+
+    class Meta:
+        model = CVNDistillation
+        fields = [
+            'start_time', 'end_time', 'kettle',
+            'pre_cvn_content', 'pre_dcb_content', 'pre_adn_content',
+            'output_weight', 'output_cvn_content', 'output_dcb_content', 'output_adn_content',
+            'residue_weight',
+        ]
