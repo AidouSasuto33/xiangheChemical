@@ -114,7 +114,7 @@
                 return;
             }
 
-            // 2. 🚨 核心防御：校验是否已经在其他行被选择
+            // 2. 核心防御：校验是否已经在其他行被选择
             let isDuplicate = false;
             document.querySelectorAll('.batch-input').forEach(input => {
                 // 排除自己，只对比其他行
