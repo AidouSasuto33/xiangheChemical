@@ -197,6 +197,7 @@
                     updateTotalWeight();
                     calculateSummary();
                     updateDeleteButtonsState();
+                    updateDatalistOptions(); //让被删掉的批次立刻回到下拉池。
                 });
             }
         }
