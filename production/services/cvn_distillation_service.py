@@ -2,10 +2,14 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
+from django.db.models import F
+
 from production.models.core import BaseProductionStep
 from production.models.cvn_distillation import CVNDistillation
 from production.models.cvn_synthesis import CVNSynthesis
 from production.models.kettle import Kettle
+
+import json
 
 
 # 如果有库存全局服务，预留导入位置
@@ -96,3 +100,29 @@ def process_finish(instance: CVNDistillation, user):
         #     source_doc=f"CVN精馏入库",
         #     operator=user
         # )
+
+def get_available_synthesis_batches_json():
+    """
+    获取所有可用的 CVN 合成粗品批次，打包为 JSON DTO 供前端交互使用。
+    条件：状态为已完工 (completed)，且剩余可用量 > 0 (产出 > 已领用)
+    """
+    # 核心优化：利用 Django F 表达式在数据库引擎层面直接过滤有结余的批次
+    available_batches = CVNSynthesis.objects.filter(
+        status=BaseProductionStep.STATUS_COMPLETED,
+        crude_weight__gt=F('consumed_weight')
+    ).order_by('end_time')  # 按照完工时间排序，先进先出 (FIFO) 提示
+
+    batch_list = []
+    for batch in available_batches:
+        batch_list.append({
+            'batch_no': batch.batch_no,
+            # 直接调用模型的 property，确保业务逻辑的一致性
+            'remaining_weight': round(batch.remaining_weight, 2),
+            # 兼容化验单可能未填全的情况，赋予默认值 0.0
+            'cvn': batch.content_cvn or 0.0,
+            'dcb': batch.content_dcb or 0.0,
+            'adn': batch.content_adn or 0.0,
+        })
+
+    # 将 Python 字典列表转化为 JSON 字符串，防止前端解析时遇到单引号等语法错误
+    return json.dumps(batch_list)

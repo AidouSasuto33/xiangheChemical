@@ -1,11 +1,15 @@
 <div class="batch-source-component bg-white border rounded-3 p-3 shadow-sm mb-3">
     <label class="small text-primary fw-bold text-uppercase mb-2 d-flex justify-content-between align-items-center">
         <span><i class="bi bi-diagram-3 me-1"></i> 多批次粗品投入 (Input Sources)</span>
-        <span class="badge bg-primary bg-opacity-10 text-primary">动态列表</span>
+        <span class="badge bg-primary bg-opacity-10 text-primary">智能感应列表</span>
     </label>
 
-    <div class="table-responsive">
-        <table class="table table-sm table-borderless align-middle mb-2" id="batchSourceTable">
+    <script id="available-sources-data" type="application/json">
+        {{ available_sources_json|safe|default:"[]" }}
+    </script>
+
+    <div class="table-responsive" style="overflow-visible: true;">
+<table class="table table-sm table-borderless align-top mb-2" id="batchSourceTable">
             <thead class="border-bottom border-light">
             <tr class="text-muted small">
                 <th style="width: 55%;" class="fw-normal ps-1">粗正品批次号</th>
@@ -14,14 +18,16 @@
             </tr>
             </thead>
             <tbody id="batchSourceBody">
-            {% if form.instance.pk and form.instance.inputs.exists %}
+            {% if form.instance.pk %}
                 {% for item in form.instance.inputs.all %}
                     <tr class="source-row border-bottom border-light border-opacity-50">
                         <td class="ps-0 py-2">
-                            <input type="text" class="form-control form-control-sm font-monospace bg-light"
+                            <input type="text" class="form-control form-control-sm font-monospace batch-input bg-light"
+                                   list="availableBatches" autocomplete="off"
                                    name="source_batch_no" value="{{ item.source_batch.batch_no }}" required
-                                   placeholder="输入或扫描批号"
+                                   placeholder="输入或下拉选择批号"
                                    {% if form.instance.status != 'new' %}readonly{% endif %}>
+                            <div class="batch-info-container mt-1" style="font-size: 0.75rem;"></div>
                         </td>
                         <td class="py-2">
                             <div class="input-group input-group-sm">
@@ -33,10 +39,8 @@
                         </td>
                         <td class="text-center py-2 pe-0">
                             {% if form.instance.status == 'new' %}
-                                <button type="button"
-                                        class="btn btn-sm btn-link text-danger p-0 border-0 remove-row-btn"
-                                        title="移除">
-                                    <i class="bi bi-dash-circle fs-5"></i>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" tabindex="-1" title="移除">
+                                    <i class="bi bi-trash"></i> 删除
                                 </button>
                             {% endif %}
                         </td>
@@ -62,8 +66,10 @@
 <template id="batchSourceRowTemplate">
     <tr class="source-row border-bottom border-light border-opacity-50">
         <td class="ps-0 py-2">
-            <input type="text" class="form-control form-control-sm font-monospace"
-                   name="source_batch_no" required placeholder="输入或扫描批号">
+            <input type="text" class="form-control form-control-sm font-monospace batch-input"
+                   list="availableBatches" autocomplete="off"
+                   name="source_batch_no" required placeholder="输入或下拉选择批号">
+            <div class="batch-info-container mt-1" style="font-size: 0.75rem;"></div>
         </td>
         <td class="py-2">
             <div class="input-group input-group-sm">
@@ -73,87 +79,15 @@
             </div>
         </td>
         <td class="text-center py-2 pe-0">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" tabindex="-1" title="移除"><i
-                    class="bi bi-trash"></i> 删除
-            </button>
-            <i class="bi bi-dash-circle fs-5"></i>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" tabindex="-1" title="移除">
+                <i class="bi bi-trash"></i> 删除
             </button>
         </td>
     </tr>
 </template>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const tableBody = document.getElementById('batchSourceBody');
-        const addBtn = document.getElementById('addBatchRowBtn');
-        const template = document.getElementById('batchSourceRowTemplate');
-        const totalWeightSpan = document.getElementById('totalInputWeight');
+{% load static %}
 
-        // 计算合计重量
-        function updateTotalWeight() {
-            if (!totalWeightSpan) return; // 如果是非编辑状态可能没有合计展示
-            let total = 0;
-            document.querySelectorAll('.use-weight-input').forEach(input => {
-                const val = parseFloat(input.value);
-                if (!isNaN(val) && val > 0) {
-                    total += val;
-                }
-            });
-            totalWeightSpan.textContent = total.toFixed(1);
-        }
 
-        // 绑定移除事件
-        function bindRemoveEvent(button) {
-            button.addEventListener('click', function () {
-                if (tableBody.children.length <= 1) {
-                    if (window.showGlobalError) {
-                        window.showGlobalError('至少需要保留一条投入明细！');
-                    } else {
-                        // 降级保护，防止 _global_feedback 尚未加载完毕
-                        alert('至少需要保留一条投入明细！');
-                    }
-                    return;
-                }
-                const row = this.closest('tr');
-                row.remove();
-                updateTotalWeight();
-            });
-        }
 
-        // 绑定重量输入变化事件
-        function bindWeightChangeEvent(input) {
-            input.addEventListener('input', updateTotalWeight);
-        }
-
-        // 初始化已存在的行
-        if (tableBody) {
-            tableBody.querySelectorAll('.remove-row-btn').forEach(bindRemoveEvent);
-            tableBody.querySelectorAll('.use-weight-input').forEach(bindWeightChangeEvent);
-            updateTotalWeight();
-        }
-
-        // 动态添加新行
-        if (addBtn && template) {
-            addBtn.addEventListener('click', function () {
-                const clone = template.content.cloneNode(true);
-                const newRow = clone.querySelector('tr');
-
-                bindRemoveEvent(newRow.querySelector('.remove-row-btn'));
-                bindWeightChangeEvent(newRow.querySelector('.use-weight-input'));
-
-                tableBody.appendChild(newRow);
-            });
-
-            // 如果是全新工单，默认自动添加一行空白行
-            if (tableBody.children.length === 0) {
-                addBtn.click();
-                // querySelector 会自动返回匹配的第一个元素，找不到则返回 null
-                const firstDeleteBtn = tableBody.querySelector('.remove-row-btn');
-                if (firstDeleteBtn) {
-                    firstDeleteBtn.disabled = true;
-                    firstDeleteBtn.hidden = true;
-                }
-            }
-        }
-    });
-</script>
+<script src="{% static 'js/production/partials/_batch_source_input.js' %}"></script>

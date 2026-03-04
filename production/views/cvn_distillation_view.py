@@ -43,6 +43,8 @@ class CVNDistillationCreateView(LoginRequiredMixin, CreateView):
         # 传递釜皿状态供前端选择器使用
         context['available_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_IDLE)
         context['cleaning_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_CLEANING)
+        # 注入可用的粗品批次 JSON (供动态明细表使用)
+        context['available_sources_json'] = cvn_distillation_service.get_available_synthesis_batches_json()
         return context
 
     def form_valid(self, form):
@@ -88,6 +90,8 @@ class CVNDistillationUpdateView(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['available_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_IDLE)
         context['cleaning_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_CLEANING)
+        # 同样注入可用的粗品批次 JSON
+        context['available_sources_json'] = cvn_distillation_service.get_available_synthesis_batches_json()
         return context
 
     def form_valid(self, form):
