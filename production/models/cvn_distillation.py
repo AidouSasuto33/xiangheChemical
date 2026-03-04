@@ -45,6 +45,7 @@ class CVNDistillation(BaseProductionStep):
         """批次里还剩多少精馏CVM"""
         return max(0, self.output_weight - self.consumed_weight)
 
+    # 问题点
     @property
     def dry_weight_pre(self):
         """精前折干重量(kg) = 投入总重量 * 精前CVN含量"""

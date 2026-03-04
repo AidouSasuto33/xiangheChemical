@@ -91,15 +91,6 @@ def process_finish(instance: CVNDistillation, user):
             instance.kettle.status = Kettle.STATUS_CLEANING
             instance.kettle.save(update_fields=['status'])
 
-        # 3. 对接全局库存大盘 (预留扩展点)
-        # 如果你的架构中使用了 inventory 子应用统一管理总账，可在此处调用：
-        # inventory_service.add_stock(
-        #     material_code=instance.INVENTORY_MAPPING.get('output_weight'),
-        #     weight=instance.output_weight,
-        #     batch_no=instance.batch_no,
-        #     source_doc=f"CVN精馏入库",
-        #     operator=user
-        # )
 
 def get_available_synthesis_batches_json():
     """

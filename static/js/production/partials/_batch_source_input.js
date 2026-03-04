@@ -64,6 +64,8 @@
             });
 
             // 将计算结果自动填入主表单的精前组份栏位中
+            // 问题点：model未instantiate需从front-end计算数据
+            const dryWeightInput = document.querySelector('[name="dry_weight_pre"]') || document.getElementById('dry_weight_pre');
             const cvnInput = document.querySelector('[name="pre_cvn_content"]');
             const dcbInput = document.querySelector('[name="pre_dcb_content"]');
             const adnInput = document.querySelector('[name="pre_adn_content"]');
@@ -71,6 +73,15 @@
             if (cvnInput) cvnInput.value = totalWeight > 0 ? ((sumCvn / totalWeight) * 100).toFixed(2) : '';
             if (dcbInput) dcbInput.value = totalWeight > 0 ? ((sumDcb / totalWeight) * 100).toFixed(2) : '';
             if (adnInput) adnInput.value = totalWeight > 0 ? ((sumAdn / totalWeight) * 100).toFixed(2) : '';
+            if (dryWeightInput) {
+                const finalDryWeight = totalWeight > 0 ? sumCvn.toFixed(2) : '';
+                // 兼容它是 input 还是普通 span/div 标签
+                if (dryWeightInput.tagName === 'INPUT') {
+                    dryWeightInput.value = finalDryWeight;
+                } else {
+                    dryWeightInput.innerText = finalDryWeight || '0.00';
+                }
+            }
         }
 
                // 选项池更新引擎：动态剔除已被选中的批次
