@@ -38,42 +38,46 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // 定义不同消息级别的处理逻辑
-        // Django tags: debug, info, success, warning, error
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. 初始化 Bootstrap 组件实例
+    const toastEl = document.getElementById('globalSuccessToast');
+    const modalEl = document.getElementById('globalErrorModal');
 
-        // 1. 初始化 Bootstrap 组件实例
-        const toastEl = document.getElementById('globalSuccessToast');
-        const modalEl = document.getElementById('globalErrorModal');
+    const toastInstance = new bootstrap.Toast(toastEl, { delay: 3000 }); // 3秒自动消失
+    const modalInstance = new bootstrap.Modal(modalEl);
 
-        const toastInstance = new bootstrap.Toast(toastEl, { delay: 3000 }); // 3秒自动消失
-        const modalInstance = new bootstrap.Modal(modalEl);
+    // ==========================================
+    // ⭐ 核心改造：将方法暴露给 window 全局对象
+    // ==========================================
+    window.showGlobalSuccess = function(message) {
+        document.getElementById('toastMessageText').innerText = message;
+        toastInstance.show();
+    };
 
-        // 2. 获取 Django 传过来的消息列表
-        // 注意：这里利用 Django 模板引擎直接渲染出一个 JS 数组
-        const djangoMessages = [
-            {% for message in messages %}
-            {
-                "level": "{{ message.tags }}",
-                "text": "{{ message|escapejs }}" // escapejs 防止引号破坏 JS 语法
-            },
-            {% endfor %}
-        ];
+    window.showGlobalError = function(message) {
+        document.getElementById('modalErrorMessageText').innerText = message;
+        modalInstance.show();
+    };
 
-        // 3. 循环处理每一条消息
-        if (djangoMessages.length > 0) {
-            djangoMessages.forEach(msg => {
-                if (msg.level.includes('success') || msg.level.includes('info')) {
-                    // === 成功/普通消息 -> 显示气泡 ===
-                    document.getElementById('toastMessageText').innerText = msg.text;
-                    toastInstance.show();
+    // 2. 获取 Django 后端传过来的消息列表
+    const djangoMessages = [
+        {% for message in messages %}
+        {
+            "level": "{{ message.tags }}",
+            "text": "{{ message|escapejs }}"
+        },
+        {% endfor %}
+    ];
 
-                } else if (msg.level.includes('error') || msg.level.includes('warning')) {
-                    // === 错误/警告消息 -> 显示弹窗 ===
-                    document.getElementById('modalErrorMessageText').innerText = msg.text;
-                    modalInstance.show();
-                }
-            });
-        }
-    });
+    // 3. 循环处理 Django 消息，直接调用我们刚封装好的全局 API
+    if (djangoMessages.length > 0) {
+        djangoMessages.forEach(msg => {
+            if (msg.level.includes('success') || msg.level.includes('info')) {
+                window.showGlobalSuccess(msg.text);
+            } else if (msg.level.includes('error') || msg.level.includes('warning')) {
+                window.showGlobalError(msg.text);
+            }
+        });
+    }
+});
 </script>

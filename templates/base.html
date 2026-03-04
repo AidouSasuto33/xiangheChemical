@@ -181,8 +181,38 @@
     });
 </script>
 
+
 {% include 'includes/_global_feedback.html' %}
 <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+
+{# not disable_global_errors 支持极个别需要自定义错误展示的页面#}
+{#只需在特定的 View 里传一个 context['disable_global_errors'] = True，就能平滑绕过。#}
+{% if form.errors and not disable_global_errors %}
+   <script>
+       document.addEventListener('DOMContentLoaded', function() {
+           let errorMessages = [];
+
+           // 1. 提取全局/非字段级错误
+           {% if form.non_field_errors %}
+               {% for error in form.non_field_errors %}
+                   errorMessages.push("• {{ error|escapejs }}");
+               {% endfor %}
+           {% endif %}
+
+           // 2. 提取绑定在具体字段上的错误
+           {% for field in form %}
+               {% for error in field.errors %}
+                   errorMessages.push("• {{ field.label }}: {{ error|escapejs }}");
+               {% endfor %}
+           {% endfor %}
+
+           // 3. 呼叫全局 Modal
+           if (window.showGlobalError && errorMessages.length > 0) {
+               window.showGlobalError("表单校验失败：\n" + errorMessages.join('\n'));
+           }
+       });
+   </script>
+   {% endif %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>
