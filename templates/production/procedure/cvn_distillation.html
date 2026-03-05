@@ -12,13 +12,12 @@
                 <label class="small text-muted fw-bold text-uppercase mb-2">
                     <i class="bi bi-calculator me-1"></i> 精前组份汇总 (Pre-Distillation Summary)
                 </label>
-{#                问题点: CVN含量页面计算#}
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label small text-muted mb-1">精前折干重量</label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control bg-white text-primary fw-bold" 
-                                   value="{{ form.instance.dry_weight_pre|floatformat:1|default:'0.0' }}" readonly disabled>
+                        <div class="input-group input-group-sm" >
+                            <input type="text" class="form-control bg-white text-primary fw-bold"
+                                value="0" id="dry_weight_pre">
                             <span class="input-group-text bg-light text-muted">kg</span>
                         </div>
                     </div>

@@ -39,14 +39,18 @@
                 const val = parseFloat(input.value);
                 if (!isNaN(val) && val > 0) total += val;
             });
-            totalWeightSpan.textContent = total.toFixed(1);
+            totalWeightSpan.textContent = total.toFixed(2);
         }
 
 
 
-        // 加权平均组份演算引擎
+        // 算术平均组份演算引擎 (更新版)
         function calculateSummary() {
-            let totalWeight = 0, sumCvn = 0, sumDcb = 0, sumAdn = 0;
+            let totalWeight = 0,
+                sumCvn = 0,
+                sumDcb = 0,
+                sumAdn = 0,
+                selectedCount = 0; // 新增：有效批次计数
 
             document.querySelectorAll('#batchSourceBody tr').forEach(row => {
                 const batchNo = row.querySelector('.batch-input')?.value;
@@ -56,31 +60,37 @@
                     const source = availableSources.find(s => s.batch_no === batchNo);
                     if (source) {
                         totalWeight += weight;
-                        sumCvn += weight * (source.cvn / 100);
-                        sumDcb += weight * (source.dcb / 100);
-                        sumAdn += weight * (source.adn / 100);
+                        // 逻辑调整：直接累加含量，不乘以重量
+                        sumCvn += source.cvn;
+                        sumDcb += source.dcb;
+                        sumAdn += source.adn;
+                        selectedCount++; // 计数增加
                     }
                 }
             });
 
-            // 将计算结果自动填入主表单的精前组份栏位中
-            // 问题点：model未instantiate需从front-end计算数据
-            const dryWeightInput = document.querySelector('[name="dry_weight_pre"]') || document.getElementById('dry_weight_pre');
+            // 获取主表单的 Input 元素
+            // 注意：你的 HTML 中“精前折干重量”目前的 ID 是 dry_weight_pre，
+            // 但根据 querySelector 习惯，这里建议确保 name 或 id 匹配
+            const dryWeightDisplay = document.getElementById('dry_weight_pre'); // cvn_distillation.html 中的显示框
             const cvnInput = document.querySelector('[name="pre_cvn_content"]');
             const dcbInput = document.querySelector('[name="pre_dcb_content"]');
             const adnInput = document.querySelector('[name="pre_adn_content"]');
 
-            if (cvnInput) cvnInput.value = totalWeight > 0 ? ((sumCvn / totalWeight) * 100).toFixed(2) : '';
-            if (dcbInput) dcbInput.value = totalWeight > 0 ? ((sumDcb / totalWeight) * 100).toFixed(2) : '';
-            if (adnInput) adnInput.value = totalWeight > 0 ? ((sumAdn / totalWeight) * 100).toFixed(2) : '';
-            if (dryWeightInput) {
-                const finalDryWeight = totalWeight > 0 ? sumCvn.toFixed(2) : '';
-                // 兼容它是 input 还是普通 span/div 标签
-                if (dryWeightInput.tagName === 'INPUT') {
-                    dryWeightInput.value = finalDryWeight;
-                } else {
-                    dryWeightInput.innerText = finalDryWeight || '0.00';
-                }
+            // 1. 更新折干重量 (合计投入)
+            if (dryWeightDisplay) {
+                dryWeightDisplay.value = totalWeight.toFixed(1);
+            }
+
+            // 2. 更新组份 (执行算术平均：总和 / 批次数)
+            if (selectedCount > 0) {
+                if (cvnInput) cvnInput.value = (sumCvn / selectedCount).toFixed(2);
+                if (dcbInput) dcbInput.value = (sumDcb / selectedCount).toFixed(2);
+                if (adnInput) adnInput.value = (sumAdn / selectedCount).toFixed(2);
+            } else {
+                if (cvnInput) cvnInput.value = '';
+                if (dcbInput) dcbInput.value = '';
+                if (adnInput) adnInput.value = '';
             }
         }
 
