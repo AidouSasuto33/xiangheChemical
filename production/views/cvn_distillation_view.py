@@ -100,6 +100,9 @@ class CVNDistillationUpdateView(LoginRequiredMixin, UpdateView):
 
         try:
             with transaction.atomic():
+                # 无条件保存工单页信息
+                form.save()
+
                 # 1. 投产 (Start) - 扣减前置粗品库存
                 if action == 'start_production' and current_status == BaseProductionStep.STATUS_NEW:
                     cvn_distillation_service.process_start(form.instance, self.request.user)

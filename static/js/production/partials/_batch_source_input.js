@@ -42,8 +42,6 @@
             totalWeightSpan.textContent = total.toFixed(2);
         }
 
-
-
         // 算术平均组份演算引擎 (更新版)
         function calculateSummary() {
             let totalWeight = 0,
@@ -70,7 +68,7 @@
             });
 
             // 获取主表单的 Input 元素
-            // 注意：你的 HTML 中“精前折干重量”目前的 ID 是 dry_weight_pre，
+            // “精前折干重量”ID 是 dry_weight_pre，
             // 但根据 querySelector 习惯，这里建议确保 name 或 id 匹配
             const dryWeightDisplay = document.getElementById('dry_weight_pre'); // cvn_distillation.html 中的显示框
             const cvnInput = document.querySelector('[name="pre_cvn_content"]');

@@ -15,13 +15,8 @@ class CVNDistillationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # === 1. Widget 显式配置 ===
-        self.fields['start_time'].widget = forms.DateTimeInput(
-            attrs={'type': 'datetime-local', 'class': 'form-control'})
+        self.fields['start_time'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
         self.fields['end_time'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
-        # if 'note' in self.fields:
-        #     self.fields['note'].widget = forms.Textarea(attrs={'rows': 2, 'class': 'form-control'})
-        if 'kettle' in self.fields:
-            self.fields['kettle'].widget.attrs['class'] = 'form-select'
 
         # === 2. 定义字段分组 ===
         input_group = ['start_time', 'kettle']
@@ -34,12 +29,12 @@ class CVNDistillationForm(forms.ModelForm):
         status = self.instance.status if self.instance else 'new'
 
         # === 3. 状态机 UI 锁定逻辑 ===
-        # 3.1 无论什么状态，精前组份始终只读 (由子表及化验单汇总而来)
+        # 3.1 无论什么状态，精前组份始终由系统计算，禁止人工篡改
         readonly_fields = ['pre_cvn_content', 'pre_dcb_content', 'pre_adn_content']
         for field in readonly_fields:
             if field in self.fields:
-                self.fields[field].widget.attrs['readonly'] = True
-                self.fields[field].widget.attrs['class'] = 'form-control bg-light'
+                # 抛弃 CSS 样式的干预，使用 Django 原生的后端防篡改锁
+                self.fields[field].disabled = True
 
         # 3.2 动态流转锁定
         if status == 'new':
@@ -55,7 +50,8 @@ class CVNDistillationForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].disabled = True
                     self.fields[field].required = True
-                    self.fields[field].widget.attrs['class'] += ' bg-light'
+                    # current_class = self.fields[field].widget.attrs.get('class', '')
+                    # self.fields[field].widget.attrs['class'] = current_class + ' bg-light'
 
         elif status == 'completed':
             # 结束生产：锁定所有核心输入输出信息
@@ -63,7 +59,8 @@ class CVNDistillationForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].disabled = True
                     self.fields[field].required = True
-                    self.fields[field].widget.attrs['class'] += ' bg-light'
+                    # current_class = self.fields[field].widget.attrs.get('class', '')
+                    # self.fields[field].widget.attrs['class'] = current_class + ' bg-light'
 
     def clean_output_weight(self):
         weight = self.cleaned_data.get('output_weight')
@@ -92,8 +89,8 @@ class CVNDistillationForm(forms.ModelForm):
         batch_nos = self.data.getlist('source_batch_no')
         use_weights = self.data.getlist('source_use_weight')
 
-        # 仅在“投产”或“保存草稿”时校验投入物料
-        if self.action_type in ['start_production', 'save_draft']:
+        # 在“创建订单”、“投产”或“保存草稿”时校验投入物料
+        if self.action_type in ['create_plan', 'start_production', 'save_draft']:
             if not batch_nos:
                 raise ValidationError("请至少添加一条粗正品投入明细。")
 

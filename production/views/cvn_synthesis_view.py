@@ -100,6 +100,8 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
 
         try:
             with transaction.atomic():
+                # 无条件保存工单页信息
+                form.save()
 
                 # 1. 投产 (Start)
                 if action == 'start_production' and current_status == BaseProductionStep.STATUS_NEW:

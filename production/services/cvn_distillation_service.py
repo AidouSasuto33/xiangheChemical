@@ -59,8 +59,7 @@ def process_start(instance: CVNDistillation, user):
 
         # 3. 占用釜皿
         if instance.kettle:
-            # 假设 Kettle 模型中 STATUS_IN_USE 代表生产中
-            instance.kettle.status = Kettle.STATUS_IN_USE
+            instance.kettle.status = Kettle.STATUS_RUNNING
             instance.kettle.save(update_fields=['status'])
 
 
