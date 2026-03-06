@@ -57,7 +57,7 @@ def process_start(cvn_obj, user):
                     user=user
                 )
                 if not is_success:
-                    raise ValueError(f"系统严重错误：物料 {name} (Key: {key}) 扣减失败，可能是库存项未配置。操作已全部回滚！")
+                    raise ValueError(f"系统严重错误：物料 {name} (Key: {key}) \n扣减失败！操作已全部回滚！")
 
         # 6. 更新单据状态
         cvn_obj.status = 'running'
@@ -86,21 +86,25 @@ def process_finish(cvn_obj, user):
 
         # 3. 主产物：CVN粗品 (增加)
         if cvn_obj.crude_weight and cvn_obj.crude_weight > 0:
-            inventory_service.update_single_inventory(
+            is_success = inventory_service.update_single_inventory(
                 key=constants.KEY_INTER_CVN_CRUDE,
                 change_amount=cvn_obj.crude_weight,
                 note=f"批次 {cvn_obj.batch_no} 产出: CVN粗品",
                 user=user
             )
+            if not is_success:
+                raise ValueError(f"系统严重错误：\n 物料: CVN粗品库存 应增加{cvn_obj.crude_weight}L \n增加失败！操作已全部回滚！")
 
         # 4. 副产物：回收二氯丁烷 (增加)
         if cvn_obj.recovered_dcb_amount and cvn_obj.recovered_dcb_amount > 0:
-            inventory_service.update_single_inventory(
+            is_success = inventory_service.update_single_inventory(
                 key=constants.KEY_RECYCLED_DCB,
                 change_amount=cvn_obj.recovered_dcb_amount,
                 note=f"批次 {cvn_obj.batch_no} 回收: DCB溶剂",
                 user=user
             )
+            if not is_success:
+                raise ValueError(f"系统严重错误：\n 物料: DCB溶剂库存 应增加{cvn_obj.recovered_dcb_amount}L \n增加失败！操作已全部回滚！")
 
         # 5. 更新单据状态
         cvn_obj.status = BaseProductionStep.STATUS_COMPLETED
