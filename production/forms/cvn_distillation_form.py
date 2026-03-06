@@ -85,6 +85,11 @@ class CVNDistillationForm(forms.ModelForm):
         if self.instance.status != 'new':
             return cleaned_data
 
+        # --- 1. 结构性前置校验 (如设备、动作等基础信息) ---
+        if self.action_type == 'start_production':
+            if not cleaned_data.get('kettle'):
+                self.add_error('kettle', "投产必须选择一个釜皿。")
+
         # 获取前端传来的动态数组 (由于这些字段不在 Meta.fields 中，必须从 self.data 直接提取)
         batch_nos = self.data.getlist('source_batch_no')
         use_weights = self.data.getlist('source_use_weight')
@@ -93,6 +98,7 @@ class CVNDistillationForm(forms.ModelForm):
         if self.action_type in ['create_plan', 'start_production', 'save_draft']:
             if not batch_nos:
                 raise ValidationError("请至少添加一条粗正品投入明细。")
+
 
             parsed_inputs = []
             total_weight = 0.0
