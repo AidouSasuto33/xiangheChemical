@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.db import transaction
 from production.models.core import BaseProductionStep
 from core import constants
 from inventory.services import inventory_service
@@ -46,20 +47,24 @@ def process_start(cvn_obj, user):
             raise ValueError(error_msg)
 
     # 5. 预检通过，执行实际扣减 (第二道防线执行)
-    for qty, key, name in raw_materials:
-        if qty and qty > 0:
-            inventory_service.update_single_inventory(
-                key=key, 
-                change_amount=-qty, 
-                note=f"批次 {cvn_obj.batch_no} 投料: {name}", 
-                user=user
-            )
+    with transaction.atomic():
+        for qty, key, name in raw_materials:
+            if qty and qty > 0:
+                is_success = inventory_service.update_single_inventory(
+                    key=key,
+                    change_amount=-qty,
+                    note=f"批次 {cvn_obj.batch_no} 投料: {name}",
+                    user=user
+                )
+                if not is_success:
+                    raise ValueError(f"系统严重错误：物料 {name} (Key: {key}) 扣减失败，可能是库存项未配置。操作已全部回滚！")
 
-    # 6. 更新单据状态
-    cvn_obj.status = 'running'
-    if not cvn_obj.start_time:
-        cvn_obj.start_time = timezone.now()
-    cvn_obj.save()
+        # 6. 更新单据状态
+        cvn_obj.status = 'running'
+        if not cvn_obj.start_time:
+            cvn_obj.start_time = timezone.now()
+        cvn_obj.save()
+
 
 def process_finish(cvn_obj, user):
     """
@@ -77,26 +82,29 @@ def process_finish(cvn_obj, user):
     kettle.last_product_name = "CVN粗品"
     kettle.save()
 
-    # 3. 主产物：CVN粗品 (增加)
-    if cvn_obj.crude_weight and cvn_obj.crude_weight > 0:
-        inventory_service.update_single_inventory(
-            key=constants.KEY_INTER_CVN_CRUDE,
-            change_amount=cvn_obj.crude_weight,
-            note=f"批次 {cvn_obj.batch_no} 产出: CVN粗品",
-            user=user
-        )
+    with transaction.atomic():
 
-    # 4. 副产物：回收二氯丁烷 (增加)
-    if cvn_obj.recovered_dcb_amount and cvn_obj.recovered_dcb_amount > 0:
-        inventory_service.update_single_inventory(
-            key=constants.KEY_RECYCLED_DCB,
-            change_amount=cvn_obj.recovered_dcb_amount,
-            note=f"批次 {cvn_obj.batch_no} 回收: DCB溶剂",
-            user=user
-        )
+        # 3. 主产物：CVN粗品 (增加)
+        if cvn_obj.crude_weight and cvn_obj.crude_weight > 0:
+            inventory_service.update_single_inventory(
+                key=constants.KEY_INTER_CVN_CRUDE,
+                change_amount=cvn_obj.crude_weight,
+                note=f"批次 {cvn_obj.batch_no} 产出: CVN粗品",
+                user=user
+            )
 
-    # 5. 更新单据状态
-    cvn_obj.status = BaseProductionStep.STATUS_COMPLETED
-    if not cvn_obj.end_time:
-        cvn_obj.end_time = timezone.now()
-    cvn_obj.save()
+        # 4. 副产物：回收二氯丁烷 (增加)
+        if cvn_obj.recovered_dcb_amount and cvn_obj.recovered_dcb_amount > 0:
+            inventory_service.update_single_inventory(
+                key=constants.KEY_RECYCLED_DCB,
+                change_amount=cvn_obj.recovered_dcb_amount,
+                note=f"批次 {cvn_obj.batch_no} 回收: DCB溶剂",
+                user=user
+            )
+
+        # 5. 更新单据状态
+        cvn_obj.status = BaseProductionStep.STATUS_COMPLETED
+
+        if not cvn_obj.end_time:
+            cvn_obj.end_time = timezone.now()
+        cvn_obj.save()
