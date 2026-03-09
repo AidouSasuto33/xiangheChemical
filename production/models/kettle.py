@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from core.constants.kettle_status import KettleState
 
 
 class Kettle(models.Model):
@@ -8,19 +9,6 @@ class Kettle(models.Model):
     釜皿/设备资源表 (Master Data)
     用于管理车间的反应釜、精馏塔等核心设备
     """
-
-    # === 状态常量 ===
-    STATUS_IDLE = 'idle'
-    STATUS_RUNNING = 'running'
-    STATUS_CLEANING = 'to_clean'
-    STATUS_MAINTENANCE = 'maintenance'
-
-    STATUS_CHOICES = [
-        (STATUS_IDLE, '🟢 空闲 (可使用)'),
-        (STATUS_RUNNING, '🔴 生产中'),
-        (STATUS_CLEANING, '🟡 待清洁'),
-        (STATUS_MAINTENANCE, '⚪ 维护/故障'),
-    ]
 
     # === 工艺选项 (用于 ArrayField) ===
     PROCESS_CHOICES = [
@@ -49,7 +37,7 @@ class Kettle(models.Model):
     )
 
     # === 动态状态 ===
-    status = models.CharField("当前状态", max_length=20, choices=STATUS_CHOICES, default=STATUS_IDLE)
+    status = models.CharField("当前状态", max_length=20, choices=KettleState.choices, default=KettleState.IDLE)
 
     # 预留字段：当前正在生产的批次号 (暂存字符串，未来可关联 Order)
     current_batch_no = models.CharField("当前占用批次", max_length=50, blank=True, null=True)
@@ -94,4 +82,4 @@ class Kettle(models.Model):
     @property
     def is_locked(self):
         # 如果状态不是 'new'，则认为是锁定的
-        return self.status != 'new'
+        return self.status != KettleState.IDLE

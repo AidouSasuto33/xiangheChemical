@@ -5,6 +5,7 @@ from django.db.models import JSONField
 # django用户管理库
 from django.contrib.auth.models import User
 
+from core.constants.procedure_status import ProcedureState
 from .kettle import Kettle
 
 # ==========================================
@@ -23,21 +24,11 @@ class BaseProductionStep(models.Model):
     # --- 1. 核心追踪 ---
     batch_no = models.CharField("生产批号", max_length=50, unique=True)
     
-    STATUS_NEW = 'new'
-    STATUS_RUNNING = 'running'
-    STATUS_COMPLETED = 'completed'
-
-    STATUS_CHOICES = [
-        (STATUS_NEW, '新建/待投 (New)'),
-        (STATUS_RUNNING, '生产中 (Running)'),
-        (STATUS_COMPLETED, '已完工 (Completed)'),
-    ]
-    
     status = models.CharField(
         "状态",
         max_length=20,
-        choices=STATUS_CHOICES,
-        default=STATUS_NEW,
+        choices=ProcedureState.choices,
+        default=ProcedureState.NEW,
         db_index=True,
         help_text="生产状态流转：新建 -> 生产中(锁原料) -> 完工(入成品)"
     )

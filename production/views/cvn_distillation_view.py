@@ -9,7 +9,7 @@ from django.utils import timezone
 
 # === Models & Utils ===
 from production.models.cvn_distillation import CVNDistillation
-from production.models.core import BaseProductionStep
+from core.constants import ProcedureState, ProcedureAction
 from production.models.kettle import Kettle
 from production.utils.batch_generator import generate_batch_number
 
@@ -53,7 +53,7 @@ class CVNDistillationCreateView(LoginRequiredMixin, CreateView):
         form.instance.batch_no = batch_no
 
         # 强制初始状态为 'new'
-        form.instance.status = BaseProductionStep.STATUS_NEW
+        form.instance.status = ProcedureState.NEW
 
         # 绑定操作员
         form.instance.operator = self.request.user
@@ -104,28 +104,24 @@ class CVNDistillationUpdateView(LoginRequiredMixin, UpdateView):
                 form.save()
 
                 # 1. 投产 (Start) - 扣减前置粗品库存
-                if action == 'start_production' and current_status == BaseProductionStep.STATUS_NEW:
+                if action == ProcedureAction.START_PRODUCTION and current_status == ProcedureState.NEW:
                     cvn_distillation_service.process_start(form.instance, self.request.user)
                     messages.success(self.request, f"精馏批次 {form.instance.batch_no} 已投产！粗品库存已锁定/扣减。")
 
                 # 2. 完工 (Finish) - 增加精品库存，记录釜残
-                elif action == 'finish_production' and current_status == BaseProductionStep.STATUS_RUNNING:
+                elif action == ProcedureAction.FINISH_PRODUCTION and current_status == ProcedureState.RUNNING:
                     cvn_distillation_service.process_finish(form.instance, self.request.user)
                     messages.success(self.request, f"精馏批次 {form.instance.batch_no} 已完工！精品产出已记录，设备已释放。")
 
-                # 3. 保存草稿
-                elif action == 'save_draft':
+                # 3. 统一的数据保存 (涵盖新建时的草稿和生产中的记录更新)
+                elif action == ProcedureAction.SAVE_DRAFT:
                     form.save()
-                    messages.info(self.request, "草稿已保存。")
+                    messages.info(self.request, "工单信息及记录已成功保存。")
 
-                # 4. 保存过程记录
-                elif action == 'save_notes':
-                    form.save()
-                    messages.info(self.request, "精馏过程参数及记录已更新。")
-
+                # 4. 异常兜底 (防范前端被篡改传来了莫名其妙的指令)
                 else:
-                    form.save()
-                    messages.info(self.request, "修改已保存。")
+                    form.save()  # 依然保存数据防丢失，但给出警告
+                    messages.warning(self.request, f"执行了未知的操作指令 '{action}'，数据已默认保存。")
 
         except Exception as e:
             messages.error(self.request, f"操作失败: {str(e)}")
@@ -167,5 +163,5 @@ class CVNDistillationListView(LoginRequiredMixin, ListView):
         # 传回前端保持筛选状态
         context['current_status'] = self.request.GET.get('status', '')
         context['search_query'] = self.request.GET.get('q', '')
-        context['status_choices'] = BaseProductionStep.STATUS_CHOICES
+        context['status_choices'] = ProcedureState.choices
         return context
