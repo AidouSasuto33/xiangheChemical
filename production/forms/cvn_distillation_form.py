@@ -25,7 +25,6 @@ class CVNDistillationForm(forms.ModelForm):
             'output_cvn_content', 'output_dcb_content', 'output_adn_content',
             'residue_weight'
         ]
-
         status = self.instance.status if self.instance else 'new'
 
         # === 3. 状态机 UI 锁定逻辑 ===
