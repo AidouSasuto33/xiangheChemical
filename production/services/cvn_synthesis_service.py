@@ -59,7 +59,7 @@ def process_start(cvn_obj, user):
         # 记录时间并调用状态机统一处理状态流转
         if not cvn_obj.start_time:
             cvn_obj.start_time = timezone.now()
-        ProcedureStateService.process_action(cvn_obj, constants.ProcedureAction.START_PRODUCTION)
+        ProcedureStateService.process_action(cvn_obj, constants.ProcedureAction.START_PRODUCTION, user=user)
 
 
 def process_finish(cvn_obj, user):
@@ -105,4 +105,4 @@ def process_finish(cvn_obj, user):
         # 5. 记录时间并调用状态机处理完工流转与设备释放
         if not cvn_obj.end_time:
             cvn_obj.end_time = timezone.now()
-        ProcedureStateService.process_action(cvn_obj, constants.ProcedureAction.FINISH_PRODUCTION)
+        ProcedureStateService.process_action(cvn_obj, constants.ProcedureAction.FINISH_PRODUCTION, user=user)

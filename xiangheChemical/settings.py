@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'core',
     'production',
     'inventory',
+    'system',
+    'notification.apps.NotificationConfig'
 ]
 
 MIDDLEWARE = [

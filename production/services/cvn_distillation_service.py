@@ -11,10 +11,6 @@ from core.constants.procedure_status import ProcedureState, ProcedureAction
 from production.services.partial.procedure_state_service import ProcedureStateService
 
 
-# 如果有库存全局服务，预留导入位置
-# from inventory.services.inventory_service import inventory_service
-
-
 def process_start(instance: CVNDistillation, user):
     """
     执行投产逻辑 (Status: New -> Running)
@@ -50,7 +46,7 @@ def process_start(instance: CVNDistillation, user):
         if not instance.start_time:
             instance.start_time = timezone.now()
 
-        ProcedureStateService.process_action(instance, ProcedureAction.START_PRODUCTION)
+        ProcedureStateService.process_action(instance, ProcedureAction.START_PRODUCTION, user=user)
 
 
 def process_finish(instance: CVNDistillation, user):
@@ -77,7 +73,7 @@ def process_finish(instance: CVNDistillation, user):
         if not instance.end_time:
             instance.end_time = timezone.now()
 
-        ProcedureStateService.process_action(instance, ProcedureAction.FINISH_PRODUCTION)
+        ProcedureStateService.process_action(instance, ProcedureAction.FINISH_PRODUCTION, user=user)
 
 
 def get_available_synthesis_batches_json():

@@ -1,6 +1,7 @@
 from django.utils import timezone
 from core.constants.procedure_status import ProcedureState, ProcedureAction
 from production.services.partial.kettle_state_service import KettleStateService
+from production.signals import post_procedure_state_change  # 新增：导入状态变更信号
 
 
 class ProcedureStateService:
@@ -29,7 +30,26 @@ class ProcedureStateService:
         if action not in action_map:
             raise ValueError(f"未知的工单操作动作: {action}")
 
-        return action_map[action](procedure, **kwargs)
+        # 记录流转前的状态
+        old_status = procedure.status
+
+        # 执行具体的状态动作方法
+        result = action_map[action](procedure, **kwargs)
+
+        # 获取流转后的新状态
+        new_status = procedure.status
+
+        # 仅当状态发生实质性变化时，才发射信号给消息通知模块
+        if old_status != new_status:
+            post_procedure_state_change.send(
+                sender=procedure.__class__,
+                instance=procedure,
+                old_status=old_status,
+                new_status=new_status,
+                user=kwargs.get('user')  # 从 kwargs 提取当前操作人
+            )
+
+        return result
 
     @classmethod
     def create_plan(cls, procedure, **kwargs):
