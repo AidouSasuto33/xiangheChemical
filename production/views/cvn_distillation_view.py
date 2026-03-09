@@ -9,7 +9,7 @@ from django.utils import timezone
 
 # === Models & Utils ===
 from production.models.cvn_distillation import CVNDistillation
-from core.constants import ProcedureState, ProcedureAction
+from core.constants import ProcedureState, ProcedureAction, KettleState
 from production.models.kettle import Kettle
 from production.utils.batch_generator import generate_batch_number
 
@@ -41,8 +41,8 @@ class CVNDistillationCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # 传递釜皿状态供前端选择器使用
-        context['available_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_IDLE)
-        context['cleaning_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_CLEANING)
+        context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
+        context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
         # 注入可用的粗品批次 JSON (供动态明细表使用)
         context['available_sources_json'] = cvn_distillation_service.get_available_synthesis_batches_json()
         return context
@@ -88,8 +88,8 @@ class CVNDistillationUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['available_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_IDLE)
-        context['cleaning_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_CLEANING)
+        context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
+        context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
         # 同样注入可用的粗品批次 JSON
         context['available_sources_json'] = cvn_distillation_service.get_available_synthesis_batches_json()
         return context

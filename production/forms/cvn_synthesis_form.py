@@ -54,7 +54,7 @@ class CVNSynthesisForm(forms.ModelForm):
         
         # 构造查询：状态是idle OR to_clean OR id是当前id
         kettle_qs = Kettle.objects.filter(
-            Q(status=Kettle.STATUS_IDLE) | Q(status=Kettle.STATUS_CLEANING) | Q(id=current_kettle_id)
+            Q(status=constants.KettleState.IDLE) | Q(status=constants.KettleState.CLEANING) | Q(id=current_kettle_id)
         )
         self.fields['kettle'].queryset = kettle_qs
 

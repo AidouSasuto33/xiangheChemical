@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.utils import timezone
 
 # === Models & Utils ===
-from core.constants import ProcedureState, ProcedureAction
+from core.constants import ProcedureState, ProcedureAction, KettleState
 from production.models.cvn_synthesis import CVNSynthesis
 from production.models.kettle import Kettle
 from production.utils.batch_generator import generate_batch_number
@@ -40,8 +40,8 @@ class CVNSynthesisCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Populate kettle lists for the selector
-        context['available_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_IDLE)
-        context['cleaning_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_CLEANING)
+        context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
+        context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
         return context
 
     def form_valid(self, form):
@@ -90,8 +90,8 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Populate kettle lists for the selector
-        context['available_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_IDLE)
-        context['cleaning_kettles'] = Kettle.objects.filter(status=Kettle.STATUS_CLEANING)
+        context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
+        context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
         return context
 
     def form_valid(self, form):
