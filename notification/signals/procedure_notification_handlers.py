@@ -64,7 +64,6 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
             employees = Employee.objects.filter(workshops=instance.workshop).select_related('user')
             recipients = [emp.user for emp in employees if emp.user]
 
-
         # 5. 批量生成通知记录 (Bulk Create 提升性能)
         if recipients:
             notifications = [

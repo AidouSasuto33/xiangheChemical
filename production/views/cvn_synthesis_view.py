@@ -11,6 +11,7 @@ from django.utils import timezone
 from core.constants import ProcedureState, ProcedureAction, KettleState
 from production.models.cvn_synthesis import CVNSynthesis
 from production.models.kettle import Kettle
+from production.signals import post_procedure_state_change
 from production.utils.batch_generator import generate_batch_number
 from production.services import cvn_synthesis_service
 from production.forms.cvn_synthesis_form import CVNSynthesisForm
@@ -57,7 +58,10 @@ class CVNSynthesisCreateView(LoginRequiredMixin, CreateView):
 
         # 4. 保存单据
         response = super().form_valid(form)
-
+        # 新工单入数据库后，发送计划已创建消息
+        post_procedure_state_change.send(sender=self.object.__class__, instance=self.object,
+                                         old_status='Not_Create', new_status=self.object.status,
+                                         user=self.request.user)
         messages.success(self.request, f"生产单 {batch_no} 已创建，请确认无误后点击“确认投产”。")
         return response
 

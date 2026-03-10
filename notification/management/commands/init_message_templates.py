@@ -7,6 +7,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         templates = [
             {
+                "code": "status_change_new",
+                "name": "新建工单计划",
+                "title_template": "【新建工单】{workshop} - {batch_no}",
+                "content_template": "{actor} 已经新建工单 {batch_no} ，目前处于: '{new_status}' 阶段。"
+            },
+            {
                 "code": "status_change_running",
                 "name": "工单进入生产状态",
                 "title_template": "【生产开始】{workshop} - {batch_no}",

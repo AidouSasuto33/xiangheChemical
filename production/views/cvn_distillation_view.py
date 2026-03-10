@@ -11,6 +11,7 @@ from django.utils import timezone
 from production.models.cvn_distillation import CVNDistillation
 from core.constants import ProcedureState, ProcedureAction, KettleState
 from production.models.kettle import Kettle
+from production.signals import post_procedure_state_change
 from production.utils.batch_generator import generate_batch_number
 
 # 预留引入，后续我们将创建对应的 Form 和 Service
@@ -59,7 +60,10 @@ class CVNDistillationCreateView(LoginRequiredMixin, CreateView):
         form.instance.operator = self.request.user
 
         response = super().form_valid(form)
-
+        # 新工单入数据库后，发送计划已创建消息
+        post_procedure_state_change.send(sender=self.object.__class__, instance=self.object,
+                                         old_status='Not_Created', new_status=self.object.status,
+                                         user=self.request.user)
         messages.success(self.request, f"精馏工单 {batch_no} 已创建，请确认投入明细无误后点击“确认投产”。")
         return response
 
