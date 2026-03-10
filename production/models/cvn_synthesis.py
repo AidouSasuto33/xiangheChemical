@@ -1,5 +1,7 @@
 # Django基础ORM管理
 from django.db import models
+
+from system.models import Workshop
 # 表单基础模型
 from .core import BaseProductionStep
 # 引入常量
@@ -14,7 +16,7 @@ class CVNSynthesis(BaseProductionStep):
     Step 1: CVN 合成
     逻辑：投入原料 -> 产出粗品 -> (部分用于精馏)
     """
-
+    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvn_synthesis', verbose_name="工单所属车间", default=1) # 1是CVN_SYN车间id
     # =========================================================
     # 1. 投入原料 (Input)
     # =========================================================

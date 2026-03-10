@@ -6,6 +6,7 @@ from django.db.models import JSONField
 from django.contrib.auth.models import User
 
 from core.constants.procedure_status import ProcedureState
+from system.models import Workshop
 from .kettle import Kettle
 
 # ==========================================
@@ -62,6 +63,7 @@ class BaseProductionStep(models.Model):
     )
 
     # --- 4. 辅助信息 ---
+    #TODO 备注与操作数据结构改为LIST，每次操作都留痕
     operator = models.ForeignKey(
         User,
         on_delete=models.PROTECT,  # 关键：如果该账号有数据，禁止物理删除，强迫管理员改用“禁用”

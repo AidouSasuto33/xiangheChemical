@@ -7,7 +7,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         templates = [
             {
-                "code": "status_change_in_progress",
+                "code": "status_change_running",
                 "name": "工单进入生产状态",
                 "title_template": "【生产开始】{workshop} - {batch_number}",
                 "content_template": "工单 {batch_number} 已由 {actor} 启动，目前处于 {new_status} 阶段。"
@@ -19,22 +19,10 @@ class Command(BaseCommand):
                 "content_template": "好消息！工单 {batch_number} 已由 {actor} 标记为完成，请相关人员核验。"
             },
             {
-                "code": "status_change_exception",
+                "code": "status_change_abnormal",
                 "name": "工单触发异常",
                 "title_template": "【⚠️ 生产异常】{workshop} - {batch_number}",
                 "content_template": "警报：工单 {batch_number} 发生异常！操作人：{actor}。当前状态：{new_status}。请立即处理！"
-            },
-            {
-                "code": "status_change_pending",
-                "name": "工单待料/待命",
-                "title_template": "【待命提醒】{workshop} - {batch_number}",
-                "content_template": "工单 {batch_number} 状态变更为 {new_status}（操作人：{actor}），请注意后续排产。"
-            },
-            {
-                "code": "status_change_audit_passed",
-                "name": "工单审核通过",
-                "title_template": "【审核通过】{workshop} - {batch_number}",
-                "content_template": "工单 {batch_number} 的记录已由 {actor} 审核通过。"
             }
         ]
 

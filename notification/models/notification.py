@@ -38,8 +38,8 @@ class Notification(models.Model):
     )
 
     TYPE_CHOICES = (
-        ('status', '工单状态变更'),
-        ('exception', '生产异常'),
+        ('status_change', '工单状态变更'),
+        ('abnormal', '生产异常'),
         ('audit', '审核提醒'),
         ('system', '系统消息'),
     )
