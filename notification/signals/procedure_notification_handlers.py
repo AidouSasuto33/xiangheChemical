@@ -1,6 +1,5 @@
 import logging
 from django.dispatch import receiver
-from django.urls import reverse
 from production.signals import post_procedure_state_change
 from notification.models import Notification, MessageTemplate
 from system.models import Employee

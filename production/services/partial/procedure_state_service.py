@@ -1,4 +1,3 @@
-from django.utils import timezone
 from core.constants.procedure_status import ProcedureState, ProcedureAction
 from production.services.partial.kettle_state_service import KettleStateService
 from production.signals import post_procedure_state_change  # 新增：导入状态变更信号
