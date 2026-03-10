@@ -15,7 +15,6 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
     try:
         # 1. 动态确定模板编码 (例如: status_change_running)
         template_code = f"status_change_{new_status}"
-        logger.warning(f"消息模版代号: {template_code}")
         template = MessageTemplate.objects.filter(code=template_code).first()
 
         # 定义渲染用的上下文变量
@@ -26,7 +25,6 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
             'old_status': old_status,
             'new_status': getattr(instance, 'get_status_display', lambda: new_status)(),
         }
-        logger.warning(f"{context}")
 
         # 2. 准备通知的内容与级别
         if template:
@@ -51,7 +49,7 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
             level = 'success'
 
         # 3. 生成工单的目标链接 (target_url)
-        # 这里使用 Django 规范的 get_absolute_url，如果模型没定义，先留空
+        #TODO为工艺模型添加absolute_url函数
         target_url = ""
         if hasattr(instance, 'get_absolute_url'):
             target_url = instance.get_absolute_url()
@@ -66,9 +64,6 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
             employees = Employee.objects.filter(workshops=instance.workshop).select_related('user')
             recipients = [emp.user for emp in employees if emp.user]
 
-        logger.warning(f"instance: {instance}")
-        logger.warning(f"targeturl: {target_url}")
-        logger.warning(f"recipients: {recipients}")
 
         # 5. 批量生成通知记录 (Bulk Create 提升性能)
         if recipients:

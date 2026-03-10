@@ -91,6 +91,8 @@ class CVNDistillation(BaseProductionStep):
         verbose_name = "2-CVN精馏"
         verbose_name_plural = verbose_name
 
+    url_name_base = "cvn_distillation_update"  # 用于reverse帮助消息模块生成url
+
 
 class CVNDistillationInput(models.Model):
     """
@@ -122,6 +124,8 @@ class CVNDistillationInput(models.Model):
     snapshot_dcb = models.FloatField("领用时DCB含量%", null=True, blank=True)
     snapshot_adn = models.FloatField("领用时己二腈含量%", null=True, blank=True)
 
+
+
     def __str__(self):
         return f"{self.distillation.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
 
@@ -130,3 +134,4 @@ class CVNDistillationInput(models.Model):
         verbose_name_plural = verbose_name
         # 联合约束：同一个精馏单里，不能添加两次同一个粗品批号
         unique_together = ('distillation', 'source_batch')
+

@@ -6,10 +6,10 @@ class ProcedureState(models.TextChoices):
     工单生产状态常量 (Static States)
     代表工单当前所处的阶段
     """
-    NEW = 'new', _('待产/新建')
+    NEW = 'new', _('新工单')
     RUNNING = 'running', _('生产中')
     DELAYED = 'delayed', _('已延迟')
-    ABNORMAL = 'abnormal', _('异常')
+    ABNORMAL = 'abnormal', _('异常单')
     COMPLETED = 'completed', _('已完成')
 
 

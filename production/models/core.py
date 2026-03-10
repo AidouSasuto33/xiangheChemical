@@ -6,7 +6,7 @@ from django.db.models import JSONField
 from django.contrib.auth.models import User
 
 from core.constants.procedure_status import ProcedureState
-from system.models import Workshop
+from django.urls import reverse
 from .kettle import Kettle
 
 # ==========================================
@@ -90,3 +90,8 @@ class BaseProductionStep(models.Model):
             delta = self.end_time - self.start_time
             return round(delta.total_seconds() / 3600, 1)
         return 0
+
+    def get_absolute_url(self):
+        """动态生成工单更新页面的 URL。"""
+        #TODO 项目正式上线时，将返回的domain放在DJango Site中去。
+        return "127.0.0.1:8000" + reverse(f'production:{getattr(self, 'url_name_base')}', kwargs={'pk': self.pk})

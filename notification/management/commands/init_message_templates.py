@@ -9,20 +9,20 @@ class Command(BaseCommand):
             {
                 "code": "status_change_running",
                 "name": "工单进入生产状态",
-                "title_template": "【生产开始】{workshop} - {batch_number}",
-                "content_template": "工单 {batch_number} 已由 {actor} 启动，目前处于 {new_status} 阶段。"
+                "title_template": "【生产开始】{workshop} - {batch_no}",
+                "content_template": "工单 {batch_no} 已由 {actor} 启动，目前处于: '{new_status}' 阶段。"
             },
             {
                 "code": "status_change_completed",
                 "name": "工单生产完成",
-                "title_template": "【生产完成】{workshop} - {batch_number}",
-                "content_template": "好消息！工单 {batch_number} 已由 {actor} 标记为完成，请相关人员核验。"
+                "title_template": "【生产完成】{workshop} - {batch_no}",
+                "content_template": "工单 {batch_no} 已由 {actor} 标记为: '{new_status}'，请相关人员核验。"
             },
             {
                 "code": "status_change_abnormal",
                 "name": "工单触发异常",
-                "title_template": "【⚠️ 生产异常】{workshop} - {batch_number}",
-                "content_template": "警报：工单 {batch_number} 发生异常！操作人：{actor}。当前状态：{new_status}。请立即处理！"
+                "title_template": "【⚠️ 生产异常】{workshop} - {batch_no}",
+                "content_template": "警报：工单 {batch_no} 发生异常！操作人：{actor}。当前状态: '{new_status}'。请立即处理！"
             }
         ]
 

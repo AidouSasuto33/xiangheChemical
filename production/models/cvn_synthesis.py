@@ -92,3 +92,5 @@ class CVNSynthesis(BaseProductionStep):
 
     status_label.fget.short_description = "当前状态"
     status_label.fget.admin_order_field = 'consumed_weight'
+    url_name_base = "cvn_synthesis_update" # 用于reverse帮助消息模块生成url
+
