@@ -2,10 +2,10 @@ from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from production.models.partial import ProductionAttachment
+from production.models.partial import Attachment
 
 
-class ProductionAttachmentUploadView(LoginRequiredMixin, View):
+class AttachmentUploadView(LoginRequiredMixin, View):
     """
     处理通用附件上传的 Class-Based View
     接收前端 Dropzone.js 传来的图片及 GenericForeignKey 参数
@@ -28,7 +28,7 @@ class ProductionAttachmentUploadView(LoginRequiredMixin, View):
             content_type = ContentType.objects.get(app_label='production', model=model_name)
 
             # 3. 创建并保存附件记录
-            attachment = ProductionAttachment.objects.create(
+            attachment = Attachment.objects.create(
                 content_type=content_type,
                 object_id=object_id,
                 image=image,

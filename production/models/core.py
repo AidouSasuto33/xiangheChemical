@@ -15,6 +15,10 @@ from .kettle import Kettle
 # ==========================================
 # 1. 抽象基类 (BaseProductionStep) - 重构版
 # ==========================================
+# 默认预期时间，今天+1。Django 的迁移序列化器无法处理定义在类内部的函数，所以函数需全局化。
+def get_default_expected_time():
+    # 返回当前时间加 1 天
+    return timezone.now() + timedelta(days=1)
 
 class BaseProductionStep(models.Model):
     """
@@ -29,11 +33,6 @@ class BaseProductionStep(models.Model):
         """动态生成工单更新页面的 URL。"""
         #TODO 项目正式上线时，将返回的domain放在DJango Site中去。
         return "127.0.0.1:8000" + reverse(f'production:{getattr(self, 'url_name_base')}', kwargs={'pk': self.pk})
-
-    @staticmethod
-    def get_default_expected_time():
-        # 返回当前时间加 1 天
-        return timezone.now() + timedelta(days=1)
 
     # --- 1. 核心追踪 ---
     batch_no = models.CharField("生产批号", max_length=50, unique=True)

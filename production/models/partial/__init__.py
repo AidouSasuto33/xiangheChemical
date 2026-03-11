@@ -1,1 +1,1 @@
-from .production_attachment import ProductionAttachment
+from .attachment import Attachment

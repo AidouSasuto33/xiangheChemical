@@ -5,7 +5,7 @@ from production.views import \
     KettleDashboardView, \
     CVNSynthesisCreateView, CVNSynthesisUpdateView, CVNSynthesisListView, \
     CVNDistillationListView, CVNDistillationCreateView, CVNDistillationUpdateView
-from .views.partial.attachment_view import ProductionAttachmentUploadView
+from .views.partial.attachment_view import AttachmentUploadView
 
 app_name = 'production'
 
@@ -33,5 +33,5 @@ urlpatterns = [
 
     # === 通用 API 接口 ===
     # 🔐 附件上传接口，加装上传频率限制
-    path('attachment/upload/',upload_limit(ProductionAttachmentUploadView.as_view()),name='upload_attachment'),
+    path('attachment/upload/',upload_limit(AttachmentUploadView.as_view()),name='upload_attachment'),
 ]

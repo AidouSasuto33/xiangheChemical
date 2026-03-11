@@ -24,7 +24,7 @@ def attachment_upload_path(instance, filename):
     return f"attachments/{app_label}/{model_name}/{now.strftime('%Y/%m')}/{new_filename}"
 
 
-class ProductionAttachment(models.Model):
+class Attachment(models.Model):
     """
     通用生产附件表（万能插座）
     """
