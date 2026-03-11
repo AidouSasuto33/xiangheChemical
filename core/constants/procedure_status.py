@@ -10,6 +10,7 @@ class ProcedureState(models.TextChoices):
     RUNNING = 'running', _('生产中')
     DELAYED = 'delayed', _('已延迟')
     ABNORMAL = 'abnormal', _('异常单')
+    CANCEL = 'cancel', _('已取消')
     COMPLETED = 'completed', _('已完成')
 
 
@@ -25,3 +26,4 @@ class ProcedureAction(models.TextChoices):
     PAUSE_ABNORMAL_PRODUCTION = 'pause_abnormal_production', _('报告异常/暂停')
     RESUME_ABNORMAL_PRODUCTION = 'resume_abnormal_production', _('恢复正常生产')
     DELAYED_PRODUCTION = 'delayed_production', _('标记延迟')
+    CANCEL_PRODUCTION = 'cancel_production'

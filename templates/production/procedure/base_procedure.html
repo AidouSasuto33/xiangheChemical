@@ -1,66 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}新建生产单{% endblock %}
-
 {% block extra_css %}
-    <style>
-        /* === 工业风表单样式微调 === */
-        .form-section-title {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #4e73df; /* 统一的主题色 */
-            border-left: 4px solid #4e73df;
-            padding-left: 10px;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .batch-display {
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #2e343a;
-            letter-spacing: 1px;
-        }
-
-        /* 选中釜皿的高亮样式 (配合 JS) */
-        .kettle-selectable {
-            transition: all 0.2s ease;
-            border-radius: 6px; /* 匹配卡片圆角 */
-        }
-
-        .kettle-selectable:hover {
-            transform: translateY(-2px);
-        }
-
-        /* 选中态：深蓝边框 + 阴影 */
-        .kettle-selectable.selected {
-            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.3);
-            transform: translateY(-3px);
-            position: relative;
-        }
-
-        /* 选中态：右下角打钩角标 */
-        .kettle-selectable.selected::after {
-            content: "✔";
-            position: absolute;
-            bottom: -5px;
-            right: -5px;
-            background-color: #0d6efd;
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            border: 2px solid white;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/production/base_procedure.css' %}">
 {% endblock %}
 
 {% block content %}

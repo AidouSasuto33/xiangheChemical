@@ -4,7 +4,6 @@ from django.urls import reverse
 from django.shortcuts import redirect
 from django.db import transaction
 from django.contrib import messages
-
 # === Models & Utils ===
 from production.models.cvn_distillation import CVNDistillation
 from core.constants import ProcedureState, ProcedureAction, KettleState

@@ -4,9 +4,12 @@ from django.db import models
 from django.db.models import JSONField
 # django用户管理库
 from django.contrib.auth.models import User
-
-from core.constants.procedure_status import ProcedureState
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 from django.urls import reverse
+
+from datetime import timedelta
+from core.constants.procedure_status import ProcedureState
 from .kettle import Kettle
 
 # ==========================================
@@ -21,6 +24,16 @@ class BaseProductionStep(models.Model):
     2. 劳务：废弃固定字段，改用 JSON 灵活存储 "工种+人数+单位量"。
     3. 灵活性：允许部分步骤为空。
     """
+
+    def get_absolute_url(self):
+        """动态生成工单更新页面的 URL。"""
+        #TODO 项目正式上线时，将返回的domain放在DJango Site中去。
+        return "127.0.0.1:8000" + reverse(f'production:{getattr(self, 'url_name_base')}', kwargs={'pk': self.pk})
+
+    @staticmethod
+    def get_default_expected_time():
+        # 返回当前时间加 1 天
+        return timezone.now() + timedelta(days=1)
 
     # --- 1. 核心追踪 ---
     batch_no = models.CharField("生产批号", max_length=50, unique=True)
@@ -46,7 +59,8 @@ class BaseProductionStep(models.Model):
 
     # --- 2. 时间管理 ---
     # 不使用 auto_now，完全由文员手动选择日历
-    start_time = models.DateTimeField("开始时间")
+    start_time = models.DateTimeField("开始时间", default=timezone.now)
+    expected_time = models.DateTimeField("预计完成时间", default=get_default_expected_time)
     end_time = models.DateTimeField("结束时间", null=True, blank=True)
 
     # --- 3. 劳务成本记录 (核心变更) ---
@@ -76,6 +90,28 @@ class BaseProductionStep(models.Model):
     created_at = models.DateTimeField("创建时间", auto_now_add=True)
     updated_at = models.DateTimeField("最后更新", auto_now=True)
 
+    # --- 5. 并发控制 ---
+    version = models.IntegerField("工单版本号", default=0, help_text="用于乐观锁并发控制，每次修改都会加1")
+
+    def save(self, *args, **kwargs):
+        """
+        重写 save 方法，引入乐观锁机制，防止多人同时编辑导致的相互覆盖。
+        """
+        if self.pk:
+            # 获取数据库中当前真实的 version
+            # 使用 type(self) 是为了动态获取当前的具体子类（如 CVNSynthesis）
+            db_version = type(self).objects.filter(pk=self.pk).values_list('version', flat=True).first()
+
+            # 如果数据库里的版本号比当前对象携带的版本号大，说明在页面打开期间，别人已经改过了
+            if db_version is not None and db_version > self.version:
+                raise ValidationError("保存失败：该工单已被其他人员修改，请刷新页面后重试。")
+
+        # 校验通过（或为新建工单），版本号自增
+        self.version += 1
+
+        # 顺延执行 Django 原生的保存逻辑
+        super().save(*args, **kwargs)
+
     class Meta:
         abstract = True
         ordering = ['-start_time']
@@ -91,7 +127,3 @@ class BaseProductionStep(models.Model):
             return round(delta.total_seconds() / 3600, 1)
         return 0
 
-    def get_absolute_url(self):
-        """动态生成工单更新页面的 URL。"""
-        #TODO 项目正式上线时，将返回的domain放在DJango Site中去。
-        return "127.0.0.1:8000" + reverse(f'production:{getattr(self, 'url_name_base')}', kwargs={'pk': self.pk})
