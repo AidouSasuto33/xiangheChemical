@@ -127,3 +127,8 @@ class BaseProductionStep(models.Model):
             return round(delta.total_seconds() / 3600, 1)
         return 0
 
+    @property
+    def model_name(self):
+        """将内部的 model_name 暴露给模板使用"""
+        return self._meta.model_name
+

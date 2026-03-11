@@ -1,0 +1,181 @@
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'css/dropzone.min.css' %}">
+<style>
+    .dropzone {
+        border: 2px dashed #4e73df;
+        border-radius: 8px;
+        background: #f8f9fc;
+        min-height: 250px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+    .dropzone:hover, .dropzone.dz-drag-hover {
+        background: #eaecf4;
+        border-color: #2e59d9;
+    }
+    .dropzone .dz-message {
+        width: 100%;
+        font-weight: 600;
+        color: #5a5c69;
+        margin: 0;
+    }
+    .dropzone .dz-message i {
+        font-size: 3.5rem;
+        color: #b7b9cc;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    /* === 修复问题 1：报错气泡与移除按钮的重叠 === */
+    .dropzone .dz-preview .dz-error-message {
+        top: 150px !important; /* 将红色的报错气泡强行往下推，避开按钮 */
+        z-index: 100 !important;
+    }
+    .dropzone .dz-preview .dz-remove {
+        position: relative;
+        z-index: 105 !important; /* 拔高移除按钮的层级，确保永远可点击 */
+        margin-top: 15px;
+        font-weight: bold;
+        text-decoration: none;
+        color: #e74a3b !important; /* 替换为清晰的警告红 */
+        display: inline-block;
+    }
+    .dropzone .dz-preview .dz-remove:hover {
+        text-decoration: underline;
+        color: #c0392b !important;
+    }
+</style>
+
+<div class="modal fade" id="attachmentModal" tabindex="-1" aria-labelledby="attachmentModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-light border-bottom-primary">
+        <h5 class="modal-title fw-bold text-primary" id="attachmentModalLabel">
+            <i class="bi bi-cloud-arrow-up me-2"></i>上传生产现场附件
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <div class="mb-4 p-3 bg-white border rounded shadow-sm">
+            <label for="attachmentType" class="form-label fw-bold text-dark text-uppercase mb-2">
+                1. 请先选择附件类型 (Category)
+            </label>
+            <select class="form-select form-select-lg border-primary" id="attachmentType">
+                <option value="QA">🧪 质检 / 完工证明 (如：化验单、成品过磅图)</option>
+                <option value="INCIDENT">⚠️ 异常 / 事故现场 (如：设备损坏、跑冒滴漏)</option>
+                <option value="OTHER" selected>📁 其他辅助说明 (如：清洁前后的内壁照)</option>
+            </select>
+            <div class="form-text mt-2 text-primary">
+                <i class="bi bi-info-circle me-1"></i> 请务必先确认分类，再进行文件选择。
+            </div>
+        </div>
+
+        <div>
+            <label class="form-label fw-bold text-dark text-uppercase mb-2">
+                2. 拖入或选择文件 (Upload)
+            </label>
+            <form action="{% url 'production:upload_attachment' %}" class="dropzone shadow-sm" id="productionAttachmentDropzone">
+                {% csrf_token %}
+                <input type="hidden" name="object_id" value="{{ form.instance.pk }}">
+                <input type="hidden" name="model_name" value="{{ form.instance.model_name }}">
+
+                <div class="dz-message needsclick text-center">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <span class="fs-5">将图片拖拽至此框内，或 <span class="text-primary text-decoration-underline">点击选择文件</span></span><br>
+                    <span class="small text-muted fw-normal mt-2 d-inline-block">支持 JPG, PNG 格式图片。加入框内后需点击下方按钮确认。</span>
+                </div>
+            </form>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-primary px-4 fw-bold" id="btnConfirmUpload">
+            <i class="bi bi-check-circle me-1"></i> 开始上传并完成
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'js/dropzone.min.js' %}"></script>
+<script>
+    Dropzone.autoDiscover = false;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        let myDropzone = new Dropzone("#productionAttachmentDropzone", {
+            paramName: "image",
+            maxFilesize: 10,
+            acceptedFiles: "image/jpeg,image/png,image/webp",
+            addRemoveLinks: true,
+            dictRemoveFile: "❌ 移除",
+            dictCancelUpload: "取消",
+            dictFileTooBig: "文件过大 ({{filesize}}MB). 最大允许: {{maxFilesize}}MB.",
+            dictInvalidFileType: "不支持该文件类型，请上传图片。",
+
+            // === 修复问题 2：关闭自动上传 ===
+            autoProcessQueue: false, // 禁止拖入文件后立即向服务器发送请求
+            parallelUploads: 5,      // 允许同时上传的并发数
+            uploadMultiple: false,   // 保持单文件逐个发请求，与后端的 View 逻辑最兼容
+
+            // 在真正发请求前，获取当前选中的分类
+            sending: function(file, xhr, formData) {
+                let typeValue = document.getElementById("attachmentType").value;
+                formData.append("attachment_type", typeValue);
+            },
+
+            success: function(file, response) {
+                file.previewElement.classList.add("dz-success");
+            },
+
+            error: function(file, response) {
+                file.previewElement.classList.add("dz-error");
+                let errMsg = response.error || "服务器响应异常";
+                file.previewElement.querySelector('.dz-error-message span').textContent = errMsg;
+            }
+        });
+
+        // 接管底部按钮：真正的上传触发器
+        document.getElementById("btnConfirmUpload").addEventListener("click", function() {
+            let queuedFiles = myDropzone.getQueuedFiles();
+
+            if (queuedFiles.length > 0) {
+                // 切换按钮为加载状态，防连击
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>上传中...';
+                this.disabled = true;
+
+                // 命令 Dropzone 把等待区的图全发给服务器
+                myDropzone.processQueue();
+            } else {
+                // 框里没东西，直接刷新页面
+                location.reload();
+            }
+        });
+
+        // 监听 Dropzone 的“全队列处理完毕”事件
+        myDropzone.on("queuecomplete", function() {
+            // 如果队列处理完毕，检查是不是全部都成功了
+            let failedFiles = myDropzone.getRejectedFiles();
+            let successFiles = myDropzone.getFilesWithStatus(Dropzone.SUCCESS);
+
+            if (failedFiles.length === 0 && successFiles.length > 0) {
+                // 如果全是成功的，延迟半秒刷新页面（让用户能看到变绿的对勾）
+                setTimeout(function() {
+                    location.reload();
+                }, 500);
+            } else if (failedFiles.length > 0) {
+                // 如果有报错的，恢复按钮状态，不刷新页面，留给用户看报错并移除
+                let btn = document.getElementById("btnConfirmUpload");
+                btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> 重新尝试上传';
+                btn.disabled = false;
+            }
+        });
+    });
+</script>

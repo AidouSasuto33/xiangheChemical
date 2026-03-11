@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}新建生产单{% endblock %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/production/base_procedure.css' %}">
 {% endblock %}
@@ -23,6 +25,10 @@
                                     <span class="badge bg-warning text-dark ms-2 fs-6">生产中</span>
                                 {% elif s == 'completed' %}
                                     <span class="badge bg-success ms-2 fs-6">已完工</span>
+                                {% elif s == 'abnormal' %}
+                                    <span class="badge bg-danger ms-2 fs-6">异常单</span>
+                                {% elif s == 'cancel' %}
+                                    <span class="badge bg-secondary ms-2 fs-6">已取消</span>
                                 {% else %}
                                     <span class="badge bg-primary ms-2 fs-6">新建</span>
                                 {% endif %}
@@ -37,8 +43,8 @@
                                 {{ form.start_time }}
                             </div>
                             <div class="col-md-6">
-                                <label class="small fw-bold text-muted">结束时间 (预计)</label>
-                                {{ form.end_time }}
+                                <label class="small fw-bold text-muted">预计完成时间</label>
+                                {{ form.expected_finish_time }}
                             </div>
                         </div>
                     </div>
@@ -54,7 +60,7 @@
                             <h6 class="form-section-title">
                                 {% if status == 'new' %}
                                     Step 1. 选择生产设备 (Select Equipment)
-                                {% elif status == 'running' %}
+                                {% elif status == 'running' or status == 'abnormal' %}
                                     Step 1. 正在使用的釜皿 (Operating Equipment)
                                 {% else %}
                                     Step 1. 本批次使用的釜皿 (Equipment History)
@@ -63,7 +69,7 @@
 
                             {% if status == 'new' %}
                                 {% include "production/procedure/partials/kettle_selector.html" %}
-                            {% elif status == 'running' %}
+                            {% elif status == 'running' or status == 'abnormal' %}
                                 {% include "production/kettle/partials/kettle_usage_card.html" with kettle=form.instance.kettle status='running' status_class='running' %}
                             {% else %}
                                 {% include "production/kettle/partials/kettle_usage_card.html" with kettle=form.instance.kettle status='completed' status_class='completed' %}
@@ -77,7 +83,6 @@
                 <div class="card shadow-sm h-100 border-left-info">
                     <div class="card-body">
                         <h6 class="form-section-title">Step 2. 关键工艺参数与投入</h6>
-
                         {% block process_details %}
                             <div class="alert alert-warning">
                                 开发提示：请在子模板中覆盖 <code>block process_details</code> 以显示具体工艺字段。
@@ -106,60 +111,81 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
-                <div class="small text-muted">
-                    操作员: <strong>{{ user.last_name }}{{ user.first_name }}</strong>
-                </div>
-                <div>
-                    <a href="javascript:history.back()" class="btn btn-secondary me-2">取消</a>
+            <div class="card-footer bg-light py-3 d-flex justify-content-between align-items-center">
 
-                    {% if not form.instance.pk %}
-                        <button type="submit" name="action" value="create_plan"
-                                class="btn btn-primary px-4 fw-bold">
-                            <i class="bi bi-check-lg me-1"></i>确认创建计划
+                <div class="d-flex align-items-center">
+                    <div class="small text-muted me-4 border-end pe-3">
+                        操作员: <strong>{{ user.last_name }}{{ user.first_name }}</strong>
+                    </div>
+
+                    {% if form.instance.pk %}
+                        <button type="button" class="btn btn-outline-info btn-sm fw-bold me-2" data-bs-toggle="modal" data-bs-target="#attachmentModal">
+                            <i class="bi bi-paperclip me-1"></i> 上传附件
                         </button>
-
-                    {% elif form.instance.status == 'new' %}
-                        <button type="submit" name="action" value="save_draft"
-                                class="btn btn-outline-primary me-2 fw-bold">
-                            <i class="bi bi-save me-1"></i> 保存修改
-                        </button>
-
-                        <button type="submit" name="action" value="start_production"
-                                class="btn btn-primary px-4 fw-bold">
-                            <i class="bi bi-rocket-takeoff me-1"></i> 🚀 确认投产 (Start Production)
-                        </button>
-
-                    {% elif form.instance.status == 'running' %}
-                        <button type="submit" name="action" value="save_draft"
-                                class="btn btn-outline-warning text-dark me-2 fw-bold">
-                            <i class="bi bi-save me-1"></i> 保存记录
-                        </button>
-
-                        <button type="submit" name="action" value="finish_production"
-                                class="btn btn-warning px-4 fw-bold text-dark">
-                            <i class="bi bi-flag-fill me-1"></i> 🏁 完工录入 (Finish)
-                        </button>
-
-                    {% elif form.instance.status == 'completed' %}
-                        <a href="{% url 'production:cvn_synthesis_list' %}" class="btn btn-secondary px-4 fw-bold">
-                            <i class="bi bi-arrow-left me-1"></i> 🔙 返回列表
-                        </a>
                     {% endif %}
+                </div>
+
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-secondary me-2">返回</a>
+
+                    {% with s=form.instance.status|default:'new' %}
+                        {% if form.instance.pk and s == 'new' or s == 'running' or s == 'delayed' or s == 'abnormal' %}
+                            <button type="submit" name="action" value="cancel_production"
+                                    class="btn btn-outline-danger me-2 fw-bold"
+                                    onclick="return confirm('警告：确定要取消并作废此工单吗？相关操作将被追踪。');">
+                                <i class="bi bi-x-circle me-1"></i> 取消计划
+                            </button>
+                        {% endif %}
+
+                        {% if not form.instance.pk %}
+                            <button type="submit" name="action" value="create_plan" class="btn btn-primary px-4 fw-bold">
+                                <i class="bi bi-check-lg me-1"></i> 确认创建计划
+                            </button>
+                        {% elif s == 'new' %}
+                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary me-2 fw-bold">
+                                <i class="bi bi-save me-1"></i> 保存修改
+                            </button>
+                            <button type="submit" name="action" value="start_production" class="btn btn-primary px-4 fw-bold">
+                                <i class="bi bi-rocket-takeoff me-1"></i> 🚀 确认投产 (Start)
+                            </button>
+
+                        {% elif s == 'running' %}
+                            <button type="submit" name="action" value="pause_abnormal_production" class="btn btn-danger me-2 fw-bold">
+                                <i class="bi bi-exclamation-triangle me-1"></i> 报告异常
+                            </button>
+                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-warning text-dark me-2 fw-bold">
+                                <i class="bi bi-save me-1"></i> 保存记录
+                            </button>
+                            <button type="submit" name="action" value="finish_production" class="btn btn-warning px-4 fw-bold text-dark">
+                                <i class="bi bi-flag-fill me-1"></i> 🏁 完工录入 (Finish)
+                            </button>
+
+                        {% elif s == 'abnormal' %}
+                            <button type="submit" name="action" value="resume_abnormal_production" class="btn btn-success px-4 fw-bold">
+                                <i class="bi bi-play-circle me-1"></i> 恢复生产 (Resume)
+                            </button>
+                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-secondary me-2 fw-bold">
+                                <i class="bi bi-save me-1"></i> 保存备注
+                            </button>
+
+                        {% elif s == 'completed' or s == 'cancel' %}
+                            {% endif %}
+                    {% endwith %}
                 </div>
             </div>
         </div>
     </form>
 
     {% if form.errors %}
-        <div class="alert alert-danger">
+        <div class="alert alert-danger mt-3">
             <strong>开单失败：</strong> 请检查以下错误
             {{ form.errors }}
         </div>
-        {% endif %}
+    {% endif %}
+
+    {% include "production/procedure/partials/_attachment_modal.html" %}
 
 {% endblock %}
-
 
 {% block extra_js %}
     <script>
