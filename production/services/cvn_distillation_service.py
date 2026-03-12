@@ -62,7 +62,7 @@ def process_finish(instance: CVNDistillation, user):
         raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法执行完工操作。")
 
     # 防御性校验：确保产出重量已录入
-    if not instance.output_weight or instance.output_weight <= 0:
+    if not instance.crude_weight or instance.crude_weight <= 0:
         raise ValidationError("完工失败：尚未录入有效的精品产出重量。")
 
     with transaction.atomic():

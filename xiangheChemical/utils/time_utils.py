@@ -1,14 +1,26 @@
-# production/utils/time_utils.py
 from django.utils import timezone
 from datetime import timedelta
 
+def get_now_hour():
+    """
+    获取当前时间并抹除分钟及以下精度（即整点时间）。
+    示例：2026-03-12 21:56 -> 2026-03-12 21:00
+    """
+    now = timezone.now()
+    # 使用 replace 方法将分钟、秒和微秒全部归零
+    return now.replace(minute=0, second=0, microsecond=0)
+
+def get_default_start_time():
+    """
+    获取工单默认的开始时间：当前整点
+    """
+    return get_now_hour()
+
 def get_default_expected_time():
     """
-    获取默认的预计完成时间：当前时间加 1 天。
-    未来可以在此扩展更复杂的逻辑，例如根据特定工艺（Procedure Type）自动计算标准工时。
+    获取工单默认的预计完成时间：当前整点 + 1天
     """
-    # 返回当前时间加 1 天
-    return timezone.now() + timedelta(days=1)
+    return get_now_hour() + timedelta(days=1)
 
 def format_duration(start_time, end_time):
     """

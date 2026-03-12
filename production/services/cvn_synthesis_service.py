@@ -106,3 +106,4 @@ def process_finish(cvn_obj, user):
         if not cvn_obj.end_time:
             cvn_obj.end_time = timezone.now()
         ProcedureStateService.process_action(cvn_obj, constants.ProcedureAction.FINISH_PRODUCTION, user=user)
+

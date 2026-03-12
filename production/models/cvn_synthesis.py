@@ -1,13 +1,8 @@
 # Django基础ORM管理
 from django.db import models
-
 from system.models import Workshop
 # 表单基础模型
 from .core import BaseProductionStep
-# 引入常量
-from core import constants
-
-
 # =========================================================
 # 工艺第一步： CVN合成
 # =========================================================
@@ -52,18 +47,6 @@ class CVNSynthesis(BaseProductionStep):
     # 4. 环保/排污 (Waste)
     # =========================================================
     waste_batches = models.IntegerField("破氰废水处理(批次/釜)", default=0, help_text="填整数，用于计算排污费", blank=True, null=True)
-
-    # =========================================================
-    # 5. 库存映射配置
-    # =========================================================
-    INVENTORY_MAPPING = {
-        'raw_dcb': constants.KEY_RAW_DCB,
-        'raw_nacn': constants.KEY_RAW_NACN,
-        'raw_tbab': constants.KEY_RAW_TBAB,
-        'raw_alkali': constants.KEY_RAW_ALKALI,
-        'crude_weight': constants.KEY_INTER_CVN_CRUDE,
-        'recovered_dcb_amount': constants.KEY_RECYCLED_DCB,
-    }
 
     class Meta(BaseProductionStep.Meta):
         verbose_name = "1-CVN合成"

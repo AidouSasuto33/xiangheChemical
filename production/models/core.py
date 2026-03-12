@@ -4,22 +4,15 @@ from django.db import models
 from django.db.models import JSONField
 # django用户管理库
 from django.contrib.auth.models import User
-from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.urls import reverse
-
-from datetime import timedelta
 from core.constants.procedure_status import ProcedureState
 from .kettle import Kettle
+from xiangheChemical.utils.time_utils import get_default_start_time, get_default_expected_time
 
 # ==========================================
 # 1. 抽象基类 (BaseProductionStep) - 重构版
 # ==========================================
-# 默认预期时间，今天+1。Django 的迁移序列化器无法处理定义在类内部的函数，所以函数需全局化。
-def get_default_expected_time():
-    # 返回当前时间加 1 天
-    return timezone.now() + timedelta(days=1)
-
 class BaseProductionStep(models.Model):
     """
     生产工段基类 (Abstract)
@@ -58,7 +51,7 @@ class BaseProductionStep(models.Model):
 
     # --- 2. 时间管理 ---
     # 不使用 auto_now，完全由文员手动选择日历
-    start_time = models.DateTimeField("开始时间", default=timezone.now)
+    start_time = models.DateTimeField("开始时间", default=get_default_start_time)
     expected_time = models.DateTimeField("预计完成时间", default=get_default_expected_time)
     end_time = models.DateTimeField("结束时间", null=True, blank=True)
 

@@ -1,6 +1,7 @@
 import random
 from django.core.management.base import BaseCommand
-from production.models.kettle import Kettle
+from production.models import Kettle
+from core.constants.kettle_status import *
 
 
 class Command(BaseCommand):
@@ -40,13 +41,13 @@ class Command(BaseCommand):
             # 随机状态权重 (生产中多一点，显得忙)
             rand_val = random.random()
             if rand_val < 0.5:
-                status = Kettle.STATUS_RUNNING
+                status = KettleState.RUNNING
             elif rand_val < 0.7:
-                status = Kettle.STATUS_CLEANING
+                status = KettleState.CLEANING
             elif rand_val < 0.95:
-                status = Kettle.STATUS_IDLE
+                status = KettleState.IDLE
             else:
-                status = Kettle.STATUS_MAINTENANCE
+                status = KettleState.MAINTENANCE
 
             # 根据状态设置液位和批次
             current_level = 0
@@ -54,7 +55,7 @@ class Command(BaseCommand):
             last_process = ""
             last_product = ""
 
-            if status == Kettle.STATUS_RUNNING:
+            if status == KettleState.RUNNING:
                 # 生产中：液位随机 20% ~ 95%
                 current_level = capacity * random.uniform(0.2, 0.95)
                 current_batch = f"BATCH-20260203-{random.randint(100, 999)}"
@@ -62,13 +63,13 @@ class Command(BaseCommand):
                 last_process = random.choice(processes)
                 last_product = random.choice(products)
 
-            elif status == Kettle.STATUS_CLEANING:
+            elif status == KettleState.CLEANING:
                 # 待清洁：可能有少量残留，或者空
                 current_level = 0
                 last_process = random.choice(processes)
                 last_product = random.choice(products)
 
-            elif status == Kettle.STATUS_IDLE:
+            elif status == KettleState.IDLE:
                 # 空闲：一定是空的，但有上批记录
                 current_level = 0
                 last_process = random.choice(processes)

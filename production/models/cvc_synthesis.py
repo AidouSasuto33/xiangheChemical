@@ -2,8 +2,6 @@ from django.db import models
 from .core import BaseProductionStep
 from .cva_synthesis import CVASynthesis
 from core import constants
-
-
 # =========================================================
 # 工艺第四步： CVC合成
 # =========================================================
@@ -12,22 +10,19 @@ class CVCSynthesis(BaseProductionStep):
     Step 4: CVC 合成 (内销/普通级)
     逻辑：投入CVA粗品(Step 3) + 二氯亚砜 -> 氯化反应(多点中控) -> 精馏 -> CVC成品
     """
+    # 投入
     input_total_cva_weight = models.FloatField("投入CVA总重(kg)", default=0)
     raw_socl2 = models.FloatField("投入-二氯亚砜(kg)", default=0)
 
     # 产出
     distillation_head_weight = models.FloatField("产出-前馏份/头酒(kg)", default=0, help_text="精馏初期的不合格部分")
-    product_weight = models.FloatField("产出-CVC合格品重量(kg)", default=0)
-    product_content = models.FloatField("成品-CVC含量%", null=True, blank=True, help_text="精馏后的最终纯度")
+    crude_weight = models.FloatField("产出-CVC合格品重量(kg)", default=0)
+    # 质检
+    content_cvc = models.FloatField("成品-CVC含量%", null=True, blank=True, help_text="CVC合成的纯度")
+    content_cva = models.FloatField("成品-CVA含量%", null=True, blank=True, help_text="CVC合成工艺中CVA的纯度")
 
     # 库存逻辑
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False)
-
-    INVENTORY_MAPPING = {
-        'raw_socl2': constants.KEY_RAW_SOCL2,
-        'distillation_head_weight': constants.KEY_WASTE_HEAD,
-        'product_weight': constants.KEY_PROD_CVC_NX,
-    }
 
     class Meta(BaseProductionStep.Meta):
         verbose_name = "4-CVC合成(内销)"
@@ -35,11 +30,11 @@ class CVCSynthesis(BaseProductionStep):
 
     @property
     def remaining_weight(self):
-        return max(0, self.product_weight - self.consumed_weight)
+        return max(0, self.crude_weight - self.consumed_weight)
 
     @property
     def status_label(self):
-        if self.product_weight <= 0:
+        if self.crude_weight <= 0:
             return "异常批次"
         if self.consumed_weight <= 0:
             return "🟢 全新待领"

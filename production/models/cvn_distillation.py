@@ -6,10 +6,6 @@ from system.models import Workshop
 from .core import BaseProductionStep
 # 引入 CVN 合成模型
 from .cvn_synthesis import CVNSynthesis
-# 引入常量
-from core import constants
-
-
 # =========================================================
 # 工艺第二步： CVN精馏
 # =========================================================
@@ -20,25 +16,25 @@ class CVNDistillation(BaseProductionStep):
     """
 
     workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvn_distillation', verbose_name="工单所属车间", default=2) # 2是cvn_dis车间id
-
-    input_total_weight = models.FloatField("投入总重量(kg)", default=0, help_text="应等于来源明细重量之和")
+    # 投入cvn粗品批次
+    input_total_cvn_weight = models.FloatField("投入总重量(kg)", default=0, help_text="应等于来源明细重量之和")
 
     # =========================================================
     # 2. 精馏前组份 (Pre-Distillation Composition)
     # =========================================================
     # 虽然可以通过子表 inputs 算加权平均，但工厂可能有实测值，故保留字段
-    pre_cvn_content = models.FloatField("精前-CVN含量%", null=True, blank=True)
-    pre_dcb_content = models.FloatField("精前-DCB含量%", null=True, blank=True)
-    pre_adn_content = models.FloatField("精前-己二腈含量%", null=True, blank=True)
+    pre_content_cvn = models.FloatField("精前-CVN含量%", null=True, blank=True)
+    pre_content_dcb = models.FloatField("精前-DCB含量%", null=True, blank=True)
+    pre_content_adn = models.FloatField("精前-己二腈含量%", null=True, blank=True)
 
     # =========================================================
     # 3. 产出 (Output)
     # =========================================================
-    output_weight = models.FloatField("产出-CVN精品重量(kg)", default=0)
-
-    output_cvn_content = models.FloatField("精品-CVN含量%", null=True, blank=True)
-    output_dcb_content = models.FloatField("精品-DCB含量%", null=True, blank=True)
-    output_adn_content = models.FloatField("精品-己二腈含量%", null=True, blank=True)
+    crude_weight = models.FloatField("产出-CVN精品重量(kg)", default=0)
+    # 质检
+    output_content_cvn = models.FloatField("精品-CVN含量%", null=True, blank=True)
+    output_content_dcb = models.FloatField("精品-DCB含量%", null=True, blank=True)
+    output_content_adn = models.FloatField("精品-己二腈含量%", null=True, blank=True)
 
     # 库存核心字段：记录已被CVA合成工段领用了多少
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False, help_text="系统自动更新，不可手改")
@@ -47,7 +43,7 @@ class CVNDistillation(BaseProductionStep):
     @property
     def remaining_weight(self):
         """批次里还剩多少精馏CVM"""
-        return max(0, self.output_weight - self.consumed_weight)
+        return max(0, self.crude_weight - self.consumed_weight)
 
     # @property
     # def dry_weight_pre(self):
@@ -61,7 +57,7 @@ class CVNDistillation(BaseProductionStep):
         """
         批次生命周期状态 (针对 CVN精品)
         """
-        if self.output_weight <= 0:
+        if self.crude_weight <= 0:
             return "异常批次"
 
         if self.consumed_weight <= 0:
@@ -78,13 +74,6 @@ class CVNDistillation(BaseProductionStep):
     # 4. 固废 (Waste)
     # =========================================================
     residue_weight = models.FloatField("釜残重量(kg)", default=0, help_text="危废处理成本依据")
-
-    # =========================================================
-    # 5. 库存映射配置
-    # =========================================================
-    INVENTORY_MAPPING = {
-        'output_weight': constants.KEY_INTER_CVN_PURE,
-    }
 
 
     class Meta(BaseProductionStep.Meta):

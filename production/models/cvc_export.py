@@ -1,7 +1,6 @@
 from django.db import models
 from .core import BaseProductionStep
 from .cvc_synthesis import CVCSynthesis
-from core import constants
 
 
 # =========================================================
@@ -12,21 +11,15 @@ class CVCExport(BaseProductionStep):
     Step 5: CVC 外销精制 (Wai Xiao)
     逻辑：投入CVC合格品(Step 4) -> 二次精馏 -> CVC精品
     """
-    input_total_weight = models.FloatField("投入总重量(kg)", default=0)
-
+    # 投入
+    input_total_cvc_weight = models.FloatField("投入总重量(kg)", default=0)
     # 产出
-    premium_weight = models.FloatField("产出-CVC精品重量(kg)", default=0, help_text="二次蒸馏后的实际装桶重量")
-
+    crude_weight = models.FloatField("产出-CVC精品重量(kg)", default=0, help_text="二次蒸馏后的实际装桶重量")
     # 质检
-    product_content_cvc = models.FloatField("精品-CVC含量%", null=True, blank=True)
-    product_content_cva = models.FloatField("精品-CVA含量%", null=True, blank=True)
-
+    content_cvc = models.FloatField("精品-CVC含量%", null=True, blank=True)
+    content_cva = models.FloatField("精品-CVA含量%", null=True, blank=True)
     # 库存
     consumed_weight = models.FloatField("已发货重量(kg)", default=0, editable=False)
-
-    INVENTORY_MAPPING = {
-        'premium_weight': constants.KEY_PROD_CVC_WX,
-    }
 
     class Meta:
         verbose_name = "5-CVC外销精制"
@@ -34,11 +27,11 @@ class CVCExport(BaseProductionStep):
 
     @property
     def remaining_weight(self):
-        return max(0, self.premium_weight - self.consumed_weight)
+        return max(0, self.crude_weight - self.consumed_weight)
 
     @property
     def status_label(self):
-        if self.premium_weight <= 0:
+        if self.crude_weight <= 0:
             return "异常批次"
         if self.consumed_weight <= 0:
             return "🟢 全新待售"

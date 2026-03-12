@@ -1,8 +1,6 @@
 from django.db import models
 from .core import BaseProductionStep
 from .cvn_distillation import CVNDistillation
-from core import constants
-
 # =========================================================
 # 工艺第三步： CVA合成
 # =========================================================
@@ -11,28 +9,19 @@ class CVASynthesis(BaseProductionStep):
     Step 3: CVA 合成及脱水
     逻辑：投入CVN精品(Step 2) + 酸碱 -> 反应 -> 脱水 -> CVA粗品
     """
-    input_total_weight = models.FloatField("投入CVN精品总重(kg)", default=0)
-
+    # 投入
+    input_total_cvc_dis_weight = models.FloatField("投入CVN精品总重(kg)", default=0)
     # 辅料
     raw_hcl = models.FloatField("投入-盐酸(kg)", default=0)
     raw_alkali = models.FloatField("投入-液碱(kg)", default=0)
-
     # 产出
     crude_weight = models.FloatField("产出-CVA粗品重量(kg)", default=0, help_text="脱水后的实际称重")
-
     # 库存核心
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False)
-
     # 质检 (QC)
     content_cva = models.FloatField("中控-CVA含量%", null=True, blank=True)
     content_cvn = models.FloatField("中控-CVN残留%", null=True, blank=True, help_text="标准应 < 0.5%")
     content_water = models.FloatField("中控-水分%", null=True, blank=True, help_text="脱水效果指标")
-
-    INVENTORY_MAPPING = {
-        'raw_hcl': constants.KEY_RAW_HCL,
-        'raw_alkali': constants.KEY_RAW_ALKALI,
-        'crude_weight': constants.KEY_INTER_CVA_CRUDE,
-    }
 
     class Meta(BaseProductionStep.Meta):
         verbose_name = "3-CVA合成"
