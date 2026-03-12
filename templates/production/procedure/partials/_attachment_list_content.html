@@ -1,0 +1,29 @@
+<ul class="nav nav-tabs nav-fill mb-3" id="attachmentTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold text-success" data-bs-toggle="tab" data-bs-target="#qa" type="button" role="tab">
+            🧪 质检证明 ({{ qa|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold text-danger" data-bs-toggle="tab" data-bs-target="#abnormal" type="button" role="tab">
+            ⚠️ 异常照片 ({{ abnormal|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold text-primary" data-bs-toggle="tab" data-bs-target="#other" type="button" role="tab">
+            📁 其他辅图 ({{ other|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold text-muted" data-bs-toggle="tab" data-bs-target="#invalid" type="button" role="tab">
+            🚫 已废弃 ({{ invalid|length }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="attachmentTabsContent">
+    {% include "production/procedure/partials/_attachment_tab_pane.html" with tab_id="qa" active="show active" qs=qa %}
+    {% include "production/procedure/partials/_attachment_tab_pane.html" with tab_id="abnormal" active="" qs=abnormal %}
+    {% include "production/procedure/partials/_attachment_tab_pane.html" with tab_id="other" active="" qs=other %}
+    {% include "production/procedure/partials/_attachment_tab_pane.html" with tab_id="invalid" active="" qs=invalid %}
+</div>

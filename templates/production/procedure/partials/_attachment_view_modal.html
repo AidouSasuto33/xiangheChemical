@@ -1,0 +1,127 @@
+<div class="modal fade" id="attachmentManageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content bg-light">
+            <div class="modal-header border-bottom-primary">
+                <h5 class="modal-title fw-bold text-dark">
+                    <i class="bi bi-images text-primary me-2"></i>生产现场附件档案室
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4" id="attachmentManageModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-3 text-muted">正在从档案库调取资料...</div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭档案</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true" style="z-index: 1060; background: rgba(0,0,0,0.85);">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered m-0">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-header border-0 pb-0 absolute-top w-100 z-3">
+                <button type="button" class="btn-close btn-close-white ms-auto fs-3 p-4" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body d-flex align-items-center justify-content-center p-0">
+                <div class="spinner-border text-light position-absolute z-1" id="lightboxLoader" role="status"></div>
+                <img src="" id="lightboxImage" class="img-fluid z-2" style="max-height: 95vh; max-width: 95vw; object-fit: contain; display: none;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const manageModalEl = document.getElementById('attachmentManageModal');
+    const modalBody = document.getElementById('attachmentManageModalBody');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxLoader = document.getElementById('lightboxLoader');
+    let currentModelName = "";
+    let currentObjectId = "";
+
+    // 1. 监听主弹窗打开，请求内容
+    manageModalEl.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        currentModelName = button.getAttribute('data-model');
+        currentObjectId = button.getAttribute('data-id');
+
+        // 重置为加载状态
+        modalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+
+        fetchAttachments();
+    });
+
+    // 封装刷新附件列表的函数
+    function fetchAttachments() {
+        const url = `{% url 'production:manage_attachment' %}?model_name=${currentModelName}&object_id=${currentObjectId}`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if(data.html) {
+                    modalBody.innerHTML = data.html;
+                }
+            })
+            .catch(error => console.error('加载失败:', error));
+    }
+
+    // 2. 使用事件代理，监听 Modal 内的点击动作 (看大图 & 修正分类)
+    modalBody.addEventListener('click', function(e) {
+
+// 动作 A：寻找点击处最近的带有缩略图类的元素
+    const thumbImg = e.target.closest('.attachment-thumbnail');
+
+    if (thumbImg) {
+        const originalUrl = thumbImg.getAttribute('data-original-url');
+
+        // 显示加载器，隐藏旧图
+        lightboxImage.style.display = 'none';
+        lightboxLoader.style.display = 'block';
+
+        // 赋予新地址
+        lightboxImage.src = originalUrl;
+
+        lightboxImage.onload = function() {
+            lightboxLoader.style.display = 'none';
+            lightboxImage.style.display = 'block';
+        };
+
+        // 兼容性更好的 Modal 调用方式
+        const lightboxEl = document.getElementById('lightboxModal');
+        let lightboxInstance = bootstrap.Modal.getOrCreateInstance(lightboxEl);
+        lightboxInstance.show();
+    }
+
+        // 动作 B：点击修正类型
+        if (e.target.classList.contains('btn-change-type')) {
+            const attachmentId = e.target.getAttribute('data-id');
+            const newType = e.target.getAttribute('data-type');
+
+            if (confirm("确定要将此附件的分类转移吗？此操作将被审计记录。")) {
+                const formData = new FormData();
+                formData.append('attachment_id', attachmentId);
+                formData.append('new_type', newType);
+
+                fetch("{% url 'production:manage_attachment' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        fetchAttachments(); // 成功后刷新列表，卡片会自动飞到对应磁贴
+                    }
+                });
+            }
+        }
+    });
+});
+</script>

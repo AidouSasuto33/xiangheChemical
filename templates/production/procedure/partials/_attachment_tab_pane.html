@@ -1,0 +1,49 @@
+<div class="tab-pane fade {{ active }}" id="{{ tab_id }}" role="tabpanel">
+    <div class="row g-3">
+        {% for att in qs %}
+            <div class="col-md-3 col-sm-4 col-6">
+                <div class="card h-100 border-1 shadow-sm">
+                    <div class="position-relative overflow-hidden bg-light" style="aspect-ratio: 1 / 1; cursor: zoom-in;">
+                        <img src="{% if att.thumbnail %}{{ att.thumbnail.url }}{% else %}{{ att.image.url }}{% endif %}"
+                             class="w-100 h-100 object-fit-cover attachment-thumbnail"
+                             data-original-url="{{ att.image.url }}"
+                             alt="附件缩略图"
+                             title="点击查看原图">
+                    </div>
+
+                    <div class="card-body p-2 bg-white">
+                        <div class="small text-muted text-truncate mb-1" title="上传于 {{ att.uploaded_at|date:'Y-m-d H:i' }}">
+                            <i class="bi bi-cloud-upload"></i> {{ att.uploaded_by.last_name }}{{ att.uploaded_by.first_name }}
+                        </div>
+
+                        {% if att.changed_by %}
+                        <div class="small text-warning text-truncate mb-2 fw-bold" title="最后修正于 {{ att.changed_at|date:'Y-m-d H:i' }}">
+                            <i class="bi bi-pencil-square"></i> {{ att.changed_by.last_name }} 修正
+                        </div>
+                        {% else %}
+                        <div class="small text-white mb-2 user-select-none">占位</div>
+                        {% endif %}
+
+                        <div class="dropdown d-grid">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-sliders me-1"></i>修正分类
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm fs-7">
+                                <li><a class="dropdown-item btn-change-type" href="javascript:void(0)" data-id="{{ att.id }}" data-type="QA">设为 🧪 质检证明</a></li>
+                                <li><a class="dropdown-item btn-change-type" href="javascript:void(0)" data-id="{{ att.id }}" data-type="ABNORMAL">设为 ⚠️ 异常照片</a></li>
+                                <li><a class="dropdown-item btn-change-type" href="javascript:void(0)" data-id="{{ att.id }}" data-type="OTHER">设为 📁 其他辅图</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger fw-bold btn-change-type" href="javascript:void(0)" data-id="{{ att.id }}" data-type="INVALID">标记为 🚫 已废弃</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 py-5 text-center text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 text-light"></i>
+                该分类下暂无任何照片记录
+            </div>
+        {% endfor %}
+    </div>
+</div>

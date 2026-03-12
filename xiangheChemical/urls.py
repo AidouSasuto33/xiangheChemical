@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from inventory.views import InventoryListView  # 仅首页使用
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,3 +25,6 @@ urlpatterns = [
     # 生产业务
     path('production/', include('production.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

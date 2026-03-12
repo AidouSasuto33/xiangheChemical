@@ -119,9 +119,19 @@
                     </div>
 
                     {% if form.instance.pk %}
-                        <button type="button" class="btn btn-outline-info btn-sm fw-bold me-2" data-bs-toggle="modal" data-bs-target="#attachmentModal">
-                            <i class="bi bi-paperclip me-1"></i> 上传附件
-                        </button>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-info btn-sm fw-bold" data-bs-toggle="modal"
+                                    data-bs-target="#attachmentModal">
+                                <i class="bi bi-cloud-arrow-up me-1"></i> 上传附件
+                            </button>
+                            <button type="button" class="btn btn-info btn-sm fw-bold text-white"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#attachmentManageModal"
+                                    data-model="{{ form.instance.model_name }}"
+                                    data-id="{{ form.instance.pk }}">
+                                <i class="bi bi-images me-1"></i> 查看档案库
+                            </button>
+                        </div>
                     {% endif %}
                 </div>
 
@@ -138,38 +148,46 @@
                         {% endif %}
 
                         {% if not form.instance.pk %}
-                            <button type="submit" name="action" value="create_plan" class="btn btn-primary px-4 fw-bold">
+                            <button type="submit" name="action" value="create_plan"
+                                    class="btn btn-primary px-4 fw-bold">
                                 <i class="bi bi-check-lg me-1"></i> 确认创建计划
                             </button>
                         {% elif s == 'new' %}
-                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary me-2 fw-bold">
+                            <button type="submit" name="action" value="save_draft"
+                                    class="btn btn-outline-primary me-2 fw-bold">
                                 <i class="bi bi-save me-1"></i> 保存修改
                             </button>
-                            <button type="submit" name="action" value="start_production" class="btn btn-primary px-4 fw-bold">
+                            <button type="submit" name="action" value="start_production"
+                                    class="btn btn-primary px-4 fw-bold">
                                 <i class="bi bi-rocket-takeoff me-1"></i> 🚀 确认投产 (Start)
                             </button>
 
                         {% elif s == 'running' %}
-                            <button type="submit" name="action" value="pause_abnormal_production" class="btn btn-danger me-2 fw-bold">
+                            <button type="submit" name="action" value="pause_abnormal_production"
+                                    class="btn btn-danger me-2 fw-bold">
                                 <i class="bi bi-exclamation-triangle me-1"></i> 报告异常
                             </button>
-                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-warning text-dark me-2 fw-bold">
+                            <button type="submit" name="action" value="save_draft"
+                                    class="btn btn-outline-warning text-dark me-2 fw-bold">
                                 <i class="bi bi-save me-1"></i> 保存记录
                             </button>
-                            <button type="submit" name="action" value="finish_production" class="btn btn-warning px-4 fw-bold text-dark">
+                            <button type="submit" name="action" value="finish_production"
+                                    class="btn btn-warning px-4 fw-bold text-dark">
                                 <i class="bi bi-flag-fill me-1"></i> 🏁 完工录入 (Finish)
                             </button>
 
                         {% elif s == 'abnormal' %}
-                            <button type="submit" name="action" value="resume_abnormal_production" class="btn btn-success px-4 fw-bold">
+                            <button type="submit" name="action" value="resume_abnormal_production"
+                                    class="btn btn-success px-4 fw-bold">
                                 <i class="bi bi-play-circle me-1"></i> 恢复生产 (Resume)
                             </button>
-                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-secondary me-2 fw-bold">
+                            <button type="submit" name="action" value="save_draft"
+                                    class="btn btn-outline-secondary me-2 fw-bold">
                                 <i class="bi bi-save me-1"></i> 保存备注
                             </button>
 
                         {% elif s == 'completed' or s == 'cancel' %}
-                            {% endif %}
+                        {% endif %}
                     {% endwith %}
                 </div>
             </div>
@@ -184,6 +202,7 @@
     {% endif %}
 
     {% include "production/procedure/partials/_attachment_modal.html" %}
+    {% include "production/procedure/partials/_attachment_view_modal.html" %}
 
 {% endblock %}
 
