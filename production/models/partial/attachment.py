@@ -35,7 +35,6 @@ class Attachment(models.Model):
     """
     通用生产附件表（万能插座 + 双图引擎）
     """
-
     class AttachmentType(models.TextChoices):
         QA = 'QA', '质检/完工证明'
         ABNORMAL = 'ABNORMAL', '异常/事故现场'
