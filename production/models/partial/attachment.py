@@ -18,7 +18,7 @@ def attachment_upload_path(instance, filename):
     app_label = instance.content_type.app_label
     model_name = instance.content_type.model
     now = timezone.now()
-    return f"{app_label}/{model_name}/{now.strftime('%Y/%m')}/{new_filename}"
+    return f"attachments/{app_label}/{model_name}/{now.strftime('%Y/%m')}/{new_filename}"
 
 
 def thumbnail_upload_path(instance, filename):
@@ -28,7 +28,7 @@ def thumbnail_upload_path(instance, filename):
     app_label = instance.content_type.app_label
     model_name = instance.content_type.model
     now = timezone.now()
-    return f"{app_label}/{model_name}/{now.strftime('%Y/%m')}/thumbnails/{new_filename}"
+    return f"attachments/{app_label}/{model_name}/{now.strftime('%Y/%m')}/thumbnails/{new_filename}"
 
 
 class Attachment(models.Model):
