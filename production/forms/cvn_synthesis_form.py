@@ -1,6 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+
 from production.models.cvn_synthesis import CVNSynthesis
 from production.models.kettle import Kettle
 from inventory.services import inventory_service
@@ -13,13 +14,14 @@ class CVNSynthesisForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # === 1. Widget Setup ===
-        # Explicitly define widgets for start_time , end_time , test_time
-        self.fields['start_time'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
-        self.fields['end_time'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
-        self.fields['test_time'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+        # Explicitly define widgets for start_time , expected_time, end_time , test_time
+        self.fields['start_time'].widget = forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'form-control'})
+        self.fields['expected_time'].widget = forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'form-control'})
+        self.fields['end_time'].widget = forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'form-control'})
+        self.fields['test_time'].widget = forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'form-control'})
 
         # === 2. Define Field Groups ===
-        input_group = ['start_time', 'kettle', 'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali']
+        input_group = ['start_time', 'expected_time','kettle', 'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali']
         output_group = ['end_time', 'test_time', 'crude_weight', 'content_cvn', 'content_dcb', 'content_adn', 'recovered_dcb_amount', 'waste_batches']
 
         # === 3. Implement Status Locking Logic ===
@@ -116,7 +118,7 @@ class CVNSynthesisForm(forms.ModelForm):
     class Meta:
         model = CVNSynthesis
         fields = [
-            'start_time', 'end_time', 'kettle',
+            'start_time', 'expected_time','end_time', 'kettle',
             'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
             'crude_weight', 'remarks',
             'test_time', 'content_cvn', 'content_dcb', 'content_adn',

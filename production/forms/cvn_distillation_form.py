@@ -15,11 +15,12 @@ class CVNDistillationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # === 1. Widget 显式配置 ===
-        self.fields['start_time'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
-        self.fields['end_time'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+        self.fields['start_time'].widget = forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'form-control'})
+        self.fields['expected_time'].widget = forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'form-control'})
+        self.fields['end_time'].widget = forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'form-control'})
 
         # === 2. 定义字段分组 ===
-        input_group = ['start_time', 'kettle']
+        input_group = ['start_time', 'expected_time', 'kettle']
         output_group = [
             'end_time', 'output_weight',
             'output_cvn_content', 'output_dcb_content', 'output_adn_content',
@@ -49,8 +50,6 @@ class CVNDistillationForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].disabled = True
                     self.fields[field].required = True
-                    # current_class = self.fields[field].widget.attrs.get('class', '')
-                    # self.fields[field].widget.attrs['class'] = current_class + ' bg-light'
 
         elif status == 'completed':
             # 结束生产：锁定所有核心输入输出信息
@@ -58,8 +57,6 @@ class CVNDistillationForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].disabled = True
                     self.fields[field].required = True
-                    # current_class = self.fields[field].widget.attrs.get('class', '')
-                    # self.fields[field].widget.attrs['class'] = current_class + ' bg-light'
 
     def clean_output_weight(self):
         weight = self.cleaned_data.get('output_weight')
@@ -180,7 +177,7 @@ class CVNDistillationForm(forms.ModelForm):
     class Meta:
         model = CVNDistillation
         fields = [
-            'start_time', 'end_time', 'kettle',
+            'start_time', 'expected_time', 'end_time', 'kettle',
             'pre_cvn_content', 'pre_dcb_content', 'pre_adn_content',
             'output_weight', 'output_cvn_content', 'output_dcb_content', 'output_adn_content',
             'residue_weight',
