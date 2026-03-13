@@ -62,7 +62,7 @@ def process_finish(instance: CVNDistillation, user):
         raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法执行完工操作。")
 
     # 防御性校验：确保产出重量已录入
-    if not instance.crude_weight or instance.crude_weight <= 0:
+    if not instance.cvn_dis_crude_weight or instance.cvn_dis_crude_weight <= 0:
         raise ValidationError("完工失败：尚未录入有效的精品产出重量。")
 
     with transaction.atomic():
@@ -85,7 +85,7 @@ def get_available_synthesis_batches_json():
     # 将旧的 BaseProductionStep.STATUS_COMPLETED 替换为 ProcedureState.COMPLETED
     available_batches = CVNSynthesis.objects.filter(
         status=ProcedureState.COMPLETED,
-        crude_weight__gt=F('consumed_weight')
+        cvn_syn_crude_weight__gt=F('consumed_weight')
     ).order_by('end_time')  # 按照完工时间排序，先进先出 (FIFO) 提示
 
     batch_list = []

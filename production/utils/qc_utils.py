@@ -23,8 +23,8 @@ def validate_qc_sum_100(model_name, cleaned_data):
                 except ValueError:
                     pass
 
-        if total > 100.0:
-            return False, f"质检数据异常：各项含量总和 ({round(total, 2)}%) 不可大于 100%"
+        if total != 100.0:
+            return False, f"质检数据异常：各项含量总和 ({round(total, 2)}%) 必须等于 100%"
 
     # 2. 校验精前质检字段 (如 CVN精馏 特有的 qc_pre_fields)
     qc_pre_fields = config.get('qc_pre_fields', [])
@@ -38,8 +38,8 @@ def validate_qc_sum_100(model_name, cleaned_data):
                 except ValueError:
                     pass
 
-        if pre_total > 100.0:
-            return False, f"精前质检数据异常：各项含量总和 ({round(pre_total, 2)}%) 不可大于 100%"
+        if 99.9 > pre_total > 100.1:
+            return False, f"精前质检数据异常：各项含量总和 ({round(pre_total, 2)}%) 需约等于 100%"
 
     return True, ""
 

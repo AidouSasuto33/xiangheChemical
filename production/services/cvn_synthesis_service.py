@@ -70,7 +70,7 @@ def process_finish(cvn_obj, user):
     output_fields = get_procedure_bom_info(PROCEDURE_KEY, 'outputs', 'field')
     output_names = get_procedure_bom_info(PROCEDURE_KEY, 'outputs', 'name')
 
-    if (cvn_obj.crude_weight or 0) <= 0:
+    if (cvn_obj.cvn_syn_crude_weight or 0) <= 0:
         raise ValueError("完工必须填写有效的产出重量！")
 
     with transaction.atomic():
