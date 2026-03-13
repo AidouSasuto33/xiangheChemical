@@ -22,7 +22,11 @@ PROCEDURE_BOM_MAPPING = {
         'outputs': [
             {'field': 'crude_weight',       'name': 'CVN粗品'}
         ],
-        'qc_fields': ['content_cvn', 'content_dcb', 'content_adn']
+        'qc_fields': [
+            {'field': 'content_cvn', 'name': 'CVN含量%'},
+            {'field': 'content_dcb', 'name': 'DCB含量%'},
+            {'field': 'content_adn', 'name': 'ADN含量%'}
+        ]
     },
 
     # ==========================================
@@ -38,8 +42,16 @@ PROCEDURE_BOM_MAPPING = {
             {'field': 'residue_weight',     'name': '釜残危废'}
         ],
         # 精馏特殊：有精前质检和精品质检
-        'qc_fields': ['output_content_cvn', 'output_content_dcb', 'output_content_adn'],
-        'qc_pre_fields': ['pre_content_cvn', 'pre_content_dcb', 'pre_content_adn']
+        'qc_fields': [
+            {'field': 'output_content_cvn', 'name': 'CVN含量%(精品)'},
+            {'field': 'output_content_dcb', 'name': 'DCB含量%(精品)'},
+            {'field': 'output_content_adn', 'name': 'ADN含量%(精品)'}
+        ],
+        'qc_pre_fields': [
+            {'field': 'pre_content_cvn', 'name': 'CVN含量%(精前)'},
+            {'field': 'pre_content_dcb', 'name': 'DCB含量%(精前)'},
+            {'field': 'pre_content_adn', 'name': 'ADN含量%(精前)'}
+        ]
     },
 
     # ==========================================
@@ -55,7 +67,11 @@ PROCEDURE_BOM_MAPPING = {
         'outputs': [
             {'field': 'crude_weight',       'name': 'CVA粗品'}
         ],
-        'qc_fields': ['content_cva', 'content_cvn', 'content_water']
+        'qc_fields': [
+            {'field': 'content_cva', 'name': 'CVA含量%'},
+            {'field': 'content_cvn', 'name': 'CVN含量%'},
+            {'field': 'content_water', 'name': '水分%'}
+        ]
     },
 
     # ==========================================
@@ -71,7 +87,10 @@ PROCEDURE_BOM_MAPPING = {
             {'field': 'crude_weight',             'name': 'CVC合格品'},
             {'field': 'distillation_head_weight', 'name': '前馏份'}
         ],
-        'qc_fields': ['content_cvc', 'content_cva']
+        'qc_fields': [
+            {'field': 'content_cvc', 'name': 'CVC含量%'},
+            {'field': 'content_cva', 'name': 'CVA含量%'}
+        ]
     },
 
     # ==========================================
@@ -85,6 +104,9 @@ PROCEDURE_BOM_MAPPING = {
         'outputs': [
             {'field': 'crude_weight',           'name': 'CVC精品'}
         ],
-        'qc_fields': ['content_cvc', 'content_cva']
+        'qc_fields': [
+            {'field': 'content_cvc', 'name': 'CVC含量%'},
+            {'field': 'content_cva', 'name': 'CVA含量%'}
+        ]
     }
 }

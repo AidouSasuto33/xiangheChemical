@@ -3,32 +3,38 @@
 from core.constants.procedure_bom import PROCEDURE_BOM_MAPPING
 
 
-def get_procedure_materials(procedure_key, obj, material_type='inputs'):
+def get_procedure_bom_info(procedure_key, material_type='inputs', return_type='field'):
     """
-    根据工艺字典动态获取物料清单及实际数量。
+    根据工艺键名获取物料清单信息。
 
-    :param procedure_key: 工艺的键名，例如 'cvnsynthesis'
-    :param obj: 对应的模型实例（如 CvnSynthesis 实例）
-    :param material_type: 'inputs' (投入) 或 'outputs' (产出)
-    :return: 包含 (数量, 字段/Key, 名称) 的列表，剔除了数量为0或空的物料
+    :param procedure_key: 工艺键名, 如 'cvnsynthesis'
+    :param material_type: 物料类型, 可选: 'inputs', 'outputs', 'qc_fields', 'qc_pre_fields'
+    :param return_type: 返回类型, 'field' (模型字段名) 或 'name' (页面显示名)
+    :return: 字段列表或名称列表
     """
-    if procedure_key not in PROCEDURE_BOM_MAPPING:
-        raise ValueError(f"系统严重错误：工艺字典中未定义 {procedure_key} 的规则！")
+    # 1. 安全获取工艺配置
+    procedure_config = PROCEDURE_BOM_MAPPING.get(procedure_key)
+    if not procedure_config:
+        return []
 
-    config = PROCEDURE_BOM_MAPPING[procedure_key]
-    materials_config = config.get(material_type, [])
+    # 2. 获取对应的物料/质检列表
+    data_list = procedure_config.get(material_type, [])
 
-    actual_materials = []
+    # 3. 处理字典列表结构
+    if return_type == 'field':
+        return [item.get('field') for item in data_list if 'field' in item]
+    elif return_type == 'name':
+        return [item.get('name') for item in data_list if 'name' in item]
 
-    for item in materials_config:
-        field_name = item['field']
-        display_name = item['name']
+    return []
 
-        # 动态从对象中获取对应字段的值，默认为 0
-        amount = getattr(obj, field_name, 0)
 
-        # 只返回实际有数值的物料
-        if amount and amount > 0:
-            actual_materials.append((amount, field_name, display_name))
+def get_display_name(procedure_key):
+    """获取工艺的中文显示名称"""
+    return PROCEDURE_BOM_MAPPING.get(procedure_key, {}).get('name', '未知工艺')
 
-    return actual_materials
+
+def validate_field_in_procedure(procedure_key, field_name, material_type='inputs'):
+    """校验某个字段是否属于该工艺的指定物料类型"""
+    fields = get_procedure_bom_info(procedure_key, material_type, return_type='field')
+    return field_name in fields
