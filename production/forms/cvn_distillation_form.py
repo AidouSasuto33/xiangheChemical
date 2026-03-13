@@ -22,15 +22,15 @@ class CVNDistillationForm(forms.ModelForm):
         # === 2. 定义字段分组 ===
         input_group = ['start_time', 'expected_time', 'kettle']
         output_group = [
-            'end_time', 'output_weight',
-            'output_cvn_content', 'output_dcb_content', 'output_adn_content',
+            'end_time', 'crude_weight',
+            'output_content_cvn', 'output_content_dcb', 'output_content_adn',
             'residue_weight'
         ]
         status = self.instance.status if self.instance else 'new'
 
         # === 3. 状态机 UI 锁定逻辑 ===
         # 3.1 无论什么状态，精前组份始终由系统计算，禁止人工篡改
-        readonly_fields = ['pre_cvn_content', 'pre_dcb_content', 'pre_adn_content']
+        readonly_fields = ['pre_content_cvn', 'pre_content_dcb', 'pre_content_adn']
         for field in readonly_fields:
             if field in self.fields:
                 # 抛弃 CSS 样式的干预，使用 Django 原生的后端防篡改锁
@@ -59,7 +59,7 @@ class CVNDistillationForm(forms.ModelForm):
                     self.fields[field].required = True
 
     def clean_output_weight(self):
-        weight = self.cleaned_data.get('output_weight')
+        weight = self.cleaned_data.get('crude_weight')
         # 如果是“确认完工”动作，必须填写精品重量
         if self.action_type == 'finish_production':
             if not weight or weight <= 0:
@@ -138,7 +138,7 @@ class CVNDistillationForm(forms.ModelForm):
             self.parsed_inputs = parsed_inputs
 
             # 自动计算并覆盖主表的投入总重量
-            self.instance.input_total_weight = total_weight
+            self.instance.input_total_cvn_weight = total_weight
 
         return cleaned_data
 
@@ -178,7 +178,7 @@ class CVNDistillationForm(forms.ModelForm):
         model = CVNDistillation
         fields = [
             'start_time', 'expected_time', 'end_time', 'kettle',
-            'pre_cvn_content', 'pre_dcb_content', 'pre_adn_content',
-            'output_weight', 'output_cvn_content', 'output_dcb_content', 'output_adn_content',
+            'pre_content_cvn', 'pre_content_dcb', 'pre_content_adn',
+            'crude_weight', 'output_content_cvn', 'output_content_dcb', 'output_content_adn',
             'residue_weight',
         ]

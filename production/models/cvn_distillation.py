@@ -1,6 +1,5 @@
 # Django基础ORM管理
 from django.db import models
-
 from system.models import Workshop
 # 引入基础模型
 from .core import BaseProductionStep
@@ -39,18 +38,24 @@ class CVNDistillation(BaseProductionStep):
     # 库存核心字段：记录已被CVA合成工段领用了多少
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False, help_text="系统自动更新，不可手改")
 
+    # =========================================================
+    # 4. 固废 (Waste)
+    # =========================================================
+    residue_weight = models.FloatField("釜残重量(kg)", default=0, help_text="危废处理成本依据")
+
     # --- 核心属性：剩余可用量 ---
     @property
     def remaining_weight(self):
         """批次里还剩多少精馏CVM"""
         return max(0, self.crude_weight - self.consumed_weight)
 
-    # @property
-    # def dry_weight_pre(self):
-    #     """精前折干重量(kg) = 投入总重量 * 精前CVN含量"""
-    #     if self.input_total_weight and self.pre_cvn_content:
-    #         return self.input_total_weight * (self.pre_cvn_content / 100.0)
-    #     return 0.0
+    @property
+    def dry_weight_pre(self):
+        """精前折干重量(kg) = 投入总重量 * 精前CVN含量"""
+        if self.input_total_cvn_weight and self.pre_content_cvn:
+            return self.input_total_cvn_weight * (self.pre_content_cvn / 100.0)
+        return 0.0
+
 
     @property
     def status_label(self):
@@ -70,10 +75,6 @@ class CVNDistillation(BaseProductionStep):
     status_label.fget.short_description = "当前状态"
     status_label.fget.admin_order_field = 'consumed_weight'
 
-    # =========================================================
-    # 4. 固废 (Waste)
-    # =========================================================
-    residue_weight = models.FloatField("釜残重量(kg)", default=0, help_text="危废处理成本依据")
 
 
     class Meta(BaseProductionStep.Meta):

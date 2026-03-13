@@ -198,6 +198,7 @@ def process_finish(cvn_obj, user):
                 if not is_success:
                     raise ValueError(f"系统严重错误：\n 物料: {name}库存 应增加{qty} \n增加失败！操作已全部回滚！")
 
+        # TODO 拆分dcb回收工艺后，删除此处
         # 3. 兼容防丢逻辑：处理副产物回收 (建议后续将此项补充到 PROCEDURE_BOM_MAPPING 中并删掉此处硬编码)
         if hasattr(cvn_obj,
                    'recovered_dcb_amount') and cvn_obj.recovered_dcb_amount and cvn_obj.recovered_dcb_amount > 0:

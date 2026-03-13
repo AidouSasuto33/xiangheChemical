@@ -1,87 +1,81 @@
-from django.core.management.base import BaseCommand
-from inventory.models import Inventory
-from inventory.models import CostConfig
-from core import constants as k  # 引入常量文件
+# inventory/management/commands/init_inventory.py
 
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from inventory.models import Inventory, CostConfig
+from core.constants.procedure_bom import PROCEDURE_BOM_MAPPING
+
+
+# 导入路径严格遵循你的要求
 
 class Command(BaseCommand):
-    help = '初始化系统基础数据：Inventory(数量0) 与 CostConfig(基础价格)'
+    help = '基于 PROCEDURE_BOM_MAPPING 自动初始化库存与价格配置'
 
     def handle(self, *args, **options):
-        # 定义初始化清单
-        # type: 'material' #会同时创建库存和价格配置
-        # type: 'expense' #只创建价格配置
+        self.stdout.write("开始扫描工艺 BOM 进行数据初始化...")
 
-        INIT_DATA = [
-            # --- 原材料 ---
-            {'key': k.KEY_RAW_DCB, 'name': '二氯丁烷', 'type': 'material', 'unit': 'kg', 'safe_stock': 1000},
-            {'key': k.KEY_RECYCLED_DCB,'name': '回收二氯丁烷','type': 'material','unit': 'L'},  # 模型中定义的是 L，这里保持一致'cat': 'raw'  # 分类归为原料，因为后续会再次投入使用},
-            {'key': k.KEY_RAW_NACN, 'name': '液体氰化钠', 'type': 'material', 'unit': 'kg', 'safe_stock': 500},
-            {'key': k.KEY_RAW_TBAB, 'name': 'TBAB催化剂', 'type': 'material', 'unit': 'kg', 'safe_stock': 100},
-            {'key': k.KEY_RAW_ALKALI, 'name': '液碱', 'type': 'material', 'unit': 'kg', 'safe_stock': 2000},
-            {'key': k.KEY_RAW_HCL, 'name': '盐酸', 'type': 'material', 'unit': 'kg', 'safe_stock': 1000},
-            {'key': k.KEY_RAW_SOCL2, 'name': '二氯亚砜', 'type': 'material', 'unit': 'kg', 'safe_stock': 1000},
+        # 1. 提取所有物料及其元数据 (去重)
+        # 结构: { field_key: { 'name': display_name, 'is_cvn_input': bool } }
+        material_registry = {}
 
-            # --- 中间品 ---
-            {'key': k.KEY_INTER_CVN_CRUDE, 'name': 'CVN粗品', 'type': 'material', 'unit': 'kg'},
-            {'key': k.KEY_INTER_CVN_PURE, 'name': 'CVN精品', 'type': 'material', 'unit': 'kg'},
-            {'key': k.KEY_INTER_CVA_CRUDE, 'name': 'CVA粗品', 'type': 'material', 'unit': 'kg'},
-
-            # --- 成品 ---
-            {'key': k.KEY_PROD_CVC_NX, 'name': 'CVC合格品(内销)', 'type': 'material', 'unit': 'kg', 'cat': 'product'},
-            {'key': k.KEY_PROD_CVC_WX, 'name': 'CVC精品(外销)', 'type': 'material', 'unit': 'kg', 'cat': 'product'},
-            {'key': k.KEY_WASTE_HEAD, 'name': '前馏份/回收液', 'type': 'material', 'unit': 'kg', 'cat': 'intermediate'},
-
-            # --- 费用配置 (只进 CostConfig) ---
-            {'key': k.KEY_WAGE_GROUP_CVN, 'name': 'CVN组时薪', 'type': 'expense', 'unit': 'person_time',
-             'cat': 'labor'},
-            {'key': k.KEY_WAGE_GROUP_CVA, 'name': 'CVA组时薪', 'type': 'expense', 'unit': 'person_time',
-             'cat': 'labor'},
-            {'key': k.KEY_WAGE_GROUP_CVC, 'name': 'CVC组时薪', 'type': 'expense', 'unit': 'person_time',
-             'cat': 'labor'},
-            {'key': k.KEY_WAGE_GENERAL, 'name': '普工时薪', 'type': 'expense', 'unit': 'person_time', 'cat': 'labor'},
-            {'key': k.KEY_COST_WASTE_WATER, 'name': '污水处理费', 'type': 'expense', 'unit': 'batch', 'cat': 'waste'},
+        # 确定 CVN 合成的原料字段列表，用于后续 10000 库存的特殊处理
+        cvn_inputs = [
+            item['field'] for item in PROCEDURE_BOM_MAPPING.get('cvnsynthesis', {}).get('inputs', [])
         ]
 
-        self.stdout.write("开始初始化系统数据...")
+        for proc_key, config in PROCEDURE_BOM_MAPPING.items():
+            # 扫描 inputs 和 outputs
+            for category in ['inputs', 'outputs']:
+                for item in config.get(category, []):
+                    field = item['field']
+                    name = item['name']
 
-        for item in INIT_DATA:
-            # 1. 处理库存 (Inventory)
-            if item['type'] == 'material':
-                # 使用 get_or_create 确保只在第一次创建时 quantity 为 0
-                # 这样如果脚本重复运行，不会把已经修正好的库存清零
+                    if field not in material_registry:
+                        material_registry[field] = {
+                            'name': name,
+                            'is_cvn_input': field in cvn_inputs
+                        }
+
+        # 2. 执行数据库操作 (原子事务)
+        with transaction.atomic():
+            created_count = 0
+            updated_count = 0
+
+            for field_key, info in material_registry.items():
+                # --- A. 初始化库存 (Inventory) ---
+                # 根据要求：cvn_syn 的原料设为 10000，其余为 0
+                initial_qty = 10000 if info['is_cvn_input'] else 0
+
                 inv_obj, inv_created = Inventory.objects.get_or_create(
-                    key=item['key'],
+                    key=field_key,
                     defaults={
-                        'name': item['name'],
-                        'category': item.get('cat', 'raw'),  # 默认为 raw，除非指定
-                        'unit': item['unit'],
-                        'quantity': 0,  # 【关键】初始库存设为 0
-                        'safe_stock': item.get('safe_stock', 0)
+                        'name': info['name'],
+                        'quantity': initial_qty,
+                        'unit': 'kg',  # 默认单位，后续可在后台修改
+                        'category': 'raw' if info['is_cvn_input'] else 'inter'
                     }
                 )
+
+                # --- B. 初始化价格配置 (CostConfig) ---
+                conf_obj, conf_created = CostConfig.objects.get_or_create(
+                    key=field_key,
+                    defaults={
+                        'label': info['name'],
+                        'price': 0,
+                        'unit': 'kg',
+                        'category': 'material'
+                    }
+                )
+
                 if inv_created:
-                    self.stdout.write(f"  [库存] 创建: {item['name']}")
+                    status = f"已创建 (初始库存: {initial_qty})"
+                    created_count += 1
                 else:
-                    # 如果需要更新名称等元数据，可以在这里写逻辑，但暂不更新 quantity
-                    pass
+                    status = "已存在 (跳过创建)"
+                    updated_count += 1
 
-            # 2. 处理价格配置 (CostConfig)
-            # 无论 material 还是 expense 都有价格
-            config_cat = item.get('cat', 'material')
-            if item['type'] == 'material' and 'cat' not in item:
-                config_cat = 'material'
+                self.stdout.write(f"  - [{field_key}] {info['name']}: {status}")
 
-            conf_obj, conf_created = CostConfig.objects.get_or_create(
-                key=item['key'],
-                defaults={
-                    'label': item['name'],
-                    'category': config_cat,
-                    'unit': item['unit'],
-                    'price': 0  # 初始价格设为 0，等待财务录入
-                }
-            )
-            if conf_created:
-                self.stdout.write(f"  [配置] 创建: {item['name']}")
-
-        self.stdout.write(self.style.SUCCESS("初始化完成！所有库存已归零，请通知文员进行盘点修正。"))
+        self.stdout.write(self.style.SUCCESS(
+            f"\n初始化完成！新增: {created_count}, 跳过: {updated_count}"
+        ))

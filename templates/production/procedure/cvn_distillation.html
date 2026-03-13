@@ -24,21 +24,21 @@
                     <div class="col-md-3">
                         <label class="form-label small text-muted mb-1">CVN含量</label>
                         <div class="input-group input-group-sm">
-                            {{ form.pre_cvn_content }}
+                            {{ form.pre_content_cvn }}
                             <span class="input-group-text bg-light">%</span>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small text-muted mb-1">DCB含量</label>
                         <div class="input-group input-group-sm">
-                            {{ form.pre_dcb_content }}
+                            {{ form.pre_content_dcb }}
                             <span class="input-group-text bg-light">%</span>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small text-muted mb-1">己二腈(ADN)</label>
                         <div class="input-group input-group-sm">
-                            {{ form.pre_adn_content }}
+                            {{ form.pre_content_adn }}
                             <span class="input-group-text bg-light">%</span>
                         </div>
                     </div>
@@ -56,28 +56,28 @@
                 <div class="col-md-3">
                     <label class="form-label small">精品重量</label>
                     <div class="input-group input-group-sm">
-                        {{ form.output_weight }}
+                        {{ form.crude_weight }}
                         <span class="input-group-text bg-light">kg</span>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small">CVN含量</label>
                     <div class="input-group input-group-sm">
-                        {{ form.output_cvn_content }}
+                        {{ form.output_content_cvn }}
                         <span class="input-group-text bg-light">%</span>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small">DCB含量</label>
                     <div class="input-group input-group-sm">
-                        {{ form.output_dcb_content }}
+                        {{ form.output_content_dcb }}
                         <span class="input-group-text bg-light">%</span>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small">己二腈(ADN)</label>
                     <div class="input-group input-group-sm">
-                        {{ form.output_adn_content }}
+                        {{ form.output_content_adn }}
                         <span class="input-group-text bg-light">%</span>
                     </div>
                 </div>
@@ -136,10 +136,10 @@
     // 实时计算精品中各成分的具体重量
     document.addEventListener('DOMContentLoaded', function() {
         // 获取Django生成的表单Input的ID (需要与Form类中定义的字段名一致)
-        const outWeight = document.getElementById('id_output_weight');
-        const outCvn = document.getElementById('id_output_cvn_content');
-        const outDcb = document.getElementById('id_output_dcb_content');
-        const outAdn = document.getElementById('id_output_adn_content');
+        const outWeight = document.getElementById('id_crude_weight');
+        const outCvn = document.getElementById('id_output_content_cvn');
+        const outDcb = document.getElementById('id_output_content_dcb');
+        const outAdn = document.getElementById('id_output_content_adn');
 
         // 获取用于显示的只读计算框
         const calcCvn = document.getElementById('calc_out_cvn');
