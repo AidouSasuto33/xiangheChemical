@@ -56,7 +56,7 @@
                 <div class="col-md-3">
                     <label class="form-label small">精品重量</label>
                     <div class="input-group input-group-sm">
-                        {{ form.crude_weight }}
+                        {{ form.cvn_dis_crude_weight }}
                         <span class="input-group-text bg-light">kg</span>
                     </div>
                 </div>
@@ -136,7 +136,7 @@
     // 实时计算精品中各成分的具体重量
     document.addEventListener('DOMContentLoaded', function() {
         // 获取Django生成的表单Input的ID (需要与Form类中定义的字段名一致)
-        const outWeight = document.getElementById('id_crude_weight');
+        const outWeight = document.getElementById('id_cvn_dis_crude_weight');
         const outCvn = document.getElementById('id_output_content_cvn');
         const outDcb = document.getElementById('id_output_content_dcb');
         const outAdn = document.getElementById('id_output_content_adn');

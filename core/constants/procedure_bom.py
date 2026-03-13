@@ -14,13 +14,13 @@ PROCEDURE_BOM_MAPPING = {
         'name': 'CVN合成',
         'inputs': [
             {'field': 'raw_dcb',            'name': '二氯丁烷(新)'},
-            {'field': 'input_recycled_dcb', 'name': '二氯丁烷(回)'},
+            {'field': 'recycled_dcb', 'name': '二氯丁烷(回)'},
             {'field': 'raw_nacn',           'name': '氰化钠'},
             {'field': 'raw_tbab',           'name': 'TBAB'},
             {'field': 'raw_alkali',         'name': '液碱'},
         ],
         'outputs': [
-            {'field': 'crude_weight',       'name': 'CVN粗品'}
+            {'field': 'cvn_syn_crude_weight',       'name': 'CVN粗品'}
         ],
         'qc_fields': [
             {'field': 'content_cvn', 'name': 'CVN含量%'},
@@ -35,10 +35,10 @@ PROCEDURE_BOM_MAPPING = {
     'cvndistillation': {
         'name': 'CVN精馏',
         'inputs': [
-            {'field': 'input_total_cvn_weight', 'name': 'CVN粗品(投入)'}
+            {'field': 'input_total_cvn_weight', 'name': 'CVN粗品'}
         ],
         'outputs': [
-            {'field': 'crude_weight',       'name': 'CVN精品'},
+            {'field': 'cvn_dis_crude_weight',       'name': 'CVN精品'},
             {'field': 'residue_weight',     'name': '釜残危废'}
         ],
         # 精馏特殊：有精前质检和精品质检
@@ -60,16 +60,16 @@ PROCEDURE_BOM_MAPPING = {
     'cvasynthesis': {
         'name': 'CVA合成',
         'inputs': [
-            {'field': 'input_total_cvc_dis_weight', 'name': 'CVN精品(投入)'},
+            {'field': 'input_total_cvc_dis_weight', 'name': 'CVN精品'},
             {'field': 'raw_hcl',                    'name': '盐酸'},
             {'field': 'raw_alkali',                 'name': '液碱'},
         ],
         'outputs': [
-            {'field': 'crude_weight',       'name': 'CVA粗品'}
+            {'field': 'cva_crude_weight',       'name': 'CVA'}
         ],
         'qc_fields': [
             {'field': 'content_cva', 'name': 'CVA含量%'},
-            {'field': 'content_cvn', 'name': 'CVN含量%'},
+            {'field': 'content_cvn', 'name': 'CVN含量%(精品)'},
             {'field': 'content_water', 'name': '水分%'}
         ]
     },
@@ -80,15 +80,15 @@ PROCEDURE_BOM_MAPPING = {
     'cvcsynthesis': {
         'name': 'CVC合成',
         'inputs': [
-            {'field': 'input_total_cva_weight', 'name': 'CVA粗品(投入)'},
+            {'field': 'input_total_cva_weight', 'name': 'CVA'},
             {'field': 'raw_socl2',              'name': '二氯亚砜'},
         ],
         'outputs': [
-            {'field': 'crude_weight',             'name': 'CVC合格品'},
+            {'field': 'cvc_syn_crude_weight',             'name': 'CVC粗品'},
             {'field': 'distillation_head_weight', 'name': '前馏份'}
         ],
         'qc_fields': [
-            {'field': 'content_cvc', 'name': 'CVC含量%'},
+            {'field': 'content_cvc', 'name': 'CVC含量%(粗品)'},
             {'field': 'content_cva', 'name': 'CVA含量%'}
         ]
     },
@@ -99,13 +99,13 @@ PROCEDURE_BOM_MAPPING = {
     'cvcexport': {
         'name': 'CVC外销',
         'inputs': [
-            {'field': 'input_total_cvc_weight', 'name': 'CVC合格品(投入)'}
+            {'field': 'input_total_cvc_weight', 'name': 'CVC粗品'}
         ],
         'outputs': [
-            {'field': 'crude_weight',           'name': 'CVC精品'}
+            {'field': 'cvc_dis_crude_weight',           'name': 'CVC精品'}
         ],
         'qc_fields': [
-            {'field': 'content_cvc', 'name': 'CVC含量%'},
+            {'field': 'content_cvc', 'name': 'CVC含量%(精品)'},
             {'field': 'content_cva', 'name': 'CVA含量%'}
         ]
     }

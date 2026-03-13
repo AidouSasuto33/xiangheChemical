@@ -21,8 +21,8 @@ class CVNSynthesisForm(forms.ModelForm):
         self.fields['test_time'].widget = forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'form-control'})
 
         # === 2. Define Field Groups ===
-        input_group = ['start_time', 'expected_time','kettle', 'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali']
-        output_group = ['end_time', 'test_time', 'crude_weight', 'content_cvn', 'content_dcb', 'content_adn', 'recovered_dcb_amount', 'waste_batches']
+        input_group = ['start_time', 'expected_time','kettle', 'raw_dcb', 'recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali']
+        output_group = ['end_time', 'test_time', 'cvn_syn_crude_weight', 'content_cvn', 'content_dcb', 'content_adn', 'recovered_dcb_amount', 'waste_batches']
 
         # === 3. Implement Status Locking Logic ===
         status = self.instance.status if self.instance.pk else 'new'
@@ -77,50 +77,25 @@ class CVNSynthesisForm(forms.ModelForm):
         
         # === 3. 投产动作校验 (Start Validation) ===
         if action == 'start_production':
-            self._validate_inventory(cleaned_data)
-            
             # 必须选择釜皿
             if not cleaned_data.get('kettle'):
                 self.add_error('kettle', "投产必须选择一个釜皿")
 
         # === 4. 完工动作校验 (Finish Validation) ===
         elif action == 'finish_production':
-            crude = cleaned_data.get('crude_weight')
+            crude = cleaned_data.get('cvn_syn_crude_weight')
             if not crude or crude <= 0:
-                self.add_error('crude_weight', "完工录入必须填写有效的产出重量")
+                self.add_error('cvn_syn_crude_weight', "完工录入必须填写有效的产出重量")
 
         return cleaned_data
 
-    def _validate_inventory(self, data):
-        """库存预检逻辑"""
-        check_list = []
-        # 映射: (字段名, 库存Key, 显示名)
-        mapping = [
-            ('raw_dcb', constants.KEY_RAW_DCB, "二氯丁烷(新)"),
-            ('input_recycled_dcb', constants.KEY_RECYCLED_DCB, "二氯丁烷(回)"),
-            ('raw_nacn', constants.KEY_RAW_NACN, "氰化钠"),
-            ('raw_tbab', constants.KEY_RAW_TBAB, "TBAB"),
-            ('raw_alkali', constants.KEY_RAW_ALKALI, "液碱"),
-        ]
-
-        for field, key, name in mapping:
-            qty = data.get(field)
-            if qty and qty > 0:
-                check_list.append((key, qty, name))
-        
-        if check_list:
-            is_valid, errors = inventory_service.check_batch_availability(check_list)
-            if not is_valid:
-                # 格式化错误信息并抛出
-                error_msg = "库存不足无法投产：\n" + "\n".join([f"• {err}" for err in errors])
-                raise ValidationError(error_msg)
     
     class Meta:
         model = CVNSynthesis
         fields = [
             'start_time', 'expected_time','end_time', 'kettle',
-            'raw_dcb', 'input_recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
-            'crude_weight', 'remarks',
+            'raw_dcb', 'recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
+            'cvn_syn_crude_weight', 'remarks',
             'test_time', 'content_cvn', 'content_dcb', 'content_adn',
             'recovered_dcb_amount', 'waste_batches'
         ]

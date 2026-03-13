@@ -29,7 +29,7 @@ class CVNDistillation(BaseProductionStep):
     # =========================================================
     # 3. 产出 (Output)
     # =========================================================
-    crude_weight = models.FloatField("产出-CVN精品重量(kg)", default=0)
+    cvn_dis_crude_weight = models.FloatField("产出-CVN精品重量(kg)", default=0)
     # 质检
     output_content_cvn = models.FloatField("精品-CVN含量%", null=True, blank=True)
     output_content_dcb = models.FloatField("精品-DCB含量%", null=True, blank=True)
@@ -47,7 +47,7 @@ class CVNDistillation(BaseProductionStep):
     @property
     def remaining_weight(self):
         """批次里还剩多少精馏CVM"""
-        return max(0, self.crude_weight - self.consumed_weight)
+        return max(0, self.cvn_dis_crude_weight - self.consumed_weight)
 
     @property
     def dry_weight_pre(self):
@@ -62,7 +62,7 @@ class CVNDistillation(BaseProductionStep):
         """
         批次生命周期状态 (针对 CVN精品)
         """
-        if self.crude_weight <= 0:
+        if self.cvn_dis_crude_weight <= 0:
             return "异常批次"
 
         if self.consumed_weight <= 0:

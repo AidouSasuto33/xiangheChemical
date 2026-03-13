@@ -16,7 +16,7 @@ class CVNSynthesis(BaseProductionStep):
     # 1. 投入原料 (Input)
     # =========================================================
     raw_dcb = models.FloatField("投入-二氯丁烷(kg)", default=0, null=True, blank=True)
-    input_recycled_dcb = models.FloatField("投入-回收二氯丁烷(kg/L)", default=0, help_text="套用回收溶剂", null=True, blank=True)
+    recycled_dcb = models.FloatField("投入-回收二氯丁烷(kg/L)", default=0, help_text="套用回收溶剂", null=True, blank=True)
     raw_nacn = models.FloatField("投入-氰化钠(kg)", default=0, null=True, blank=True)
     raw_tbab = models.FloatField("投入-TBAB(kg)", default=0, null=True, blank=True)
     raw_alkali = models.FloatField("投入-液碱(kg)", default=0, null=True, blank=True)
@@ -24,7 +24,7 @@ class CVNSynthesis(BaseProductionStep):
     # =========================================================
     # 2. 产出与质检 (Output & QC)
     # =========================================================
-    crude_weight = models.FloatField("产出-CVN粗品重量(kg)", default=0, help_text="物理称重", blank=True, null=True)
+    cvn_syn_crude_weight = models.FloatField("产出-CVN粗品重量(kg)", default=0, help_text="物理称重", blank=True, null=True)
 
     # 库存核心字段：记录已被精馏工段领用了多少
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False, help_text="系统自动更新，不可手改")
@@ -56,14 +56,14 @@ class CVNSynthesis(BaseProductionStep):
     @property
     def remaining_weight(self):
         """批次里还剩多少粗蒸CVN"""
-        return max(0, self.crude_weight - self.consumed_weight)
+        return max(0, self.cvn_syn_crude_weight - self.consumed_weight)
 
     @property
     def status_label(self):
         """
         批次生命周期状态 (针对 CVA粗品)
         """
-        if self.crude_weight < 0:
+        if self.cvn_syn_crude_weight < 0:
             return "异常批次"
 
         if self.consumed_weight <= 0:

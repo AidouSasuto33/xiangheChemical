@@ -14,7 +14,7 @@ class CVCExport(BaseProductionStep):
     # 投入
     input_total_cvc_weight = models.FloatField("投入总重量(kg)", default=0)
     # 产出
-    crude_weight = models.FloatField("产出-CVC精品重量(kg)", default=0, help_text="二次蒸馏后的实际装桶重量")
+    cvc_dis_crude_weight = models.FloatField("产出-CVC精品重量(kg)", default=0, help_text="二次蒸馏后的实际装桶重量")
     # 质检
     content_cvc = models.FloatField("精品-CVC含量%", null=True, blank=True)
     content_cva = models.FloatField("精品-CVA含量%", null=True, blank=True)
@@ -27,11 +27,11 @@ class CVCExport(BaseProductionStep):
 
     @property
     def remaining_weight(self):
-        return max(0, self.crude_weight - self.consumed_weight)
+        return max(0, self.cvc_dis_crude_weight - self.consumed_weight)
 
     @property
     def status_label(self):
-        if self.crude_weight <= 0:
+        if self.cvc_dis_crude_weight <= 0:
             return "异常批次"
         if self.consumed_weight <= 0:
             return "🟢 全新待售"

@@ -22,7 +22,7 @@ class CVNDistillationForm(forms.ModelForm):
         # === 2. 定义字段分组 ===
         input_group = ['start_time', 'expected_time', 'kettle']
         output_group = [
-            'end_time', 'crude_weight',
+            'end_time', 'cvn_dis_crude_weight',
             'output_content_cvn', 'output_content_dcb', 'output_content_adn',
             'residue_weight'
         ]
@@ -59,7 +59,7 @@ class CVNDistillationForm(forms.ModelForm):
                     self.fields[field].required = True
 
     def clean_output_weight(self):
-        weight = self.cleaned_data.get('crude_weight')
+        weight = self.cleaned_data.get('cvn_dis_crude_weight')
         # 如果是“确认完工”动作，必须填写精品重量
         if self.action_type == 'finish_production':
             if not weight or weight <= 0:
@@ -179,6 +179,6 @@ class CVNDistillationForm(forms.ModelForm):
         fields = [
             'start_time', 'expected_time', 'end_time', 'kettle',
             'pre_content_cvn', 'pre_content_dcb', 'pre_content_adn',
-            'crude_weight', 'output_content_cvn', 'output_content_dcb', 'output_content_adn',
+            'cvn_dis_crude_weight', 'output_content_cvn', 'output_content_dcb', 'output_content_adn',
             'residue_weight',
         ]

@@ -16,7 +16,7 @@ class CVCSynthesis(BaseProductionStep):
 
     # 产出
     distillation_head_weight = models.FloatField("产出-前馏份/头酒(kg)", default=0, help_text="精馏初期的不合格部分")
-    crude_weight = models.FloatField("产出-CVC合格品重量(kg)", default=0)
+    cvc_syn_crude_weight = models.FloatField("产出-CVC合格品重量(kg)", default=0)
     # 质检
     content_cvc = models.FloatField("成品-CVC含量%", null=True, blank=True, help_text="CVC合成的纯度")
     content_cva = models.FloatField("成品-CVA含量%", null=True, blank=True, help_text="CVC合成工艺中CVA的纯度")
@@ -30,11 +30,11 @@ class CVCSynthesis(BaseProductionStep):
 
     @property
     def remaining_weight(self):
-        return max(0, self.crude_weight - self.consumed_weight)
+        return max(0, self.cvc_syn_crude_weight - self.consumed_weight)
 
     @property
     def status_label(self):
-        if self.crude_weight <= 0:
+        if self.cvc_syn_crude_weight <= 0:
             return "异常批次"
         if self.consumed_weight <= 0:
             return "🟢 全新待领"

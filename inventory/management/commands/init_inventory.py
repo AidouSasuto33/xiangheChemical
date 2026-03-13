@@ -28,6 +28,8 @@ class Command(BaseCommand):
             for category in ['inputs', 'outputs']:
                 for item in config.get(category, []):
                     field = item['field']
+                    if field.startswith('input_total'): # 链式工艺，输入物料为上一环节成品，所以不入数据库
+                        continue
                     name = item['name']
 
                     if field not in material_registry:

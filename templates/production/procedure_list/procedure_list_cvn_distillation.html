@@ -199,18 +199,18 @@
                             </td>
                             <td class="col-digit border-start text-primary fw-bold">{{ item.input_total_weight|floatformat:1|default:"0" }}</td>
 
-                            <td class="col-digit border-start">{{ item.pre_cvn_content|floatformat:1|default:"-" }}%</td>
-                            <td class="col-digit border-start text-muted">{{ item.pre_dcb_content|floatformat:1|default:"-" }}%</td>
-                            <td class="col-digit border-start text-muted">{{ item.pre_adn_content|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start">{{ item.pre_content_cvn|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.pre_content_dcb|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.pre_content_adn|floatformat:1|default:"-" }}%</td>
                             <td class="col-digit border-start text-secondary">
                                 {# 这里展示计算出的纯量，逻辑可在model/property中定义 #}
                                 {{ item.dry_weight_pre|floatformat:1|default:"-" }}
                             </td>
 
-                            <td class="col-digit border-start text-success fw-bold">{{ item.output_weight|floatformat:1|default:"0" }}</td>
-                            <td class="col-digit border-start">{{ item.output_cvn_content|floatformat:1|default:"-" }}%</td>
-                            <td class="col-digit border-start text-muted">{{ item.output_dcb_content|floatformat:1|default:"-" }}%</td>
-                            <td class="col-digit border-start text-muted">{{ item.output_adn_content|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-success fw-bold">{{ item.cvn_dis_crude_weight|floatformat:1|default:"0" }}</td>
+                            <td class="col-digit border-start">{{ item.output_content_cvn|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.output_content_dcb|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.output_content_adn|floatformat:1|default:"-" }}%</td>
 
                             <td class="col-digit border-start text-danger">{{ item.residue_weight|floatformat:1|default:"0" }}</td>
 
