@@ -1,5 +1,3 @@
-# production/utils/qc_utils.py
-
 from core.constants.procedure_bom import PROCEDURE_BOM_MAPPING
 
 def validate_qc_sum_100(model_name, cleaned_data):
