@@ -9,6 +9,7 @@ from production.models.cvn_synthesis import CVNSynthesis
 # 引入最新的状态机常量和 Service
 from core.constants.procedure_status import ProcedureState, ProcedureAction
 from production.services.partial.procedure_state_service import ProcedureStateService
+from inventory.services.inventory_service import update_single_inventory
 
 
 def process_start(instance: CVNDistillation, user):
@@ -27,6 +28,7 @@ def process_start(instance: CVNDistillation, user):
         if not inputs.exists():
             raise ValidationError("未找到粗正品投入明细，无法投产。")
 
+        total_use_weight = 0 # 用于计算总共用了多少CVN粗品
         for item in inputs:
             # 重新从数据库获取最新的 source_batch（使用 select_for_update 加锁防并发）
             source_batch = CVNSynthesis.objects.select_for_update().get(pk=item.source_batch_id)
@@ -41,6 +43,16 @@ def process_start(instance: CVNDistillation, user):
             # 扣减库存（累加已领用量）
             source_batch.consumed_weight += item.use_weight
             source_batch.save(update_fields=['consumed_weight'])
+            total_use_weight += item.use_weight  # 汇总投料
+
+        # --- 新增：扣减全局库存 (CVN粗品) ---
+        # 请确保 'CVN_CRUDE' 与 Inventory 模型中的 key 一致
+        update_single_inventory(
+            key='cvn_syn_crude_weight',
+            change_amount=-total_use_weight,
+            note=f"CVN精馏投料扣减 - 单号: {instance.batch_no}",
+            user=user
+        )
 
         # 2. 更新时间并调用状态机流转 (原有的改变状态和占用釜皿的逻辑，已全部交由状态机接管)
         if not instance.start_time:
@@ -68,6 +80,15 @@ def process_finish(instance: CVNDistillation, user):
     with transaction.atomic():
         # 这里如果以后有向全局库存服务 (inventory_service) 增加精品的逻辑，请写在这里
         # ...
+        with transaction.atomic():
+            # --- 修改：增加全局库存 (CVN精品) ---
+            # 请确保 'CVN_FINE' 与 Inventory 模型中的 key 一致
+            update_single_inventory(
+                key='cvn_dis_crude_weight',
+                change_amount=instance.cvn_dis_crude_weight,
+                note=f"CVN精馏完工入库 - 单号: {instance.batch_no}",
+                user=user
+            )
 
         # 更新时间并调用状态机流转 (状态变更及釜皿释放均已封装)
         if not instance.end_time:
