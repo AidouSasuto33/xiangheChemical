@@ -9,6 +9,7 @@ from django.urls import reverse
 from core.constants.procedure_status import ProcedureState
 from .kettle import Kettle
 from xiangheChemical.utils.time_utils import get_default_start_time, get_default_expected_time
+from simple_history.models import HistoricalRecords # Django数据表快照库
 
 # ==========================================
 # 1. 抽象基类 (BaseProductionStep) - 重构版
@@ -25,7 +26,7 @@ class BaseProductionStep(models.Model):
     def get_absolute_url(self):
         """动态生成工单更新页面的 URL。"""
         #TODO 项目正式上线时，将返回的domain放在DJango Site中去。
-        return "127.0.0.1:8000" + reverse(f'production:{getattr(self, 'url_name_base')}', kwargs={'pk': self.pk})
+        return "127.0.0.1:8000" + reverse(f"production:{getattr(self, 'url_name_base')}", kwargs={'pk': self.pk})
 
     # --- 1. 核心追踪 ---
     batch_no = models.CharField("生产批号", max_length=50, unique=True)
@@ -104,6 +105,9 @@ class BaseProductionStep(models.Model):
         # 顺延执行 Django 原生的保存逻辑
         super().save(*args, **kwargs)
 
+    # 核心：开启全量快照追踪 inherit=True 确保子类模型会自动创建各自的历史记录表
+    history = HistoricalRecords(inherit=True)
+
     class Meta:
         abstract = True
         ordering = ['-start_time']
@@ -124,3 +128,17 @@ class BaseProductionStep(models.Model):
         """将内部的 model_name 暴露给模板使用"""
         return self._meta.model_name
 
+
+class BaseMultiBatchInput(models.Model):
+    """
+    多批次投料明细抽象基类
+    用于精馏、精制等需要从上游多个批次领料的场景
+    """
+    # 投入重量
+    use_weight = models.FloatField("投入重量(kg)", default=0)
+
+    # 审计快照
+    history = HistoricalRecords(inherit=True)
+
+    class Meta:
+        abstract = True

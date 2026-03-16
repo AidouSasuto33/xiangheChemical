@@ -1,5 +1,5 @@
 from django.db import models
-from .core import BaseProductionStep
+from .core import BaseProductionStep, BaseMultiBatchInput
 from .cvc_synthesis import CVCSynthesis
 
 
@@ -42,24 +42,31 @@ class CVCExport(BaseProductionStep):
 
     status_label.fget.short_description = "当前状态"
     status_label.fget.admin_order_field = 'consumed_weight'
+    url_name_base = "cvc_export_update"  # 用于reverse帮助消息模块生成url
 
 
-class CVCExportInput(models.Model):
-    """CVC外销精制 投料明细表 (取代原 JSONField)"""
-    export = models.ForeignKey(
-        'CVCExport', on_delete=models.CASCADE, related_name='inputs', verbose_name="所属外销精制工单"
+class CVCExportInput(BaseMultiBatchInput):
+    # 关联主表
+    cvc_export = models.ForeignKey(
+        'CVCExport',
+        on_delete=models.CASCADE,
+        related_name='inputs',
+        verbose_name="所属CVC外销工单"
     )
+
+    # 关联来源批次 (具体关联哪个模型在子类定义)
     source_batch = models.ForeignKey(
-        'CVCSynthesis', on_delete=models.PROTECT, related_name='consumed_in_cvc_wx', verbose_name="CVC合格品来源"
+        'CVCSynthesis',
+        on_delete=models.PROTECT,
+        related_name='consumed_in_cvc_export',
+        verbose_name="CVC粗品来源批次"
     )
-    use_weight = models.FloatField("投入重量(kg)")
-
-    snapshot_cvc = models.FloatField("领用时CVC含量%", null=True, blank=True)
-
-    class Meta:
-        verbose_name = "外销精制投入明细"
-        verbose_name_plural = verbose_name
-        unique_together = ('export', 'source_batch')
 
     def __str__(self):
-        return f"{self.export.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
+        return f"{self.cvc_export.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
+
+    class Meta:
+        verbose_name = "精馏投入明细"
+        verbose_name_plural = verbose_name
+        # 联合约束：同一个精馏单里，不能添加两次同一个粗品批号
+        unique_together = ('cvc_export', 'source_batch')

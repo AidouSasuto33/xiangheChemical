@@ -2,7 +2,7 @@
 from django.db import models
 from system.models import Workshop
 # 引入基础模型
-from .core import BaseProductionStep
+from .core import BaseProductionStep, BaseMultiBatchInput
 # 引入 CVN 合成模型
 from .cvn_synthesis import CVNSynthesis
 # =========================================================
@@ -74,54 +74,38 @@ class CVNDistillation(BaseProductionStep):
 
     status_label.fget.short_description = "当前状态"
     status_label.fget.admin_order_field = 'consumed_weight'
-
+    url_name_base = "cvn_distillation_update"  # 用于reverse帮助消息模块生成url
 
 
     class Meta(BaseProductionStep.Meta):
         verbose_name = "2-CVN精馏"
         verbose_name_plural = verbose_name
 
-    url_name_base = "cvn_distillation_update"  # 用于reverse帮助消息模块生成url
 
+class CVNDistillationInput(BaseMultiBatchInput):
+        # 关联主表
+        distillation = models.ForeignKey(
+            'CVNDistillation',
+            on_delete=models.CASCADE,
+            related_name='inputs',
+            verbose_name="所属精馏工单"
+        )
 
-class CVNDistillationInput(models.Model):
-    """
-    精馏投料明细表 (多对一关联，取代原 JSONField)
-    """
-    # 1. 归属哪个精馏工单？
-    distillation = models.ForeignKey(
-        'CVNDistillation',
-        on_delete=models.CASCADE,
-        related_name='inputs',
-        verbose_name="所属精馏工单"
-    )
+        # 关联来源批次 (具体关联哪个模型在子类定义)
+        source_batch = models.ForeignKey(
+            'CVNSynthesis',
+            on_delete=models.PROTECT,
+            related_name='consumed_in_distillation',
+            verbose_name="粗品来源批次"
+        )
 
-    # 2. 扣减的是哪个合成粗品？
-    source_batch = models.ForeignKey(
-        'CVNSynthesis',
-        on_delete=models.PROTECT,  # 核心防御：被领用的粗品绝不能被物理删除
-        related_name='consumed_in_distillations',
-        verbose_name="粗品来源"
-    )
+        def __str__(self):
+            return f"{self.distillation.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
 
-    # 3. 扣了多少？
-    use_weight = models.FloatField("投入重量(kg)")
+        class Meta:
+            verbose_name = "精馏投入明细"
+            verbose_name_plural = verbose_name
+            # 联合约束：同一个精馏单里，不能添加两次同一个粗品批号
+            unique_together = ('distillation', 'source_batch')
 
-    # 4. (可选) 历史快照
-    # 为了防止几年后 CVNSynthesis 的含量数据被修改导致追溯对不上，
-    # 我们可以在领料瞬间，把当时的含量复制一份存入这里作为“快照”。
-    snapshot_cvn = models.FloatField("领用时CVN含量%", null=True, blank=True)
-    snapshot_dcb = models.FloatField("领用时DCB含量%", null=True, blank=True)
-    snapshot_adn = models.FloatField("领用时己二腈含量%", null=True, blank=True)
-
-
-
-    def __str__(self):
-        return f"{self.distillation.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
-
-    class Meta:
-        verbose_name = "精馏投入明细"
-        verbose_name_plural = verbose_name
-        # 联合约束：同一个精馏单里，不能添加两次同一个粗品批号
-        unique_together = ('distillation', 'source_batch')
 

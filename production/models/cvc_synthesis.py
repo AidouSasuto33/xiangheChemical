@@ -1,5 +1,5 @@
 from django.db import models
-from .core import BaseProductionStep
+from .core import BaseProductionStep, BaseMultiBatchInput
 from .cva_synthesis import CVASynthesis
 from core import constants
 # =========================================================
@@ -45,44 +45,31 @@ class CVCSynthesis(BaseProductionStep):
 
     status_label.fget.short_description = "当前状态"
     status_label.fget.admin_order_field = 'consumed_weight'
+    url_name_base = "cvc_synthesis_update"  # 用于reverse帮助消息模块生成url
 
 
-class CVCSynthesisInput(models.Model):
-    """CVC合成 投料明细表 (取代原 input_cva_sources JSONField)"""
-    synthesis = models.ForeignKey(
-        'CVCSynthesis', on_delete=models.CASCADE, related_name='inputs', verbose_name="所属CVC合成工单"
+class CVCSynthesisInput(BaseMultiBatchInput):
+    # 关联主表
+    cvc_synthesis = models.ForeignKey(
+        'CVCSynthesis',
+        on_delete=models.CASCADE,
+        related_name='inputs',
+        verbose_name="所属CVA合成工单"
     )
+
+    # 关联来源批次 (具体关联哪个模型在子类定义)
     source_batch = models.ForeignKey(
-        'CVASynthesis', on_delete=models.PROTECT, related_name='consumed_in_cvc_nx', verbose_name="CVA粗品来源"
+        'CVASynthesis',
+        on_delete=models.PROTECT,
+        related_name='consumed_in_cvc_synthesis',
+        verbose_name="CVA来源批次"
     )
-    use_weight = models.FloatField("投入重量(kg)")
-
-    snapshot_cva = models.FloatField("领用时CVA含量%", null=True, blank=True)
-
-    class Meta:
-        verbose_name = "CVC合成投入明细"
-        verbose_name_plural = verbose_name
-        unique_together = ('synthesis', 'source_batch')
 
     def __str__(self):
-        return f"{self.synthesis.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
-
-
-class CVCSynthesisIPCLog(models.Model):
-    """合成过程监控记录表 (取代原 ipc_logs JSONField)"""
-    synthesis = models.ForeignKey(
-        'CVCSynthesis', on_delete=models.CASCADE, related_name='ipc_logs', verbose_name="所属工单"
-    )
-    log_time = models.DateTimeField("记录时间")
-    duration_hours = models.FloatField("反应时长(h)", null=True, blank=True)
-    ipc_cvc = models.FloatField("中控-CVC%", null=True, blank=True)
-    ipc_cva = models.FloatField("中控-CVA%", null=True, blank=True)
-    note = models.CharField("备注", max_length=255, blank=True)
+        return f"{self.cvc_synthesis.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
 
     class Meta:
-        verbose_name = "CVC合成中控记录"
+        verbose_name = "精馏投入明细"
         verbose_name_plural = verbose_name
-        ordering = ['log_time']
-
-    def __str__(self):
-        return f"{self.synthesis.batch_no} IPC @ {self.log_time.strftime('%H:%M')}"
+        # 联合约束：同一个精馏单里，不能添加两次同一个粗品批号
+        unique_together = ('cvc_synthesis', 'source_batch')

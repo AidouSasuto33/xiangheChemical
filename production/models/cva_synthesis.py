@@ -1,5 +1,5 @@
 from django.db import models
-from .core import BaseProductionStep
+from .core import BaseProductionStep, BaseMultiBatchInput
 from .cvn_distillation import CVNDistillation
 # =========================================================
 # 工艺第三步： CVA合成
@@ -45,33 +45,31 @@ class CVASynthesis(BaseProductionStep):
 
     status_label.fget.short_description = "当前状态"
     status_label.fget.admin_order_field = 'consumed_weight'
+    url_name_base = "cva_synthesis_update"  # 用于reverse帮助消息模块生成url
 
 
-class CVASynthesisInput(models.Model):
-    """CVA合成 投料明细表 (取代原 JSONField)"""
-    synthesis = models.ForeignKey(
+class CVASynthesisInput(BaseMultiBatchInput):
+    # 关联主表
+    cva_synthesis = models.ForeignKey(
         'CVASynthesis',
         on_delete=models.CASCADE,
         related_name='inputs',
         verbose_name="所属CVA合成工单"
     )
+
+    # 关联来源批次 (具体关联哪个模型在子类定义)
     source_batch = models.ForeignKey(
         'CVNDistillation',
         on_delete=models.PROTECT,
-        related_name='consumed_in_cva',
-        verbose_name="CVN精品来源"
+        related_name='consumed_in_cva_synthesis',
+        verbose_name="CVN精品来源批次"
     )
-    use_weight = models.FloatField("投入重量(kg)")
-
-    # 快照字段
-    snapshot_cvn = models.FloatField("领用时CVN含量%", null=True, blank=True)
-    snapshot_dcb = models.FloatField("领用时DCB含量%", null=True, blank=True)
-    snapshot_adn = models.FloatField("领用时己二腈含量%", null=True, blank=True)
-
-    class Meta:
-        verbose_name = "CVA合成投入明细"
-        verbose_name_plural = verbose_name
-        unique_together = ('synthesis', 'source_batch')
 
     def __str__(self):
-        return f"{self.synthesis.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
+        return f"{self.cva_synthesis.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
+
+    class Meta:
+        verbose_name = "精馏投入明细"
+        verbose_name_plural = verbose_name
+        # 联合约束：同一个精馏单里，不能添加两次同一个粗品批号
+        unique_together = ('cva_synthesis', 'source_batch')
