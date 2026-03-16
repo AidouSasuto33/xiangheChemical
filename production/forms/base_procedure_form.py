@@ -1,12 +1,12 @@
 # production/forms/base_procedure_form.py
-
 from django import forms
 from django.db.models import Q
-from production.models.kettle import Kettle
+from django.core.exceptions import ValidationError
+from django.db import transaction
+# 引入项目内部模型
 from core.constants import KettleState
-from production.utils.bom_utils import get_procedure_bom_info
-
-# 1. 顶部引入验证工具
+from production.models.kettle import Kettle
+# 引入项目验证工具函数
 from production.utils.qc_utils import validate_qc_sum_100
 from production.utils.output_validator import validate_output_balance
 
@@ -22,18 +22,34 @@ class BaseProcedureForm(forms.ModelForm):
     MAIN_OUTPUT_FIELD = None  # 例如: 'cvn_syn_crude_weight'
     INPUT_GROUP = []
     OUTPUT_GROUP = []
-
     DATETIME_FIELDS = ['start_time', 'expected_time', 'end_time']
+
+    # --- 动态投入及多批次物料配置 (CVN精馏及后续工艺使用) ---
+    HAS_DYNAMIC_INPUTS = False  # 是否需要处理前置投入批次
+    SOURCE_BATCH_MODEL = None  # 原料来源 Model (例如: CVNSynthesis)
+    INPUT_RELATION_MODEL = None  # 投入明细关系 Model (例如: CVNDistillationInput)
+    INPUT_RELATION_FK_NAME = None  # 关系表中指向当前主表的 ForeignKey 名称 (例如: 'distillation')
+    TOTAL_INPUT_WEIGHT_FIELD = None  # 主表中用于汇总总投入重量的字段名 (例如: 'input_total_cvn_weight')
+
+    # --- 全局防篡改字段配置 ---
+    READONLY_FIELDS = []  # 无论什么状态，始终由系统计算并锁死无法篡改的字段
 
     def __init__(self, *args, **kwargs):
         self.action_type = kwargs.pop('action_type', None)
         super().__init__(*args, **kwargs)
 
         # 动态获取子类定义的 procedure_key，避免在基类中为 None 时引发报错
+        self._apply_readonly_fields()  # 新增：处理全局防篡改字段
         self._setup_datetime_widgets()
         self._setup_kettle_queryset()
         self._apply_bootstrap_styles()
         self._apply_status_locks()
+
+    def _apply_readonly_fields(self):
+        """强制锁定系统计算或流转过来的只读字段"""
+        for field in self.READONLY_FIELDS:
+            if field in self.fields:
+                self.fields[field].disabled = True
 
     def _setup_datetime_widgets(self):
         """统一配置日期时间组件"""
@@ -129,4 +145,96 @@ class BaseProcedureForm(forms.ModelForm):
                 if not is_bal_valid:
                     self.add_error(None, bal_msg)
 
+        # === 3. 动态投入批次解析校验 (带料工艺的防呆) ===
+        # 仅在工单处于“创建”状态(即未投产前)，才进行投入料的动态校验
+        status = getattr(self.instance, 'status', 'new') or 'new'
+        if self.HAS_DYNAMIC_INPUTS and status == 'new':
+            self._clean_dynamic_inputs()
         return cleaned_data
+
+
+    def _clean_dynamic_inputs(self):
+        """解析并校验前端传来的多批次投入数组"""
+        batch_nos = self.data.getlist('source_batch_no')
+        use_weights = self.data.getlist('source_use_weight')
+
+        if self.action_type in ['create_plan', 'start_production', 'save_draft']:
+            if not batch_nos:
+                raise ValidationError("请至少添加一条原料投入明细。")
+
+            parsed_inputs = []
+            total_weight = 0.0
+            seen_batches = set()
+
+            for batch_no, weight_str in zip(batch_nos, use_weights):
+                batch_no = batch_no.strip()
+                if not batch_no:
+                    continue
+
+                    # 1. 重量格式校验
+                try:
+                    weight = float(weight_str)
+                except (ValueError, TypeError):
+                    raise ValidationError(f"批号 [{batch_no}] 的重量格式不正确。")
+
+                if weight <= 0:
+                    raise ValidationError(f"批号 [{batch_no}] 的投入重量必须大于 0。")
+
+                # 2. 重复校验
+                if batch_no in seen_batches:
+                    raise ValidationError(f"批号 [{batch_no}] 被重复添加，请合并重量后录入。")
+                seen_batches.add(batch_no)
+
+                # 3. 数据库真实性校验
+                try:
+                    source_batch = self.SOURCE_BATCH_MODEL.objects.get(batch_no=batch_no)
+                except self.SOURCE_BATCH_MODEL.DoesNotExist:
+                    raise ValidationError(f"系统内未找到原料批号：[{batch_no}]，请检查拼写。")
+
+                parsed_inputs.append({
+                    'source_batch': source_batch,
+                    'use_weight': weight
+                })
+                total_weight += weight
+
+            if not parsed_inputs:
+                raise ValidationError("请添加有效的原料投入明细。")
+
+            # 将干净数据暂存在 Form 实例中，供 save() 方法使用
+            self.parsed_inputs = parsed_inputs
+
+            # 自动计算并覆盖主表的投入总重量
+            if self.TOTAL_INPUT_WEIGHT_FIELD and hasattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD):
+                setattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD, total_weight)
+
+    def save(self, commit=True):
+        """拦截默认的 save，利用事务确保主表与投入子表的一致性"""
+        instance = super().save(commit=False)
+
+        if commit:
+            with transaction.atomic():
+                instance.save()
+                if self.HAS_DYNAMIC_INPUTS:
+                    self._save_inputs(instance)
+        return instance
+
+    def _save_inputs(self, instance):
+        """批量创建投入子表记录，并打上质量快照"""
+        if hasattr(self, 'parsed_inputs') and self.INPUT_RELATION_MODEL:
+            # 清理旧数据 (应对草稿多次保存的场景)
+            instance.inputs.all().delete()
+
+            new_inputs = []
+            for item in self.parsed_inputs:
+                source = item['source_batch']
+
+                # 构建创建子表所需的基础 kwargs
+                kwargs = {
+                    self.INPUT_RELATION_FK_NAME: instance,
+                    'source_batch': source,
+                    'use_weight': item['use_weight'],
+                }
+
+                new_inputs.append(self.INPUT_RELATION_MODEL(**kwargs))
+
+            self.INPUT_RELATION_MODEL.objects.bulk_create(new_inputs)

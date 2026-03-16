@@ -29,7 +29,7 @@ def validate_qc_sum_100(model_name, cleaned_data):
     if qc_pre_fields:
         pre_total = 0.0
         for field in qc_pre_fields:
-            val = cleaned_data.get(field)
+            val = cleaned_data.get(field['field'])
             if val is not None:
                 try:
                     pre_total += float(val)
