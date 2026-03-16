@@ -1,4 +1,5 @@
 # production/utils/mass_balance_utils.py
+from logging import getLogger
 
 from core.constants.procedure_bom import PROCEDURE_BOM_MAPPING
 
@@ -8,6 +9,7 @@ def validate_output_balance(model_name, cleaned_data):
     自动适配 process_bom.py 中定义的 inputs 和 outputs
     """
     config = PROCEDURE_BOM_MAPPING.get(model_name.lower())
+
     if not config:
         return True, ""
 

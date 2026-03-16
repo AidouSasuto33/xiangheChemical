@@ -4,6 +4,8 @@ from core.constants import ProcedureAction
 from ..utils.bom_utils import get_procedure_bom_info # 引入物料获取函数
 from inventory.services import inventory_service
 from production.services.partial.procedure_state_service import ProcedureStateService
+from production.utils.qc_utils import validate_qc_sum_100
+from production.utils.output_validator import validate_output_balance
 
 PROCEDURE_KEY = 'cvnsynthesis' # 获取物料常量参数
 
@@ -66,6 +68,19 @@ def process_finish(cvn_obj, user):
     """
     CVN完工处理：动态产出校验 -> 动态入库 -> 释釜属性更新 -> 状态机流转
     """
+    # 提取模型中的所有字段，组装成字典，模拟 cleaned_data 传给校验工具
+    data_dict = {field.name: getattr(cvn_obj, field.name) for field in cvn_obj._meta.fields}
+
+    # === 新增：1. 质检百分比校验 ===
+    is_qc_valid, qc_msg = validate_qc_sum_100(PROCEDURE_KEY, data_dict)
+    if not is_qc_valid:
+        raise ValueError(f"完工拦截：{qc_msg}")
+
+    # === 新增：2. 投入产出平衡校验 ===
+    is_bal_valid, bal_msg = validate_output_balance(PROCEDURE_KEY, data_dict)
+    if not is_bal_valid:
+        raise ValueError(f"完工拦截：{bal_msg}")
+
     # 1. 动态获取主产出清单
     output_fields = get_procedure_bom_info(PROCEDURE_KEY, 'outputs', 'field')
     output_names = get_procedure_bom_info(PROCEDURE_KEY, 'outputs', 'name')

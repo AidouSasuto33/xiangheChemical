@@ -14,7 +14,7 @@ def validate_qc_sum_100(model_name, cleaned_data):
     if qc_fields:
         total = 0.0
         for field in qc_fields:
-            val = cleaned_data.get(field)
+            val = cleaned_data.get(field['field']) # 获取的field格式：{'field': 'content_cvn', 'name': 'CVN含量%'}，所以要用field['field']
             if val is not None:
                 try:
                     total += float(val)

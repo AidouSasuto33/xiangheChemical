@@ -1,11 +1,15 @@
 from django import forms
-from django.core.exceptions import ValidationError
 from django.db.models import Q
 
 from production.models.cvn_synthesis import CVNSynthesis
 from production.models.kettle import Kettle
-from inventory.services import inventory_service
 from core import constants
+
+# 1. 顶部引入验证工具
+from production.utils.qc_utils import validate_qc_sum_100
+from production.utils.output_validator import validate_output_balance
+
+PROCEDURE_KEY = 'cvn_synthesis'
 
 class CVNSynthesisForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -86,6 +90,19 @@ class CVNSynthesisForm(forms.ModelForm):
             crude = cleaned_data.get('cvn_syn_crude_weight')
             if not crude or crude <= 0:
                 self.add_error('cvn_syn_crude_weight', "完工录入必须填写有效的产出重量")
+
+            # === 新增：1. 质检百分比校验 ===
+            is_qc_valid, qc_msg = validate_qc_sum_100('cvnsynthesis', cleaned_data)
+            if not is_qc_valid:
+                # 使用 None 将其标记为全局非字段错误 (Non-field errors)
+                 self.add_error(None, qc_msg)
+
+            # === 新增：2. 投入产出平衡校验 ===
+            is_bal_valid, bal_msg = validate_output_balance('cvnsynthesis', cleaned_data)
+            if not is_bal_valid:
+                 self.add_error(None, bal_msg)
+
+
 
         return cleaned_data
 

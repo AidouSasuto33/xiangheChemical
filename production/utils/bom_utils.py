@@ -1,7 +1,5 @@
 # core/utils/bom_utils.py
-
 from core.constants.procedure_bom import PROCEDURE_BOM_MAPPING
-
 
 def get_procedure_bom_info(procedure_key, material_type='inputs', return_type='field'):
     """
