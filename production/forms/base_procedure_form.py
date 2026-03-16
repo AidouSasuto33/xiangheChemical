@@ -115,6 +115,10 @@ class BaseProcedureForm(forms.ModelForm):
         cleaned_data = super().clean()
         action = self.action_type
 
+        # === 动态投入批次解析校验，并注入前置工艺产品投入总量到cleaned_data ===
+        if self.HAS_DYNAMIC_INPUTS:
+            cleaned_data = self._clean_dynamic_inputs(cleaned_data)
+
         # === 1. 投产通用的结构性前置校验 ===
         if self.action_type == 'start_production':
             if 'kettle' in self.fields and not cleaned_data.get('kettle'):
@@ -142,70 +146,62 @@ class BaseProcedureForm(forms.ModelForm):
 
                 # === 2. 投入产出平衡校验 ===
                 is_bal_valid, bal_msg = validate_output_balance(self.PROCEDURE_KEY, cleaned_data)
+
                 if not is_bal_valid:
                     self.add_error(None, bal_msg)
 
-        # === 3. 动态投入批次解析校验 (带料工艺的防呆) ===
-        # 仅在工单处于“创建”状态(即未投产前)，才进行投入料的动态校验
-        status = getattr(self.instance, 'status', 'new') or 'new'
-        if self.HAS_DYNAMIC_INPUTS and status == 'new':
-            self._clean_dynamic_inputs()
         return cleaned_data
 
 
-    def _clean_dynamic_inputs(self):
+    def _clean_dynamic_inputs(self, cleaned_data):
         """解析并校验前端传来的多批次投入数组"""
         batch_nos = self.data.getlist('source_batch_no')
         use_weights = self.data.getlist('source_use_weight')
 
-        if self.action_type in ['create_plan', 'start_production', 'save_draft']:
-            if not batch_nos:
-                raise ValidationError("请至少添加一条原料投入明细。")
-
-            parsed_inputs = []
-            total_weight = 0.0
-            seen_batches = set()
-
-            for batch_no, weight_str in zip(batch_nos, use_weights):
-                batch_no = batch_no.strip()
-                if not batch_no:
-                    continue
-
-                    # 1. 重量格式校验
-                try:
-                    weight = float(weight_str)
-                except (ValueError, TypeError):
-                    raise ValidationError(f"批号 [{batch_no}] 的重量格式不正确。")
-
-                if weight <= 0:
-                    raise ValidationError(f"批号 [{batch_no}] 的投入重量必须大于 0。")
-
-                # 2. 重复校验
-                if batch_no in seen_batches:
-                    raise ValidationError(f"批号 [{batch_no}] 被重复添加，请合并重量后录入。")
-                seen_batches.add(batch_no)
-
-                # 3. 数据库真实性校验
-                try:
-                    source_batch = self.SOURCE_BATCH_MODEL.objects.get(batch_no=batch_no)
-                except self.SOURCE_BATCH_MODEL.DoesNotExist:
-                    raise ValidationError(f"系统内未找到原料批号：[{batch_no}]，请检查拼写。")
-
-                parsed_inputs.append({
-                    'source_batch': source_batch,
-                    'use_weight': weight
-                })
-                total_weight += weight
-
-            if not parsed_inputs:
-                raise ValidationError("请添加有效的原料投入明细。")
-
-            # 将干净数据暂存在 Form 实例中，供 save() 方法使用
-            self.parsed_inputs = parsed_inputs
-
-            # 自动计算并覆盖主表的投入总重量
-            if self.TOTAL_INPUT_WEIGHT_FIELD and hasattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD):
+        if not batch_nos:
+            raise ValidationError("请至少添加一条原料投入明细。")
+        parsed_inputs = []
+        total_weight = 0.0
+        seen_batches = set()
+        for batch_no, weight_str in zip(batch_nos, use_weights):
+            batch_no = batch_no.strip()
+            if not batch_no:
+                continue
+                # 1. 重量格式校验
+            try:
+                weight = float(weight_str)
+            except (ValueError, TypeError):
+                raise ValidationError(f"批号 [{batch_no}] 的重量格式不正确。")
+            if weight <= 0:
+                raise ValidationError(f"批号 [{batch_no}] 的投入重量必须大于 0。")
+            # 2. 重复校验
+            if batch_no in seen_batches:
+                raise ValidationError(f"批号 [{batch_no}] 被重复添加，请合并重量后录入。")
+            seen_batches.add(batch_no)
+            # 3. 数据库真实性校验
+            try:
+                source_batch = self.SOURCE_BATCH_MODEL.objects.get(batch_no=batch_no)
+            except self.SOURCE_BATCH_MODEL.DoesNotExist:
+                raise ValidationError(f"系统内未找到原料批号：[{batch_no}]，请检查拼写。")
+            parsed_inputs.append({
+                'source_batch': source_batch,
+                'use_weight': weight
+            })
+            total_weight += weight
+        if not parsed_inputs:
+            raise ValidationError("请添加有效的原料投入明细。")
+        # 将干净数据暂存在 Form 实例中，供 save() 方法使用
+        self.parsed_inputs = parsed_inputs
+        # 自动计算并覆盖主表的投入总重量
+        if self.TOTAL_INPUT_WEIGHT_FIELD and hasattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD):
+            # A. 同步到 instance (用于数据库保存)
+            if hasattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD):
                 setattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD, total_weight)
+            # B. 关键修改：手动注入到 cleaned_data (供后续 validate_output_balance 使用)
+            self.cleaned_data[self.TOTAL_INPUT_WEIGHT_FIELD] = total_weight
+
+        return cleaned_data
+
 
     def save(self, commit=True):
         """拦截默认的 save，利用事务确保主表与投入子表的一致性"""

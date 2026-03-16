@@ -71,9 +71,9 @@
             // “精前折干重量”ID 是 dry_weight_pre，
             // 但根据 querySelector 习惯，这里建议确保 name 或 id 匹配
             const dryWeightDisplay = document.getElementById('dry_weight_pre'); // cvn_distillation.html 中的显示框
-            const cvnInput = document.querySelector('[name="pre_cvn_content"]');
-            const dcbInput = document.querySelector('[name="pre_dcb_content"]');
-            const adnInput = document.querySelector('[name="pre_adn_content"]');
+            const cvnInput = document.querySelector('[name="pre_content_cvn"]');
+            const dcbInput = document.querySelector('[name="pre_content_dcb"]');
+            const adnInput = document.querySelector('[name="pre_content_adn"]');
 
             // 1. 更新折干重量 (合计投入)
             if (dryWeightDisplay) {
