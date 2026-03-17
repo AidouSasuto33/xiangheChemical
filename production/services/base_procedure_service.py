@@ -1,10 +1,11 @@
 import json
 from django.db import transaction
-from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.db.models import F
 
+from core.constants import KettleState
 from core.constants.procedure_status import ProcedureState, ProcedureAction
+from production.models import Kettle
 from production.services.partial.procedure_state_service import ProcedureStateService
 from inventory.services.inventory_service import update_single_inventory
 from production.utils.bom_utils import get_procedure_bom_info
@@ -91,6 +92,7 @@ class BaseProcedureService:
 
             ProcedureStateService.process_action(instance, ProcedureAction.FINISH_PRODUCTION, user=user)
 
+
     @classmethod
     def get_production_context(cls, require_source_batches=False):
         """为前端渲染提供工艺上下文 (利用内存级 BOM 缓存与前置可用批次)。"""
@@ -106,6 +108,9 @@ class BaseProcedureService:
 
         if require_source_batches or cls.SOURCE_BATCH_MODEL:
             context['available_source_batches'] = cls._get_available_source_batches_json()
+
+        context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
+        context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
 
         return context
 

@@ -5,7 +5,7 @@
     <div class="mb-3">
         <small class="text-success fw-bold text-uppercase ls-1">🟢 空闲可用 (Ready)</small>
         <div class="d-flex flex-wrap gap-2 mt-2">
-            {% for kettle in available_kettles %}
+            {% for kettle in bom_data.available_kettles %}
                 <div class="kettle-selectable {% if is_locked %}pe-none opacity-75{% endif %}"
                      {% if not is_locked %}onclick="selectKettle(this, '{{ kettle.id }}', 'idle')"{% endif %}
                      data-kettle-id="{{ kettle.id }}"
@@ -25,7 +25,7 @@
     <div class="mb-3">
         <small class="text-warning fw-bold text-uppercase ls-1">🟡 待清洁 (Cleaning Required)</small>
         <div class="d-flex flex-wrap gap-2 mt-2">
-            {% for kettle in cleaning_kettles %}
+            {% for kettle in bom_data.cleaning_kettles %}
                 <div class="kettle-selectable {% if is_locked %}pe-none opacity-75{% endif %}"
                      {% if not is_locked %}onclick="selectKettle(this, '{{ kettle.id }}', 'to_clean')"{% endif %}
                      data-kettle-id="{{ kettle.id }}"
