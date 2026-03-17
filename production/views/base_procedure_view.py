@@ -150,7 +150,7 @@ class BaseProcedureListView(LoginRequiredMixin, ListView):
     """
     context_object_name = 'procedures'
     paginate_by = 20
-    ordering = ['-start_time', '-id']
+    ordering = ['-batch_no', '-id']
 
     def get_queryset(self):
         qs = super().get_queryset()
