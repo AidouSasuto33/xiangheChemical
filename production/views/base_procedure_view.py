@@ -149,7 +149,7 @@ class BaseProcedureListView(LoginRequiredMixin, ListView):
     负责：统一的分页设定、状态与单号筛选器接入。
     """
     context_object_name = 'procedures'
-    paginate_by = 20
+    paginate_by = 9 # TODO 若想设置分页数量大于9，则需要在顶部状态栏同样添加分页。且将分页做成partial html
     ordering = ['-batch_no', '-id']
 
     def get_queryset(self):
