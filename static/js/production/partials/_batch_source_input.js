@@ -17,18 +17,24 @@
             console.error("解析可用批次 JSON 失败", e);
         }
 
-        // 动态创建 Datalist 挂载到 body 下
+// 动态创建 Datalist 挂载到 body 下
         const dataList = document.createElement('datalist');
         dataList.id = 'availableBatches';
         availableSources.forEach(source => {
             const option = document.createElement('option');
             option.value = source.batch_no;
+
+            // 动态组装额外含量信息，兼容未来 CVA/CVC 等其他前置工艺
+            let extraInfo = "";
+            if (source.cvn !== undefined && source.cvn !== 0) extraInfo += ` | CVN: ${source.cvn}%`;
+            if (source.cva !== undefined && source.cva !== 0) extraInfo += ` | CVA: ${source.cva}%`;
+            if (source.cvc !== undefined && source.cvc !== 0) extraInfo += ` | CVC: ${source.cva}%`;
+
             // 提示文本在部分浏览器中会显示在批号旁边
-            option.text = `余量: ${source.remaining_weight}kg | CVN: ${source.cvn}%`;
+            option.text = `余量: ${source.remaining_weight}kg${extraInfo}`;
             dataList.appendChild(option);
         });
         document.body.appendChild(dataList);
-
         // ==========================================
         // 2. 核心计算与 UI 联动逻辑
         // ==========================================

@@ -13,7 +13,7 @@ from production.utils.batch_generator import generate_batch_number
 
 # 预留引入，后续我们将创建对应的 Form 和 Service
 from production.forms.cvn_distillation_form import CVNDistillationForm
-from production.services import cvn_distillation_service
+from production.services.cvn_distillation_service import CVNDistillationService
 
 
 # ========================================================
@@ -42,7 +42,7 @@ class CVNDistillationCreateView(LoginRequiredMixin, CreateView):
         context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
         context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
         # 注入可用的粗品批次 JSON (供动态明细表使用)
-        context['available_sources_json'] = cvn_distillation_service.get_available_synthesis_batches_json()
+        context['bom_data'] = CVNDistillationService.get_production_context(require_source_batches=True)
         return context
 
     def form_valid(self, form):
@@ -92,7 +92,7 @@ class CVNDistillationUpdateView(LoginRequiredMixin, UpdateView):
         context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
         context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
         # 同样注入可用的粗品批次 JSON
-        context['available_sources_json'] = cvn_distillation_service.get_available_synthesis_batches_json()
+        context['bom_data'] = CVNDistillationService.get_production_context(require_source_batches=True)
         return context
 
     def form_valid(self, form):
@@ -106,12 +106,14 @@ class CVNDistillationUpdateView(LoginRequiredMixin, UpdateView):
 
                 # 1. 投产 (Start) - 扣减前置粗品库存
                 if action == ProcedureAction.START_PRODUCTION and current_status == ProcedureState.NEW:
-                    cvn_distillation_service.process_start(form.instance, self.request.user)
+                    # cvn_distillation_service.process_start(form.instance, self.request.user)
+                    CVNDistillationService.process_start(form.instance, self.request.user)
                     messages.success(self.request, f"精馏批次 {form.instance.batch_no} 已投产！粗品库存已锁定/扣减。")
 
                 # 2. 完工 (Finish) - 增加精品库存，记录釜残
                 elif action == ProcedureAction.FINISH_PRODUCTION and current_status == ProcedureState.RUNNING:
-                    cvn_distillation_service.process_finish(form.instance, self.request.user)
+                    # cvn_distillation_service.process_finish(form.instance, self.request.user)
+                    CVNDistillationService.process_finish(form.instance, self.request.user)
                     messages.success(self.request, f"精馏批次 {form.instance.batch_no} 已完工！精品产出已记录，设备已释放。")
 
                 # 3. 统一的数据保存 (涵盖新建时的草稿和生产中的记录更新)

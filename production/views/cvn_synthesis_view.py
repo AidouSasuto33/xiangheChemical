@@ -10,7 +10,7 @@ from production.models.cvn_synthesis import CVNSynthesis
 from production.models.kettle import Kettle
 from production.signals import post_procedure_state_change
 from production.utils.batch_generator import generate_batch_number
-from production.services import cvn_synthesis_service
+from production.services.cvn_synthesis_service import CVNSynthesisService
 from production.forms.cvn_synthesis_form import CVNSynthesisForm
 
 
@@ -40,6 +40,7 @@ class CVNSynthesisCreateView(LoginRequiredMixin, CreateView):
         # Populate kettle lists for the selector
         context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
         context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
+        context['bom_data'] = CVNSynthesisService.get_production_context()
         return context
 
     def form_valid(self, form):
@@ -93,6 +94,7 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
         # Populate kettle lists for the selector
         context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
         context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
+        context['bom_data'] = CVNSynthesisService.get_production_context()
         return context
 
     def form_valid(self, form):
@@ -106,12 +108,12 @@ class CVNSynthesisUpdateView(LoginRequiredMixin, UpdateView):
 
                 # 1. 投产 (Start)
                 if action == ProcedureAction.START_PRODUCTION and current_status == ProcedureState.NEW:
-                    cvn_synthesis_service.process_start(form.instance, self.request.user)
+                    CVNSynthesisService.process_start(form.instance, self.request.user)
                     messages.success(self.request, f"批次 {form.instance.batch_no} 已投产！原料库存已扣减。")
 
                 # 2. 完工 (Finish)
                 elif action == ProcedureAction.FINISH_PRODUCTION and current_status == ProcedureState.RUNNING:
-                    cvn_synthesis_service.process_finish(form.instance, self.request.user)
+                    CVNSynthesisService.process_finish(form.instance, self.request.user)
                     messages.success(self.request, f"批次 {form.instance.batch_no} 已完工！产出已入库，设备已释放。")
 
                 # 3. 统一的数据保存 (涵盖新建时的草稿和生产中的记录更新)

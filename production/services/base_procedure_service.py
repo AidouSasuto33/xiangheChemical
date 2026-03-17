@@ -66,10 +66,6 @@ class BaseProcedureService:
             # 1. 执行双擎库存扣减 (辅料直扣 + 前置批次溯源扣减)
             cls._execute_inventory_deduction(instance, user)
 
-            # 2. 更新时间并交由状态机处理状态流转与设备占用
-            if not instance.start_time:
-                instance.start_time = timezone.now()
-
             ProcedureStateService.process_action(instance, ProcedureAction.START_PRODUCTION, user=user)
 
     @classmethod
@@ -92,10 +88,6 @@ class BaseProcedureService:
         with transaction.atomic():
             # 2. 执行产出物料自动入库
             cls._execute_inventory_addition(instance, user)
-
-            # 3. 更新时间并交由状态机处理流转与设备释放
-            if not instance.end_time:
-                instance.end_time = timezone.now()
 
             ProcedureStateService.process_action(instance, ProcedureAction.FINISH_PRODUCTION, user=user)
 
