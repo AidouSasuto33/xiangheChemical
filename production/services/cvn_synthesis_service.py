@@ -70,7 +70,10 @@ def process_finish(cvn_obj, user):
     """
     # 提取模型中的所有字段，组装成字典，模拟 cleaned_data 传给校验工具
     data_dict = {field.name: getattr(cvn_obj, field.name) for field in cvn_obj._meta.fields}
-
+    import logging
+    logger = logging.getLogger()
+    logger.warning(f"cvn_obj: {cvn_obj}")
+    logger.warning(f"data_dict: {data_dict}")
     # === 新增：1. 质检百分比校验 ===
     is_qc_valid, qc_msg = validate_qc_sum_100(PROCEDURE_KEY, data_dict)
     if not is_qc_valid:

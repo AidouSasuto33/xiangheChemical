@@ -15,16 +15,11 @@ def validate_output_balance(model_name, cleaned_data):
 
     total_input = 0.0
     total_output = 0.0
-    import logging
-    logger = logging.getLogger()
-    logger.warning(f"CONFIGCONFIGCONFIGCONFIGCONFIG: \n{cleaned_data}")
 
     # 1. 累加所有的投入与辅料 (遍历 inputs 列表中的 field)
     for item in config.get('inputs', []):
         field_name = item.get('field')
-        logger.warning(f"\ninput_key: {field_name}")
         val = cleaned_data.get(field_name)
-        logger.warning(f"\ninput_count: {val}")
         if val is not None:
             try:
                 total_input += float(val)
@@ -35,9 +30,7 @@ def validate_output_balance(model_name, cleaned_data):
     # 2. 累加所有的产出量 (遍历 outputs 列表中的 field)
     for item in config.get('outputs', []):
         field_name = item.get('field')
-        logger.warning(f"\noutput_key: {field_name}")
         val = cleaned_data.get(field_name)
-        logger.warning(f"\ninput_count: {val}")
         if val is not None:
             try:
                 total_output += float(val)
