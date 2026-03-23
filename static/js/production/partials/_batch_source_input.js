@@ -91,7 +91,8 @@
                 if (cvnInput) cvnInput.value = (sumCvn / selectedCount).toFixed(2);
                 if (dcbInput) dcbInput.value = (sumDcb / selectedCount).toFixed(2);
                 if (adnInput) adnInput.value = (sumAdn / selectedCount).toFixed(2);
-            } else {
+            }
+            else {
                 if (cvnInput) cvnInput.value = '';
                 if (dcbInput) dcbInput.value = '';
                 if (adnInput) adnInput.value = '';

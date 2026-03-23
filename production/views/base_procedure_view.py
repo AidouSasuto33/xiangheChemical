@@ -43,12 +43,14 @@ class BaseProcedureView:
         """统一调用 Service 层获取页面渲染所需的上下文（BOM、釜皿等）"""
         context = super().get_context_data(**kwargs)
         if self.require_source_batches:
+            # 获取当前实例（如果是新建页面，self.object 可能为 None）
+            current_instance = getattr(self, 'object', None)
+
+            # 核心改动：将 instance 传给 Service
             context['bom_data'] = self.service_class.get_production_context(
+                instance=current_instance,
                 require_source_batches=self.require_source_batches
             )
-            import logging
-            logger = logging.getLogger()
-            logger.warning(f"context: {context}")
         return context
 
     def get_success_url(self):

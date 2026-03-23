@@ -199,6 +199,26 @@ class BaseProcedureForm(forms.ModelForm):
                 setattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD, total_weight)
             # B. 关键修改：手动注入到 cleaned_data (供后续 validate_output_balance 使用)
             self.cleaned_data[self.TOTAL_INPUT_WEIGHT_FIELD] = total_weight
+        input_count = len(self.parsed_inputs)
+        if input_count > 0:
+            # 定义需要聚合的字段映射：目标字段 -> 来源字段
+            # 例如：精馏工单的 pre_content_cvn 对应合成批次的 content_cvn
+            qc_map = {
+                'pre_content_cvn': 'content_cvn',
+                'pre_content_dcb': 'content_dcb',
+                'pre_content_adn': 'content_adn',
+            }
+
+            for target_f, source_f in qc_map.items():
+                if hasattr(self.instance, target_f):
+                    # 执行算术平均计算 (Sum / Count)
+                    total_val = sum(getattr(item['source_batch'], source_f, 0) or 0 for item in self.parsed_inputs)
+                    avg_val = total_val / input_count
+
+                    # 强行注入 instance，确保入库
+                    setattr(self.instance, target_f, round(avg_val, 2))
+                    # 同时注入 cleaned_data 以备后续校验使用
+                    self.cleaned_data[target_f] = round(avg_val, 2)
 
         return cleaned_data
 

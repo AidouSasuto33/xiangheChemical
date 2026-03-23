@@ -1,7 +1,7 @@
 import json
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.db.models import F
+from django.db.models import Q, F
 
 from core.constants import KettleState
 from core.constants.procedure_status import ProcedureState, ProcedureAction
@@ -94,7 +94,7 @@ class BaseProcedureService:
 
 
     @classmethod
-    def get_production_context(cls, require_source_batches=False):
+    def get_production_context(cls, instance=None, require_source_batches=False):
         """为前端渲染提供工艺上下文 (利用内存级 BOM 缓存与前置可用批次)。"""
         context = {
             'inputs': cls.INPUT_FIELDS,
@@ -107,7 +107,7 @@ class BaseProcedureService:
             context['qc_pre_fields'] = cls.QC_PRE_FIELDS
 
         if require_source_batches or cls.SOURCE_BATCH_MODEL:
-            context['available_source_batches'] = cls._get_available_source_batches_json()
+            context['available_source_batches'] = cls._get_available_source_batches_json(instance=instance)
 
         context['available_kettles'] = Kettle.objects.filter(status=KettleState.IDLE)
         context['cleaning_kettles'] = Kettle.objects.filter(status=KettleState.CLEANING)
@@ -165,20 +165,25 @@ class BaseProcedureService:
                 cls._update_single_stock(field, qty, f"产出: {name} - 单号: {instance.batch_no}", user)
 
     @classmethod
-    def _get_available_source_batches_json(cls):
+    def _get_available_source_batches_json(cls, instance=None):
         """基于 F 表达式获取有结余的前置批次"""
         if not cls.SOURCE_BATCH_MODEL or not cls.SOURCE_CRUDE_WEIGHT_FIELD:
             return "[]"
+        # 基础查询：获取所有“有结余”的可用批次
+        filter_cond = Q(**{f"{cls.SOURCE_CRUDE_WEIGHT_FIELD}__gt": F('consumed_weight')})
 
-        # 动态组装 F 表达式过滤条件
-        filter_kwargs = {
-            f"{cls.SOURCE_CRUDE_WEIGHT_FIELD}__gt": F('consumed_weight')
-        }
+        # 【逻辑补完】：如果 instance 存在，把这个工单已经选中的批次也加进来
+        if instance and instance.pk:
+            # 找到当前工单已经关联的所有源批次 ID
+            selected_ids = getattr(instance, cls.INPUTS_RELATED_NAME).values_list('source_batch_id', flat=True)
+            # 使用 OR 条件：(有结余) OR (已经是本单选中的)
+            filter_cond |= Q(pk__in=selected_ids)
 
+        # 执行查询
         available_batches = cls.SOURCE_BATCH_MODEL.objects.filter(
-            status=ProcedureState.COMPLETED,
-            **filter_kwargs
-        ).order_by('end_time')
+            filter_cond,
+            status=ProcedureState.COMPLETED
+        ).distinct().order_by('-id')
 
         batch_list = []
         for batch in available_batches:
