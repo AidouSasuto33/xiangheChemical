@@ -30,6 +30,7 @@ class BaseProcedureForm(forms.ModelForm):
     INPUT_RELATION_MODEL = None  # 投入明细关系 Model (例如: CVNDistillationInput)
     INPUT_RELATION_FK_NAME = None  # 关系表中指向当前主表的 ForeignKey 名称 (例如: 'distillation')
     TOTAL_INPUT_WEIGHT_FIELD = None  # 主表中用于汇总总投入重量的字段名 (例如: 'input_total_cvn_weight')
+    QC_SOURCE_MAP = {} # 投入前置物料的输出
 
     # --- 全局防篡改字段配置 ---
     READONLY_FIELDS = []  # 无论什么状态，始终由系统计算并锁死无法篡改的字段

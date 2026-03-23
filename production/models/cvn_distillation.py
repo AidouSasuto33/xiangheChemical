@@ -21,7 +21,7 @@ class CVNDistillation(BaseProductionStep):
     # =========================================================
     # 2. 精馏前组份 (Pre-Distillation Composition)
     # =========================================================
-    # 虽然可以通过子表 inputs 算加权平均，但工厂可能有实测值，故保留字段
+    # 通过子表 inputs 算加权平均
     pre_content_cvn = models.FloatField("精前-CVN含量%", null=True, blank=True)
     pre_content_dcb = models.FloatField("精前-DCB含量%", null=True, blank=True)
     pre_content_adn = models.FloatField("精前-己二腈含量%", null=True, blank=True)

@@ -69,7 +69,7 @@ PROCEDURE_BOM_MAPPING = {
         ],
         'qc_fields': [
             {'field': 'content_cva', 'name': 'CVA含量%'},
-            {'field': 'content_cvn', 'name': 'CVN含量%(精品)'},
+            {'field': 'content_cvn', 'name': 'CVN含量%'},
             {'field': 'content_water', 'name': '水分%'}
         ]
     },
@@ -88,7 +88,7 @@ PROCEDURE_BOM_MAPPING = {
             {'field': 'distillation_head_weight', 'name': '前馏份'}
         ],
         'qc_fields': [
-            {'field': 'content_cvc', 'name': 'CVC含量%(粗品)'},
+            {'field': 'content_cvc', 'name': 'CVC含量%'},
             {'field': 'content_cva', 'name': 'CVA含量%'}
         ]
     },
