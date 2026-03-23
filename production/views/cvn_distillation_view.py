@@ -24,3 +24,7 @@ class CVNDistillationUpdateView(CVNDistillationBaseView, BaseProcedureUpdateView
 
 class CVNDistillationListView(CVNDistillationBaseView, BaseProcedureListView):
     template_name = 'production/procedure_list/procedure_list_cvn_distillation.html'
+
+    def get_queryset(self):
+        # 预加载 inputs 及其关联的 source_batch，确保模板能读到数据且不影响查询性能
+        return super().get_queryset().prefetch_related('inputs__source_batch')

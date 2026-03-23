@@ -30,12 +30,17 @@
             padding: 0.5rem;
         }
 
-        .sticky-col-1 {
+.sticky-col-1 {
             position: sticky;
             left: 0;
             z-index: 20 !important;
             background-color: #fff;
             border-right: 1px solid #dee2e6;
+
+            /* 核心修复：打破全局的 nowrap 限制，允许长单号换行 */
+            word-break: break-word; /* 允许在连字符或任意位置换行 */
+            width: 105px; /* 显式指定宽度 */
+            min-width: 105px;
         }
 
         tbody .sticky-col-1 {
@@ -60,13 +65,13 @@
         }
 
         /* 批号截断展示样式 */
-        .batch-tag {
-            max-width: 120px;
+.batch-tag {
+            /* 移除之前固定的 max-width，让其更灵活 */
             display: inline-block;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            vertical-align: bottom;
+            vertical-align: middle;
         }
     </style>
 {% endblock %}
@@ -129,19 +134,20 @@
 
                         <th colspan="2" class="border-start border-secondary border-opacity-50 text-primary">投入来源
                         </th>
-                        <th colspan="4" class="border-start border-secondary border-opacity-50 text-primary">精前组份
+
+                        <th colspan="3" class="border-start border-secondary border-opacity-50 text-primary">精前组份
                         </th>
+
                         <th colspan="4" class="border-start border-secondary border-opacity-50 text-success">精品产出
                         </th>
-                        <th rowspan="2" class="border-start">釜残(kg)</th>
 
+                        <th rowspan="2" class="border-start">釜残(kg)</th>
                         <th rowspan="2" class="border-start" style="width: 90px;">操作</th>
                     </tr>
                     <tr>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">粗品批号</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light" style="min-width: 150px;">粗品批号</th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">总重kg</th>
 
-                        <th class="th-xs border-start text-muted fw-normal bg-light">总重kg</th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">CVN%</th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">DCB%</th>
                         <th class="th-xs border-start text-muted fw-normal bg-light">己二腈%</th>
@@ -180,31 +186,32 @@
                             <td class="text-center">{{ item.kettle.name|default:"-" }}</td>
                             <td class="text-center text-muted font-monospace">{{ item.start_time|date:"m-d H:i"|default:"-" }}</td>
 
-                            <td class="text-center border-start border-secondary border-opacity-25">
-                                {% with first_input=item.input_sources|first %}
-                                    {% if first_input %}
-                                        <span class="batch-tag font-monospace"
-                                              data-bs-toggle="tooltip"
-                                              data-bs-html="true"
-                                              title="
-                                                      {% for src in item.input_sources %}{{ src.batch_no }} ({{ src.use_weight }}kg)<br>{% endfor %}">
-                                            {{ first_input.batch_no }}
-                                        </span>
-                                        {% if item.input_sources|length > 1 %}
-                                            <span class="badge bg-secondary rounded-pill"
-                                                  style="font-size: 0.65rem;">+{{ item.input_sources|length|add:"-1" }}</span>
-                                        {% endif %}
-                                    {% else %}-{% endif %}
-                                {% endwith %}
+<td class="border-start border-secondary border-opacity-25">
+                                <div class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 200px;">
+                                    {% with inputs=item.inputs.all %}
+                                        {% with first_input=inputs|first %}
+                                            {% if first_input %}
+                                                <span class="batch-tag font-monospace"
+                                                      style="max-width: 100%;"
+                                                      data-bs-toggle="tooltip"
+                                                      data-bs-html="true"
+                                                      title="{% for input in inputs %}{{ input.source_batch.batch_no }} ({{ input.use_weight|floatformat:1 }}kg)<br>{% endfor %}">
+                                                    {{ first_input.source_batch.batch_no }}
+                                                </span>
+                                                {% if inputs|length > 1 %}
+                                                    <span class="badge bg-secondary rounded-pill flex-shrink-0 ms-1"
+                                                          style="font-size: 0.65rem;">+{{ inputs|length|add:"-1" }}</span>
+                                                {% endif %}
+                                            {% else %}-{% endif %}
+                                        {% endwith %}
+                                    {% endwith %}
+                                </div>
                             </td>
                             <td class="col-digit border-start text-primary fw-bold">{{ item.input_total_cvn_weight|floatformat:1|default:"0" }}</td>
 
-                            <td class="col-digit border-start">{{ item.input_total_cvn_weight|floatformat:1|default:"-" }}</td>
                             <td class="col-digit border-start text-muted">{{ item.pre_content_cvn|floatformat:1|default:"-" }}%</td>
                             <td class="col-digit border-start text-muted">{{ item.pre_content_dcb|floatformat:1|default:"-" }}%</td>
-                            <td class="col-digit border-start text-muted">
-                                {{ item.pre_content_adn|floatformat:1|default:"-" }}%
-                            </td>
+                            <td class="col-digit border-start text-muted">{{ item.pre_content_adn|floatformat:1|default:"-" }}%</td>
 
                             <td class="col-digit border-start text-success fw-bold">{{ item.cvn_dis_crude_weight|floatformat:1|default:"0" }}</td>
                             <td class="col-digit border-start">{{ item.output_content_cvn|floatformat:1|default:"-" }}%</td>
@@ -217,20 +224,19 @@
                                 <a href="{% url 'production:cvn_distillation_update' item.pk %}"
                                    class="btn btn-sm {% if item.status == 'completed' %}btn-outline-secondary{% elif item.status == 'new' %}btn-dark{% else %}btn-warning{% endif %} py-0 px-2 small shadow-sm"
                                    style="font-size: 0.8rem;">
-                                    {% if item.status == 'completed' %}查看{% elif item.status == 'new' %}投产{% else %}
-                                        处理{% endif %}
+                                    {% if item.status == 'completed' %}查看{% elif item.status == 'new' %}投产{% else %}处理{% endif %}
                                 </a>
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="16" class="text-center py-5 text-muted">暂无精馏数据</td>
+                            <td colspan="15" class="text-center py-5 text-muted">暂无精馏数据</td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
-                    {% if is_paginated %}
+            {% if is_paginated %}
                 <div class="card-footer bg-white border-top py-3">
                     <nav aria-label="Page navigation">
                         <ul class="pagination pagination-sm justify-content-end mb-0">

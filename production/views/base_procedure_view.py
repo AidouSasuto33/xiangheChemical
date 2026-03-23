@@ -1,5 +1,4 @@
 # production/views/base_procedure_view.py
-
 from django.views.generic import CreateView, UpdateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
