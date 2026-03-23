@@ -46,6 +46,9 @@ class BaseProcedureView:
             context['bom_data'] = self.service_class.get_production_context(
                 require_source_batches=self.require_source_batches
             )
+            import logging
+            logger = logging.getLogger()
+            logger.warning(f"context: {context}")
         return context
 
     def get_success_url(self):
@@ -178,4 +181,5 @@ class BaseProcedureListView(LoginRequiredMixin, ListView):
         context['current_status'] = self.request.GET.get('status', '')
         context['search_query'] = self.request.GET.get('q', '')
         context['status_choices'] = ProcedureState.choices
+
         return context

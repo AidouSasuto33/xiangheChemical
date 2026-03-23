@@ -26,9 +26,9 @@
 
             // 动态组装额外含量信息，兼容未来 CVA/CVC 等其他前置工艺
             let extraInfo = "";
-            if (source.cvn !== undefined && source.cvn !== 0) extraInfo += ` | CVN: ${source.cvn}%`;
-            if (source.cva !== undefined && source.cva !== 0) extraInfo += ` | CVA: ${source.cva}%`;
-            if (source.cvc !== undefined && source.cvc !== 0) extraInfo += ` | CVC: ${source.cva}%`;
+            if (source.content_cvn !== undefined && source.content_cvn !== 0) extraInfo += ` | CVN: ${source.content_cvn}%`;
+            if (source.content_dcb !== undefined && source.content_dcb !== 0) extraInfo += ` | CVA: ${source.content_dcb}%`;
+            if (source.content_adn !== undefined && source.content_adn !== 0) extraInfo += ` | CVC: ${source.content_adn}%`;
 
             // 提示文本在部分浏览器中会显示在批号旁边
             option.text = `余量: ${source.remaining_weight}kg${extraInfo}`;
@@ -65,9 +65,9 @@
                     if (source) {
                         totalWeight += weight;
                         // 逻辑调整：直接累加含量，不乘以重量
-                        sumCvn += source.cvn;
-                        sumDcb += source.dcb;
-                        sumAdn += source.adn;
+                        sumCvn += source.content_cvn;
+                        sumDcb += source.content_dcb;
+                        sumAdn += source.content_adn;
                         selectedCount++; // 计数增加
                     }
                 }
@@ -118,7 +118,7 @@
                 if (!selectedBatches.has(source.batch_no)) {
                     const option = document.createElement('option');
                     option.value = source.batch_no;
-                    option.text = `余量: ${source.remaining_weight}kg | CVN: ${source.cvn}%`;
+                    option.text = `余量: ${source.remaining_weight}kg | CVN: ${source.content_cvn}%`;
                     dataList.appendChild(option);
                 }
             });
@@ -172,7 +172,7 @@
                 // 渲染高颜值数据徽章
                 infoDiv.innerHTML = `
                     <span class="badge bg-success bg-opacity-10 text-success border border-success me-1">余: ${source.remaining_weight}kg</span>
-                    <span class="text-muted">CVN <strong class="text-dark">${source.cvn}%</strong> | DCB <strong class="text-dark">${source.dcb}%</strong> | ADN <strong class="text-dark">${source.adn}%</strong></span>
+                    <span class="text-muted">CVN <strong class="text-dark">${source.content_cvn}%</strong> | DCB <strong class="text-dark">${source.content_dcb}%</strong> | ADN <strong class="text-dark">${source.content_adn}%</strong></span>
                 `;
             } else {
                 infoDiv.innerHTML = ''; // 找不到有效批次则清空

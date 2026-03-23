@@ -189,9 +189,9 @@ class BaseProcedureService:
             # 为 CVN 精馏保留特殊的含量下发逻辑，保持基类整洁，子类纯净
             if cls.PROCEDURE_KEY == 'cvndistillation':
                 batch_data.update({
-                    'cvn': getattr(batch, 'content_cvn', 0.0),
-                    'dcb': getattr(batch, 'content_dcb', 0.0),
-                    'adn': getattr(batch, 'content_adn', 0.0),
+                    'content_cvn': getattr(batch, 'content_cvn', 0.0),
+                    'content_dcb': getattr(batch, 'content_dcb', 0.0),
+                    'content_adn': getattr(batch, 'content_adn', 0.0),
                 })
             # 如果未来 CVA 合成也需要额外信息，继续增加 elif 即可
             batch_list.append(batch_data)

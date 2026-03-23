@@ -1,6 +1,6 @@
 from production.forms import CVNDistillationForm
 from production.models.cvn_distillation import CVNDistillation
-from production.services.cvn_synthesis_service import CVNSynthesisService
+from production.services.cvn_distillation_service import CVNDistillationService
 from production.views.base_procedure_view import BaseProcedureView, BaseProcedureListView, BaseProcedureCreateView, \
     BaseProcedureUpdateView
 
@@ -9,7 +9,7 @@ class CVNDistillationBaseView(BaseProcedureView):
     # 子类必须覆盖的变量
     model = CVNDistillation
     form_class = CVNDistillationForm
-    service_class = CVNSynthesisService
+    service_class = CVNDistillationService
     template_name = 'production/procedure/cvn_distillation.html'
     reverse_str = 'production:cvn_distillation_update'
     batch_no_prefix = 'CVN-DIS'
