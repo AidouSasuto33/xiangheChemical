@@ -21,12 +21,13 @@ class BaseProcedureService:
     # ==========================================
     # 子类必须/可覆盖的配置项 (Configuration)
     # ==========================================
-    PROCEDURE_KEY = None                # 工艺标识，如 'cvnsynthesis', 'cvndistillation'
+    PROCEDURE_KEY = None  # 工艺标识，如 'cvnsynthesis', 'cvndistillation'
 
     # 前置工艺物料相关配置 (若该工艺需要用到多批次前置原料，则配置以下项)
-    SOURCE_BATCH_MODEL = None           # 前置产物模型，如 CVNSynthesis
-    SOURCE_CRUDE_WEIGHT_FIELD = None    # 前置模型的主产物字段名，用于 F 表达式过滤，如 'cvn_syn_crude_weight'
-    INPUTS_RELATED_NAME = None          # 当前模型指向前置投料子表的 related_name
+    SOURCE_PROCEDURE_KEY = None  # 前置工艺标识，如 'cvnsynthesis' (新增：用于动态拉取前置质检字段)
+    SOURCE_BATCH_MODEL = None  # 前置产物模型，如 CVNSynthesis
+    SOURCE_CRUDE_WEIGHT_FIELD = None  # 前置模型的主产物字段名，用于 F 表达式过滤，如 'cvn_syn_crude_weight'
+    INPUTS_RELATED_NAME = None  # 当前模型指向前置投料子表的 related_name
     SOURCE_GLOBAL_INVENTORY_KEY = None  # 对应的全局库存键名，防止 BOM 别名与库存键不匹配，如 'cvn_syn_crude_weight'
 
     # ==========================================
@@ -38,6 +39,10 @@ class BaseProcedureService:
     OUTPUT_NAMES = []
     QC_FIELDS = []
     QC_PRE_FIELDS = []
+
+    # 新增：用于缓存前置工艺的质检字段，供多批次选择器使用
+    SOURCE_QC_FIELDS = []
+    SOURCE_QC_NAMES = []
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -54,12 +59,17 @@ class BaseProcedureService:
             cls.QC_FIELDS = get_procedure_bom_info(cls.PROCEDURE_KEY, 'qc_fields', 'field')
             cls.QC_PRE_FIELDS = get_procedure_bom_info(cls.PROCEDURE_KEY, 'qc_pre_fields', 'field')
 
+        # 新增：如果配置了前置工艺，去 BOM 里把前置工艺的质检要求拉过来
+        if cls.SOURCE_PROCEDURE_KEY:
+            cls.SOURCE_QC_FIELDS = get_procedure_bom_info(cls.SOURCE_PROCEDURE_KEY, 'qc_fields', 'field')
+            cls.SOURCE_QC_NAMES = get_procedure_bom_info(cls.SOURCE_PROCEDURE_KEY, 'qc_fields', 'name')
+
     # ==========================================
     # 核心公共接口 (Template Methods)
     # ==========================================
     @classmethod
     def process_start(cls, instance, user):
-        """标准投产流程：防守校验 -> 双擎扣减 -> 状态机接管"""
+        """标准投产流程：防守校验 -> 双擎库存扣减 -> 状态机接管"""
         if instance.status != ProcedureState.NEW:
             raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法执行投产操作。")
 
@@ -92,7 +102,6 @@ class BaseProcedureService:
 
             ProcedureStateService.process_action(instance, ProcedureAction.FINISH_PRODUCTION, user=user)
 
-
     @classmethod
     def get_production_context(cls, instance=None, require_source_batches=False):
         """为前端渲染提供工艺上下文 (利用内存级 BOM 缓存与前置可用批次)。"""
@@ -105,6 +114,12 @@ class BaseProcedureService:
         # 动态获取，如果存在才加入，服务于 cvn_dis 等含有精前质检的模型
         if cls.QC_PRE_FIELDS:
             context['qc_pre_fields'] = cls.QC_PRE_FIELDS
+
+        # 新增：将前置质检字段字典传给前端，供 JS 动态渲染徽章和下拉列表
+        if cls.SOURCE_QC_FIELDS:
+            context['source_qc_info'] = json.dumps([
+                {'field': f, 'name': n} for f, n in zip(cls.SOURCE_QC_FIELDS, cls.SOURCE_QC_NAMES)
+            ])
 
         if require_source_batches or cls.SOURCE_BATCH_MODEL:
             context['available_source_batches'] = cls._get_available_source_batches_json(instance=instance)
@@ -124,7 +139,8 @@ class BaseProcedureService:
             # 引擎 B: 前置多批次溯源扣减规则 (约定以 'input_total_' 开头)
             if field.startswith('input_total_'):
                 if not cls.SOURCE_BATCH_MODEL:
-                    raise ValidationError(f"系统配置错误：物料 {name} 触发了前置批次溯源逻辑，但未配置 SOURCE_BATCH_MODEL。")
+                    raise ValidationError(
+                        f"系统配置错误：物料 {name} 触发了前置批次溯源逻辑，但未配置 SOURCE_BATCH_MODEL。")
 
                 total_use_weight = 0
                 inputs_qs = getattr(instance, cls.INPUTS_RELATED_NAME).all()
@@ -148,7 +164,8 @@ class BaseProcedureService:
                 if total_use_weight > 0:
                     # 优先使用配置的真实全局库存键，若未配置则降级使用 BOM 字段名
                     global_key = cls.SOURCE_GLOBAL_INVENTORY_KEY or field
-                    cls._update_single_stock(global_key, -total_use_weight, f"{name}溯源扣减 - 单号: {instance.batch_no}", user)
+                    cls._update_single_stock(global_key, -total_use_weight,
+                                             f"{name}溯源扣减 - 单号: {instance.batch_no}", user)
 
             # 引擎 A: 标准辅料全局直扣规则
             else:
@@ -166,17 +183,16 @@ class BaseProcedureService:
 
     @classmethod
     def _get_available_source_batches_json(cls, instance=None):
-        """基于 F 表达式获取有结余的前置批次"""
+        """基于 F 表达式获取有结余的前置批次，动态嵌入前置质检数据"""
         if not cls.SOURCE_BATCH_MODEL or not cls.SOURCE_CRUDE_WEIGHT_FIELD:
             return "[]"
+
         # 基础查询：获取所有“有结余”的可用批次
         filter_cond = Q(**{f"{cls.SOURCE_CRUDE_WEIGHT_FIELD}__gt": F('consumed_weight')})
 
         # 【逻辑补完】：如果 instance 存在，把这个工单已经选中的批次也加进来
         if instance and instance.pk:
-            # 找到当前工单已经关联的所有源批次 ID
             selected_ids = getattr(instance, cls.INPUTS_RELATED_NAME).values_list('source_batch_id', flat=True)
-            # 使用 OR 条件：(有结余) OR (已经是本单选中的)
             filter_cond |= Q(pk__in=selected_ids)
 
         # 执行查询
@@ -191,14 +207,13 @@ class BaseProcedureService:
                 'batch_no': batch.batch_no,
                 'remaining_weight': round(batch.remaining_weight, 2),
             }
-            # 为 CVN 精馏保留特殊的含量下发逻辑，保持基类整洁，子类纯净
-            if cls.PROCEDURE_KEY == 'cvndistillation':
-                batch_data.update({
-                    'content_cvn': getattr(batch, 'content_cvn', 0.0),
-                    'content_dcb': getattr(batch, 'content_dcb', 0.0),
-                    'content_adn': getattr(batch, 'content_adn', 0.0),
-                })
-            # 如果未来 CVA 合成也需要额外信息，继续增加 elif 即可
+
+            # 核心修改：动态遍历前置质检字段，彻底告别硬编码
+            if cls.SOURCE_QC_FIELDS:
+                for sqc_field in cls.SOURCE_QC_FIELDS:
+                    # 使用 getattr 动态获取批次对象的质检值，不存在则默认为 0.0
+                    batch_data[sqc_field] = getattr(batch, sqc_field, 0.0)
+
             batch_list.append(batch_data)
 
         return json.dumps(batch_list)

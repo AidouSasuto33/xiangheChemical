@@ -1,4 +1,5 @@
 {% extends "production/procedure/base_procedure.html" %}
+{% load static %}
 
 {% block title %}工单：CVN精馏{% endblock %}
 
@@ -132,6 +133,7 @@
 
 {% block extra_js %}
 {{ block.super }}
+    <script src="{% static 'js/production/partials/qc_pre_content_calculator.js' %}"></script>
 <script>
     // 实时计算精品中各成分的具体重量
     document.addEventListener('DOMContentLoaded', function() {

@@ -212,6 +212,12 @@ class CVNDistillationForm(BaseProcedureForm):
     INPUT_RELATION_FK_NAME = 'distillation'
     TOTAL_INPUT_WEIGHT_FIELD = 'input_total_cvn_weight'
 
+    QC_SOURCE_MAP = {
+        'pre_content_cvn': 'content_cvn',
+        'pre_content_dcb': 'content_dcb',
+        'pre_content_adn': 'content_adn',
+    }
+
     class Meta:
         model = CVNDistillation
         fields = [

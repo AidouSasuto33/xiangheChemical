@@ -1,4 +1,5 @@
 # production/forms/base_procedure_form.py
+import json
 from django import forms
 from django.db.models import Q
 from django.core.exceptions import ValidationError
@@ -24,13 +25,16 @@ class BaseProcedureForm(forms.ModelForm):
     OUTPUT_GROUP = []
     DATETIME_FIELDS = ['start_time', 'expected_time', 'end_time']
 
-    # --- 动态投入及多批次物料配置 (CVN精馏及后续工艺使用) ---
+    # --- 动态投入及多批次物料配置 (精馏及后续工艺使用) ---
     HAS_DYNAMIC_INPUTS = False  # 是否需要处理前置投入批次
     SOURCE_BATCH_MODEL = None  # 原料来源 Model (例如: CVNSynthesis)
     INPUT_RELATION_MODEL = None  # 投入明细关系 Model (例如: CVNDistillationInput)
     INPUT_RELATION_FK_NAME = None  # 关系表中指向当前主表的 ForeignKey 名称 (例如: 'distillation')
     TOTAL_INPUT_WEIGHT_FIELD = None  # 主表中用于汇总总投入重量的字段名 (例如: 'input_total_cvn_weight')
-    QC_SOURCE_MAP = {} # 投入前置物料的输出
+
+    # 新增：用于前端动态质检计算引擎的映射字典，基类默认为空，子类覆盖
+    # 格式例如: {'pre_content_cvn': 'content_cvn'}
+    QC_SOURCE_MAP = {}
 
     # --- 全局防篡改字段配置 ---
     READONLY_FIELDS = []  # 无论什么状态，始终由系统计算并锁死无法篡改的字段
@@ -39,8 +43,10 @@ class BaseProcedureForm(forms.ModelForm):
         self.action_type = kwargs.pop('action_type', None)
         super().__init__(*args, **kwargs)
 
-        # 动态获取子类定义的 procedure_key，避免在基类中为 None 时引发报错
-        self._apply_readonly_fields()  # 新增：处理全局防篡改字段
+        # 将映射字典转为 JSON，挂载到实例上，供模板传递给前端计算引擎
+        self.qc_source_map_json = json.dumps(self.QC_SOURCE_MAP)
+
+        self._apply_readonly_fields()
         self._setup_datetime_widgets()
         self._setup_kettle_queryset()
         self._apply_bootstrap_styles()
@@ -82,7 +88,6 @@ class BaseProcedureForm(forms.ModelForm):
 
     def _apply_status_locks(self):
         """基于当前实例状态，执行字段的只读锁定逻辑"""
-        # 兼容处理：确保实例有 status 属性
         status = getattr(self.instance, 'status', 'new')
         if not status:
             status = 'new'
@@ -137,7 +142,6 @@ class BaseProcedureForm(forms.ModelForm):
             if 'end_time' in self.fields and not cleaned_data.get('end_time'):
                 self.add_error('end_time', "确认完工必须录入实际结束时间。")
 
-
             # 确保 procedure_key 存在时才进行组件计算与校验
             if self.PROCEDURE_KEY:
                 # === 1. 质检百分比校验 ===
@@ -153,76 +157,77 @@ class BaseProcedureForm(forms.ModelForm):
 
         return cleaned_data
 
-
     def _clean_dynamic_inputs(self, cleaned_data):
-        """解析并校验前端传来的多批次投入数组"""
+        """解析并校验前端传来的多批次投入数组，剔除了具体的业务计算逻辑"""
         batch_nos = self.data.getlist('source_batch_no')
         use_weights = self.data.getlist('source_use_weight')
 
         if not batch_nos:
             raise ValidationError("请至少添加一条原料投入明细。")
+
         parsed_inputs = []
         total_weight = 0.0
         seen_batches = set()
+
         for batch_no, weight_str in zip(batch_nos, use_weights):
             batch_no = batch_no.strip()
             if not batch_no:
                 continue
-                # 1. 重量格式校验
+
+            # 1. 重量格式校验
             try:
                 weight = float(weight_str)
             except (ValueError, TypeError):
                 raise ValidationError(f"批号 [{batch_no}] 的重量格式不正确。")
             if weight <= 0:
                 raise ValidationError(f"批号 [{batch_no}] 的投入重量必须大于 0。")
+
             # 2. 重复校验
             if batch_no in seen_batches:
                 raise ValidationError(f"批号 [{batch_no}] 被重复添加，请合并重量后录入。")
             seen_batches.add(batch_no)
+
             # 3. 数据库真实性校验
             try:
                 source_batch = self.SOURCE_BATCH_MODEL.objects.get(batch_no=batch_no)
             except self.SOURCE_BATCH_MODEL.DoesNotExist:
                 raise ValidationError(f"系统内未找到原料批号：[{batch_no}]，请检查拼写。")
+
             parsed_inputs.append({
                 'source_batch': source_batch,
                 'use_weight': weight
             })
             total_weight += weight
+
         if not parsed_inputs:
             raise ValidationError("请添加有效的原料投入明细。")
-        # 将干净数据暂存在 Form 实例中，供 save() 方法使用
+
+        # 将干净数据暂存在 Form 实例中，供 save() 和子类的 clean() 业务逻辑使用
         self.parsed_inputs = parsed_inputs
+
         # 自动计算并覆盖主表的投入总重量
-        if self.TOTAL_INPUT_WEIGHT_FIELD and hasattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD):
-            # A. 同步到 instance (用于数据库保存)
+        if self.TOTAL_INPUT_WEIGHT_FIELD:
             if hasattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD):
                 setattr(self.instance, self.TOTAL_INPUT_WEIGHT_FIELD, total_weight)
-            # B. 关键修改：手动注入到 cleaned_data (供后续 validate_output_balance 使用)
+            # 注入到 cleaned_data (供后续 validate_output_balance 使用)
             self.cleaned_data[self.TOTAL_INPUT_WEIGHT_FIELD] = total_weight
-        input_count = len(self.parsed_inputs)
-        if input_count > 0:
-            # 定义需要聚合的字段映射：目标字段 -> 来源字段
-            # 例如：精馏工单的 pre_content_cvn 对应合成批次的 content_cvn
-            qc_map = {
-                'pre_content_cvn': 'content_cvn',
-                'pre_content_dcb': 'content_dcb',
-                'pre_content_adn': 'content_adn',
-            }
 
-            for target_f, source_f in qc_map.items():
+        # 2. 【核心安全增强】：基于 QC_SOURCE_MAP 执行通用后端加权计算
+        if self.QC_SOURCE_MAP and total_weight > 0:
+            for target_f, source_f in self.QC_SOURCE_MAP.items():
+                # 算式：Σ (源批次含量 * 该批次投入重量) / 总投入重量
+                weighted_sum = sum(
+                    (getattr(item['source_batch'], source_f, 0) or 0) * item['use_weight']
+                    for item in self.parsed_inputs
+                )
+                avg_val = weighted_sum / total_weight
+                # 强制注入 instance 和 cleaned_data
+                # 哪怕用户在前端用 F12 修改了值，这里也会根据原始数据重新覆盖
                 if hasattr(self.instance, target_f):
-                    # 执行算术平均计算 (Sum / Count)
-                    total_val = sum(getattr(item['source_batch'], source_f, 0) or 0 for item in self.parsed_inputs)
-                    avg_val = total_val / input_count
-
-                    # 强行注入 instance，确保入库
                     setattr(self.instance, target_f, round(avg_val, 2))
-                    # 同时注入 cleaned_data 以备后续校验使用
-                    self.cleaned_data[target_f] = round(avg_val, 2)
+                self.cleaned_data[target_f] = round(avg_val, 2)
 
         return cleaned_data
-
 
     def save(self, commit=True):
         """拦截默认的 save，利用事务确保主表与投入子表的一致性"""

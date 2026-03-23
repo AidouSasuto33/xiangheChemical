@@ -5,7 +5,13 @@
         <span class="badge bg-primary bg-opacity-10 text-primary">智能感应列表</span>
     </label>
 
-<script id="available-sources-data" type="application/json">
+<input type="hidden" id="config-total-weight-field" value="{{ form.TOTAL_INPUT_WEIGHT_FIELD|default:'' }}">
+    <input type="hidden" id="config-qc-map" value="{{ form.qc_source_map_json|default:'{}' }}">
+
+    <script id="config-source-qc-info" type="application/json">
+        {{ bom_data.source_qc_info|safe|default:"[]" }}
+    </script>
+    <script id="available-sources-data" type="application/json">
         {{ bom_data.available_source_batches|safe|default:"[]" }}
     </script>
 

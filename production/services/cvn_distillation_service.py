@@ -11,6 +11,7 @@ class CVNDistillationService(BaseProcedureService):
     # 1. 工艺身份标识
     # ==========================================
     PROCEDURE_KEY = 'cvndistillation'
+    SOURCE_PROCEDURE_KEY = 'cvnsynthesis'
 
     # ==========================================
     # 2. 前置多批次溯源关联配置 (精馏强依赖前置合成粗品)
