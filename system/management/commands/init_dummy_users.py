@@ -23,22 +23,15 @@ class Command(BaseCommand):
 
         # 2. 用户配置信息
         user_configs = [
-            {"first_name": "殷总", "username": "yinzong", "is_admin": False, "emp_id": "EMP-001"},
-            {"first_name": "董总", "username": "dongzong", "is_admin": False, "emp_id": "EMP-002"},
-            {"first_name": "军主任", "username": "junzhuren", "is_admin": False, "emp_id": "EMP-003"},
-            {"first_name": "张三", "username": "zhangsan", "is_admin": False, "emp_id": "EMP-004"},
-            {"first_name": "东来", "username": "wxxxx", "is_admin": True, "emp_id": "EMP-000"},  # 超级管理员
+            {"first_name": "殷总", "username": "yinzong", "is_admin": False, "emp_id": "2"},
+            {"first_name": "董总", "username": "dongzong", "is_admin": False, "emp_id": "3"},
+            {"first_name": "军主任", "username": "junzhuren", "is_admin": False, "emp_id": "4"},
+            {"first_name": "张三", "username": "zhangsan", "is_admin": False, "emp_id": "5"},
+            {"first_name": "东来", "username": "wxxxx", "is_admin": True, "emp_id": "1"},  # 超级管理员
         ]
 
         try:
             with transaction.atomic():
-                self.stdout.write(self.style.MIGRATE_HEADING("清理旧数据并开始初始化..."))
-
-                # 依次清理：Employee -> User -> Workshop -> Department
-                Employee.objects.all().delete()
-                User.objects.all().delete()
-                Workshop.objects.all().delete()
-                Department.objects.all().delete()
 
                 # A. 创建车间
                 workshops = []
@@ -83,7 +76,7 @@ class Command(BaseCommand):
                     admin_tag = " (SuperUser)" if cfg['is_admin'] else ""
                     self.stdout.write(f"成功注入: {cfg['first_name']} | 档案号: {cfg['emp_id']}{admin_tag}")
 
-                self.stdout.write(self.style.SUCCESS("\n所有数据注入成功。东来，你可以放心地 DUMP 数据库并重新开始了！"))
+                self.stdout.write(self.style.SUCCESS("\n所有用户数据注入成功。"))
 
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"初始化失败: {str(e)}"))
