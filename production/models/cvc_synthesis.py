@@ -17,6 +17,10 @@ class CVCSynthesis(BaseProductionStep):
     # 产出
     distillation_head_weight = models.FloatField("产出-前馏份/头酒(kg)", default=0, help_text="精馏初期的不合格部分")
     cvc_syn_crude_weight = models.FloatField("产出-CVC合格品重量(kg)", default=0)
+    # 新增：精前质检 (动态加权平均写入)
+    pre_content_cva = models.FloatField("精前-CVA含量%", null=True, blank=True)
+    pre_content_cvn = models.FloatField("精前-CVN残留%", null=True, blank=True)
+    pre_content_water = models.FloatField("精前-水分%", null=True, blank=True)
     # 质检
     content_cvc = models.FloatField("成品-CVC含量%", null=True, blank=True, help_text="CVC合成的纯度")
     content_cva = models.FloatField("成品-CVA含量%", null=True, blank=True, help_text="CVC合成工艺中CVA的纯度")

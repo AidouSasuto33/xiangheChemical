@@ -18,6 +18,10 @@ class CVASynthesis(BaseProductionStep):
     cva_crude_weight = models.FloatField("产出-CVA粗品重量(kg)", default=0, help_text="脱水后的实际称重")
     # 库存核心
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False)
+    # 新增：精前质检 (动态加权平均写入)
+    pre_content_cvn = models.FloatField("精前-CVN含量%", null=True, blank=True)
+    pre_content_dcb = models.FloatField("精前-DCB含量%", null=True, blank=True)
+    pre_content_adn = models.FloatField("精前-ADN含量%", null=True, blank=True)
     # 质检 (QC)
     content_cva = models.FloatField("中控-CVA含量%", null=True, blank=True)
     content_cvn = models.FloatField("中控-CVN残留%", null=True, blank=True, help_text="标准应 < 0.5%")

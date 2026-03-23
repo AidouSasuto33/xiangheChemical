@@ -15,6 +15,9 @@ class CVCExport(BaseProductionStep):
     input_total_cvc_weight = models.FloatField("投入总重量(kg)", default=0)
     # 产出
     cvc_dis_crude_weight = models.FloatField("产出-CVC精品重量(kg)", default=0, help_text="二次蒸馏后的实际装桶重量")
+    # 新增：精前质检 (动态加权平均写入)
+    pre_content_cvc = models.FloatField("精前-CVC含量%", null=True, blank=True)
+    pre_content_cva = models.FloatField("精前-CVA含量%", null=True, blank=True)
     # 质检
     content_cvc = models.FloatField("精品-CVC含量%", null=True, blank=True)
     content_cva = models.FloatField("精品-CVA含量%", null=True, blank=True)

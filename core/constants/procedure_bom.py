@@ -71,6 +71,11 @@ PROCEDURE_BOM_MAPPING = {
             {'field': 'content_cva', 'name': 'CVA含量%'},
             {'field': 'content_cvn', 'name': 'CVN含量%'},
             {'field': 'content_water', 'name': '水分%'}
+        ],
+        'qc_pre_fields': [
+            {'field': 'pre_content_cvn', 'name': 'CVN含量%(精品)'},
+            {'field': 'pre_content_dcb', 'name': 'DCB含量%'},
+            {'field': 'pre_content_adn', 'name': 'ADN含量%'}
         ]
     },
 
@@ -90,6 +95,11 @@ PROCEDURE_BOM_MAPPING = {
         'qc_fields': [
             {'field': 'content_cvc', 'name': 'CVC含量%'},
             {'field': 'content_cva', 'name': 'CVA含量%'}
+        ],
+        'qc_pre_fields': [
+            {'field': 'pre_content_cva', 'name': 'CVA含量%'},
+            {'field': 'pre_content_cvn', 'name': 'CVN残留%'},
+            {'field': 'pre_content_water', 'name': '水分%'}
         ]
     },
 
@@ -107,6 +117,10 @@ PROCEDURE_BOM_MAPPING = {
         'qc_fields': [
             {'field': 'content_cvc', 'name': 'CVC含量%(精品)'},
             {'field': 'content_cva', 'name': 'CVA含量%'}
+        ],
+        'qc_pre_fields': [
+            {'field': 'pre_content_cvc', 'name': 'CVC含量%(粗品)'},
+            {'field': 'pre_content_cva', 'name': 'CVA含量%'}
         ]
     }
 }
