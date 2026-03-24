@@ -1,0 +1,35 @@
+<li class="nav-item dropdown me-3" id="notification-dropdown-wrapper">
+    <a class="nav-link text-dark position-relative d-flex align-items-center" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-bell fs-5"></i>
+        <span class="position-absolute top-25 start-75 translate-middle badge rounded-pill bg-danger" id="notification-badge" style="display: none; font-size: 0.65em;">
+            0
+        </span>
+    </a>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="notificationDropdown" style="width: 320px;">
+        <li class="dropdown-header d-flex justify-content-between align-items-center pb-2">
+            <span class="text-dark fw-bold">未读消息 (<span id="unread-count-text">0</span>)</span>
+            <button class="btn btn-sm btn-link text-primary p-0 text-decoration-none" id="mark-all-read-btn" style="font-size: 0.85rem;">全部标为已读</button>
+        </li>
+
+        <li><hr class="dropdown-divider my-0"></li>
+
+        <div id="notification-list-container" style="max-height: 300px; overflow-y: auto;">
+            <li class="text-center text-muted py-4" id="notification-empty-state">
+                <i class="bi bi-inbox fs-4 d-block mb-1"></i>
+                <small>暂无新消息</small>
+            </li>
+        </div>
+
+        <li><hr class="dropdown-divider my-0"></li>
+
+        <li>
+            <a class="dropdown-item text-center text-primary py-2" href="#" id="view-all-notifications-btn" style="font-size: 0.9rem;">
+                查看所有消息
+            </a>
+        </li>
+    </ul>
+</li>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container" style="z-index: 1055;">
+    </div>

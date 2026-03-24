@@ -143,6 +143,7 @@
                             {{ request.user.username }}
                         {% endif %}
                     </strong>!
+                {% include 'notification/partials/_notification_modal.html' %}
                 </span>
                 <form action="{% url 'logout' %}" method="post" class="d-inline">
                     {% csrf_token %}
@@ -185,6 +186,7 @@
 
 {% include 'includes/_global_feedback.html' %}
 <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/notification/notification_modal.js' %}"></script>
 
 {# not disable_global_errors 支持极个别需要自定义错误展示的页面#}
 {#只需在特定的 View 里传一个 context['disable_global_errors'] = True，就能平滑绕过。#}

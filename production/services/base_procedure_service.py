@@ -107,6 +107,7 @@ class BaseProcedureService:
             # TODO 为所有后续状态扭转函数添加save_labor方法
             LaborRecordService.save_labor_records(instance, post_data)
 
+    # TODO 添加save_draft等状态机方法，不然人工记录、备注等信息无法保存
     @classmethod
     def get_production_context(cls, instance=None, require_source_batches=False):
         """为前端渲染提供工艺上下文 (利用内存级 BOM 缓存与前置可用批次)。"""

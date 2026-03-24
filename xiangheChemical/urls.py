@@ -24,6 +24,9 @@ urlpatterns = [
 
     # 生产业务
     path('production/', include('production.urls')),
+
+    # 消息模块
+    path('notification/', include('notification.urls')),
 ]
 
 if settings.DEBUG:
