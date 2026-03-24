@@ -6,6 +6,9 @@ from django.views.decorators.http import require_POST
 from django.utils.timezone import localtime
 from django.urls import reverse
 from .models import Notification
+from django.shortcuts import render
+from django.core.paginator import Paginator
+import json
 
 
 @login_required
@@ -75,3 +78,40 @@ def mark_as_read_and_redirect(request, pk):
             clean_url = f"/{clean_url}"
 
     return redirect(clean_url)
+
+
+@login_required
+def notification_index(request):
+    """消息主页视图（含分页）"""
+    # 获取该用户的所有消息，按时间倒序
+    all_notifs = Notification.objects.filter(recipient=request.user).order_by('-created_at')
+
+    paginator = Paginator(all_notifs, 15)  # 每页15条
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'notification/notification_list.html', {
+        'notifications': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+    })
+
+
+@login_required
+@require_POST
+def mark_single_read(request):
+    """API: 标记单条消息为已读"""
+    data = json.loads(request.body)
+    notif_id = data.get('id')
+    Notification.objects.filter(id=notif_id, recipient=request.user).update(is_read=True)
+    return JsonResponse({'status': 'success'})
+
+
+@login_required
+@require_POST
+def delete_notification(request):
+    """API: 彻底删除单条消息记录"""
+    data = json.loads(request.body)
+    notif_id = data.get('id')
+    Notification.objects.filter(id=notif_id, recipient=request.user).delete()
+    return JsonResponse({'status': 'success'})

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}所有消息 - 相和化工 MES{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="mb-0 text-dark fw-bold">
+                    <i class="bi bi-inbox me-2"></i>消息中心
+                </h3>
+                <button class="btn btn-outline-primary btn-sm" id="page-mark-all-read-btn">
+                    <i class="bi bi-check-all me-1"></i>全部标为已读
+                </button>
+            </div>
+
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="main-notification-list">
+                        
+                        {% for notif in notifications %}
+                        <div class="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center border-start border-4 {% if not notif.is_read %}border-primary bg-light{% else %}border-transparent{% endif %}" id="notif-item-{{ notif.id }}">
+                            
+                            <div class="d-flex align-items-start text-decoration-none w-100" style="cursor: pointer;" onclick="window.location.href='{% url 'notification:read_and_redirect' notif.id %}'">
+                                <div class="me-3 mt-1">
+                                    {% if notif.notice_type == 'warning' %}
+                                        <i class="bi bi-exclamation-circle-fill text-warning fs-4"></i>
+                                    {% elif notif.notice_type == 'success' %}
+                                        <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                    {% elif notif.notice_type == 'error' %}
+                                        <i class="bi bi-x-circle-fill text-danger fs-4"></i>
+                                    {% else %}
+                                        <i class="bi bi-info-circle-fill text-primary fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                
+                                <div>
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1 {% if not notif.is_read %}fw-bold text-dark{% else %}text-muted{% endif %}">
+                                            {{ notif.title }}
+                                            {% if not notif.is_read %}
+                                                <span class="badge bg-danger ms-2" style="font-size: 0.6em; vertical-align: middle;">New</span>
+                                            {% endif %}
+                                        </h6>
+                                    </div>
+                                    <p class="mb-1 text-muted small" style="font-size: 0.85rem;">{{ notif.content|default:"暂无详细内容" }}</p>
+                                    <small class="text-secondary" style="font-size: 0.75rem;">
+                                        <i class="bi bi-clock me-1"></i>{{ notif.created_at|date:"Y-m-d H:i" }}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="ms-3 d-flex flex-column flex-md-row gap-2" onclick="event.stopPropagation();">
+                                {% if not notif.is_read %}
+                                <button class="btn btn-sm btn-light text-primary border rounded-pill btn-mark-read" data-id="{{ notif.id }}" title="标为已读">
+                                    <i class="bi bi-check2-circle"></i>
+                                </button>
+                                {% endif %}
+                                
+                                <button class="btn btn-sm btn-light text-danger border rounded-pill btn-delete-notif" data-id="{{ notif.id }}" title="删除消息">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="p-5 text-center text-muted">
+                            <i class="bi bi-envelope-open fs-1 d-block mb-3 text-secondary"></i>
+                            <h5>当前没有消息记录</h5>
+                            <p class="small">当有新的系统通知、审批进度或报警时，会在这里显示。</p>
+                        </div>
+                        {% endfor %}
+
+                    </div>
+                </div>
+            </div>
+
+            {% if is_paginated %}
+            <nav aria-label="消息分页" class="mt-4">
+                <ul class="pagination justify-content-center pagination-sm">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link text-primary" href="?page={{ page_obj.previous_page_number }}">上一页</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">上一页</span></li>
+                    {% endif %}
+                    
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link bg-primary border-primary">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link text-primary" href="?page={{ page_obj.next_page_number }}">下一页</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">下一页</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notification/notification_list.js' %}"></script>
+{% endblock %}

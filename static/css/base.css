@@ -73,7 +73,7 @@ body {
 
 /* --- Sidebar 折叠状态 --- */
 #sidebar.collapsed {
-    min-width: 70px; /* 稍微宽一点点，放“相和”二字更舒服 */
+    min-width: 70px;
     max-width: 70px;
 }
 
