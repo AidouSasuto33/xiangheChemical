@@ -20,7 +20,7 @@ class LaborRecord(models.Model):
 
     procedure_type = models.CharField(
         "工艺类别",
-        max_length=7,
+        max_length=17,
         db_index=True,
         help_text="工艺标识（如 CVN_SYN, CVN_DIS），极大地提升按工艺分类的报表查询性能"
     )
@@ -46,7 +46,7 @@ class LaborRecord(models.Model):
     )
 
     # --- 4. 统计时间维度 ---
-    # 添加 db_index=True，因为陈总的图表肯定要按日/周/月/季/年进行 Where 和 Group By 筛选
+    # 图表肯定要按日/周/月/季/年进行 Where 和 Group By 筛选
     record_date = models.DateField(
         "记录日期",
         default=timezone.now,

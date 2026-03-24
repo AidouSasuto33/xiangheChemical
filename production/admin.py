@@ -6,6 +6,8 @@ from .models.cva_synthesis import CVASynthesis
 from .models.cvc_synthesis import CVCSynthesis
 from .models.cvc_export import CVCExport
 from .models.kettle import Kettle
+from simple_history.admin import SimpleHistoryAdmin
+from .models.labor_record import LaborRecord
 
 
 # =========================================================
@@ -93,3 +95,35 @@ class KettleAdmin(admin.ModelAdmin):
         )
 
     status_badge.short_description = "状态"
+
+
+@admin.register(LaborRecord)
+class LaborRecordAdmin(SimpleHistoryAdmin):
+    """
+    人力投入记录后台管理
+    集成 SimpleHistoryAdmin 以便在后台审计每一笔工时的修改轨迹
+    """
+    # 列表页展示字段：批号、工艺、工种、人数、工时、计算后的总金额、记录日期
+    list_display = [
+        'batch_no', 'procedure_type', 'cost_config',
+        'worker_count', 'work_hours', 'record_date'
+    ]
+
+    # 右侧筛选器：支持按工艺类别、日期、工种进行快速过滤
+    list_filter = ['procedure_type', 'record_date', 'cost_config']
+
+    # 搜索框：支持按批号或工种名称模糊搜索
+    search_fields = ['batch_no', 'cost_config__label']
+
+    # 详情页字段分组
+    fieldsets = (
+        ('核心关联', {
+            'fields': ('batch_no', 'procedure_type', 'record_date')
+        }),
+        ('投入明细', {
+            'fields': ('cost_config', 'worker_count', 'work_hours', 'cost_snapshot')
+        }),
+    )
+
+    # 单价快照设为只读，保证审计的严肃性（不可在后台随意篡改快照价格）
+    readonly_fields = ['cost_snapshot']

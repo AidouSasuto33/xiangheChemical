@@ -11,6 +11,7 @@ from inventory.services.inventory_service import update_single_inventory
 from production.utils.bom_utils import get_procedure_bom_info
 from production.utils.qc_utils import validate_qc_sum_100
 from production.utils.output_validator import validate_output_balance
+from .partial.labor_record_service import LaborRecordService
 
 
 class BaseProcedureService:
@@ -68,7 +69,7 @@ class BaseProcedureService:
     # 核心公共接口 (Template Methods)
     # ==========================================
     @classmethod
-    def process_start(cls, instance, user):
+    def process_start(cls, instance, user, post_data=None):
         """标准投产流程：防守校验 -> 双擎库存扣减 -> 状态机接管"""
         if instance.status != ProcedureState.NEW:
             raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法执行投产操作。")
@@ -78,9 +79,11 @@ class BaseProcedureService:
             cls._execute_inventory_deduction(instance, user)
 
             ProcedureStateService.process_action(instance, ProcedureAction.START_PRODUCTION, user=user)
+            # TODO 为所有后续状态扭转函数添加save_labor方法
+            LaborRecordService.save_labor_records(instance, post_data)
 
     @classmethod
-    def process_finish(cls, instance, user):
+    def process_finish(cls, instance, user, post_data=None):
         """标准完工流程：防守校验 -> QC与平衡底线拦截 -> 产出入库 -> 状态机接管"""
         if instance.status not in [ProcedureState.RUNNING, ProcedureState.DELAYED]:
             raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法执行完工操作。")
@@ -101,6 +104,8 @@ class BaseProcedureService:
             cls._execute_inventory_addition(instance, user)
 
             ProcedureStateService.process_action(instance, ProcedureAction.FINISH_PRODUCTION, user=user)
+            # TODO 为所有后续状态扭转函数添加save_labor方法
+            LaborRecordService.save_labor_records(instance, post_data)
 
     @classmethod
     def get_production_context(cls, instance=None, require_source_batches=False):

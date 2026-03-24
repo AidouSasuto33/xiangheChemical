@@ -10,6 +10,9 @@ from core.constants import ProcedureState, ProcedureAction
 from production.signals import post_procedure_state_change
 from production.utils.batch_generator import generate_batch_number
 
+from inventory.models import CostConfig
+from production.models import LaborRecord
+
 
 # ========================================================
 # 1. 核心混入基类 (Core Mixin)
@@ -41,6 +44,19 @@ class BaseProcedureView:
     def get_context_data(self, **kwargs):
         """统一调用 Service 层获取页面渲染所需的上下文（BOM、釜皿等）"""
         context = super().get_context_data(**kwargs)
+        # 1. 注入工种配置
+        context['labor_cost_configs'] = CostConfig.objects.filter(category='labor').order_by('label')
+
+        # 2. 安全获取实例对象 (防御 ListView/CreateView 崩溃)
+        # getattr 用于安全获取属性，如果不存在则返回 None
+        obj = getattr(self, 'object', None)
+
+        # 3. 如果实例存在且有批号，注入人工记录
+        if obj and getattr(obj, 'pk', None):
+            context['labor_records'] = LaborRecord.objects.filter(
+                batch_no=obj.batch_no
+            )
+
         if self.require_source_batches:
             # 获取当前实例（如果是新建页面，self.object 可能为 None）
             current_instance = getattr(self, 'object', None)
@@ -67,7 +83,6 @@ class BaseProcedureCreateView(LoginRequiredMixin, BaseProcedureView, CreateView)
     通用的工艺开单视图。
     负责：生成批次号、初始化状态、绑定操作员、发送创建信号。
     """
-
     def form_valid(self, form):
         if not self.batch_no_prefix:
             raise NotImplementedError("CreateView 子类必须提供 batch_no_prefix 以生成批次号。")
@@ -105,7 +120,6 @@ class BaseProcedureUpdateView(LoginRequiredMixin, BaseProcedureView, UpdateView)
     通用的工艺流转视图。
     负责：调度 Service 层处理投产与完工逻辑、执行事务管控与异常拦截。
     """
-
     def form_valid(self, form):
         action = self.request.POST.get('action')
         current_status = form.instance.status
@@ -120,12 +134,12 @@ class BaseProcedureUpdateView(LoginRequiredMixin, BaseProcedureView, UpdateView)
 
                 # 1. 投产 (Start)
                 if action == ProcedureAction.START_PRODUCTION and current_status == ProcedureState.NEW:
-                    self.service_class.process_start(form.instance, self.request.user)
+                    self.service_class.process_start(form.instance, self.request.user, post_data=self.request.POST)
                     messages.success(self.request, f"批次 {form.instance.batch_no} 已投产！原料/粗品库存已扣减。")
 
                 # 2. 完工 (Finish)
                 elif action == ProcedureAction.FINISH_PRODUCTION and current_status == ProcedureState.RUNNING:
-                    self.service_class.process_finish(form.instance, self.request.user)
+                    self.service_class.process_finish(form.instance, self.request.user, post_data=self.request.POST)
                     messages.success(self.request, f"批次 {form.instance.batch_no} 已完工！产出已记录，设备已释放。")
 
                 # 3. 统一的数据保存
