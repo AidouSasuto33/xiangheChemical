@@ -56,19 +56,6 @@ class BaseProductionStep(models.Model):
     expected_time = models.DateTimeField("预计完成时间", default=get_default_expected_time)
     end_time = models.DateTimeField("结束时间", null=True, blank=True)
 
-    # --- 3. 劳务成本记录 (核心变更) ---
-    # 数据结构示例：
-    # [
-    #   {"role_key": "wage_input", "count": 2, "amount": 1.5, "note": "投料"},
-    #   {"role_key": "wage_waste", "count": 1, "amount": 1.0, "note": "废水处理"}
-    # ]
-    labor_records = JSONField(
-        "人工工时记录",
-        default=list,
-        blank=True,
-        help_text="格式：[{工种Key, 人数, 耗时/次数}]"
-    )
-
     # --- 4. 辅助信息 ---
     #TODO 备注与操作数据结构改为LIST，每次操作都留痕
     operator = models.ForeignKey(

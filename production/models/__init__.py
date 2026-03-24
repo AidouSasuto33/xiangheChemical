@@ -5,3 +5,4 @@ from .cva_synthesis import CVASynthesis, CVASynthesisInput
 from .cvc_synthesis import CVCSynthesis, CVCSynthesisInput
 from .cvc_export import CVCExport, CVCExportInput
 from .kettle import Kettle
+from .labor_record import LaborRecord
