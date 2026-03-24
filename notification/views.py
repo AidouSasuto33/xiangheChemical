@@ -61,6 +61,7 @@ def mark_as_read_and_redirect(request, pk):
     """
     标记已读并跳转
     """
+    # TODO 跳转时保存已读时间，主页上添加已读时间显示。
     notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
 
     if not notif.is_read:
