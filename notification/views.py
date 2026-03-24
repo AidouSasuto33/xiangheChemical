@@ -26,9 +26,9 @@ def get_unread_notifications(request):
         # 获取原始 URL
         raw_url = getattr(notif, 'target_url', getattr(notif, 'url', '#'))
 
-        # URL 清洗逻辑：防止前端相对路径拼接
+        # TODO 服务上线后，notification模块存相对路径，删除此处清洗逻辑
         clean_url = raw_url
-        if clean_url != '#':
+        if clean_url != '#': #
             # 如果数据库存了域名但没加 http://，自动补全
             if clean_url.startswith('127.0.0.1') or clean_url.startswith('localhost'):
                 clean_url = f"http://{clean_url}"
