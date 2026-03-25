@@ -1,6 +1,7 @@
 from django.db import models
 from .core import BaseProductionStep, BaseMultiBatchInput
 from .cvc_synthesis import CVCSynthesis
+from system.models import Workshop
 
 
 # =========================================================
@@ -11,6 +12,7 @@ class CVCExport(BaseProductionStep):
     Step 5: CVC 外销精制 (Wai Xiao)
     逻辑：投入CVC合格品(Step 4) -> 二次精馏 -> CVC精品
     """
+    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvc_export', verbose_name="工单所属车间", default=5) # 5是cvc_exp车间id
     # 投入
     input_total_cvc_weight = models.FloatField("投入总重量(kg)", default=0)
     # 产出

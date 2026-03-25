@@ -1,7 +1,7 @@
 from django.db import models
 from .core import BaseProductionStep, BaseMultiBatchInput
 from .cva_synthesis import CVASynthesis
-from core import constants
+from system.models import Workshop
 # =========================================================
 # 工艺第四步： CVC合成
 # =========================================================
@@ -10,6 +10,8 @@ class CVCSynthesis(BaseProductionStep):
     Step 4: CVC 合成 (内销/普通级)
     逻辑：投入CVA粗品(Step 3) + 二氯亚砜 -> 氯化反应(多点中控) -> 精馏 -> CVC成品
     """
+    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvc_synthesis',
+                                 verbose_name="工单所属车间", default=4)  # 4是cvc_syn车间id
     # 投入
     input_total_cva_weight = models.FloatField("投入CVA总重(kg)", default=0)
     raw_socl2 = models.FloatField("投入-二氯亚砜(kg)", default=0)
