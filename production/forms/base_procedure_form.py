@@ -10,8 +10,6 @@ from production.models.kettle import Kettle
 # 引入项目验证工具函数
 from production.utils.qc_utils import validate_qc_sum_100
 from production.utils.output_validator import validate_output_balance
-
-
 class BaseProcedureForm(forms.ModelForm):
     """
     生产工序基础 Form 基类
