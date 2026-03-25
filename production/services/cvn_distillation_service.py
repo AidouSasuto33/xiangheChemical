@@ -20,9 +20,3 @@ class CVNDistillationService(BaseProcedureService):
     SOURCE_CRUDE_WEIGHT_FIELD = 'cvn_syn_crude_weight'   # 来源模型的主产物字段，用于 F 表达式动态计算可用量
     INPUTS_RELATED_NAME = 'inputs'                       # 本模型子表 (CVNDistillationInput) 的反向查询名称
     SOURCE_GLOBAL_INVENTORY_KEY = 'cvn_syn_crude_weight' # 溯源扣减时，同步扣减的全局库存真实键名
-
-    # ---------------------------------------------------------
-    # 🎉 恭喜！代码到此结束！
-    # 所有的 process_start, process_finish, 库存操作, 状态流转,
-    # 以及下发给前端的 get_production_context 统统自动生效！
-    # ---------------------------------------------------------

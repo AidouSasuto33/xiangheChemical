@@ -1,0 +1,160 @@
+{% extends "production/procedure/base_procedure.html" %}
+{% load static %}
+
+{% block title %}工单：CVC合成 (内销){% endblock %}
+
+{% block process_details %}
+    <div class="row g-3">
+
+        <div class="col-12">
+            <label class="small text-primary fw-bold text-uppercase mb-2">
+                📥 投入与辅料 (Inputs & Materials)
+            </label>
+            {% include "production/procedure/partials/_batch_source_input.html" %}
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <label class="form-label small text-muted mb-1">投入-二氯亚砜 (SOCl₂)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.raw_socl2 }}
+                        <span class="input-group-text bg-light text-muted">kg</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-light rounded p-3 mt-3 border border-light">
+                <label class="small text-muted fw-bold text-uppercase mb-2">
+                    <i class="bi bi-calculator me-1"></i> 精前组份汇总 (CVA粗品透传)
+                </label>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">投入CVA粗品总重</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control bg-white text-primary fw-bold" readonly
+                                value="{{ form.instance.input_total_cva_weight|default:0 }}" id="input_total_cva_weight">
+                            <span class="input-group-text bg-light text-muted">kg</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">CVA含量</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_content_cva }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">CVN残留</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_content_cvn }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">水分</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_content_water }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <div class="col-12">
+            <label class="small text-success fw-bold text-uppercase mb-2">
+                🎯 产出与质检 (Output & QC)
+            </label>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-success fw-bold">CVC粗品重量 (合格品)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.cvc_syn_crude_weight }}
+                        <span class="input-group-text bg-light fw-bold text-success">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-danger">前馏份 (头酒)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.distillation_head_weight }}
+                        <span class="input-group-text bg-light text-danger">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">CVC含量 (精品)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.content_cvc }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">CVA残留</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.content_cva }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-2 mt-1">
+                <div class="col-md-3 offset-md-6">
+                     <div class="input-group input-group-sm opacity-75">
+                         <span class="input-group-text bg-transparent border-0 small text-muted pe-1">约</span>
+                         <input type="text" class="form-control form-control-sm border-0 bg-transparent text-success text-end px-1 font-monospace" readonly placeholder="-" id="calc_out_cvc">
+                         <span class="input-group-text bg-transparent border-0 small text-muted ps-1">kg</span>
+                     </div>
+                </div>
+                <div class="col-md-3">
+                     <div class="input-group input-group-sm opacity-75">
+                         <span class="input-group-text bg-transparent border-0 small text-muted pe-1">约</span>
+                         <input type="text" class="form-control form-control-sm border-0 bg-transparent text-danger text-end px-1 font-monospace" readonly placeholder="-" id="calc_out_cva_residue">
+                         <span class="input-group-text bg-transparent border-0 small text-muted ps-1">kg</span>
+                     </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+    <script src="{% static 'js/production/partials/qc_pre_content_calculator.js' %}"></script>
+<script>
+    // CVC合成工艺特有的产出实时计算逻辑
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取Django生成的表单Input的ID (与 cvc_synthesis.py 模型对应)
+        const crudeWeight = document.getElementById('id_cvc_syn_crude_weight');
+        const contentCvc = document.getElementById('id_content_cvc');
+        const contentCvaResidue = document.getElementById('id_content_cva');
+
+        // 获取用于显示的只读计算框
+        const calcCvc = document.getElementById('calc_out_cvc');
+        const calcCvaResidue = document.getElementById('calc_out_cva_residue');
+
+        function updateCalculatedWeights() {
+            const weight = parseFloat(crudeWeight?.value) || 0;
+            const cvcPercent = parseFloat(contentCvc?.value) || 0;
+            const cvaResiduePercent = parseFloat(contentCvaResidue?.value) || 0;
+
+            if (weight > 0) {
+                // 计算纯成分重量 = 粗品重量 * 含量 / 100
+                calcCvc.value = (weight * cvcPercent / 100).toFixed(1);
+                calcCvaResidue.value = (weight * cvaResiduePercent / 100).toFixed(1);
+            } else {
+                calcCvc.value = '-';
+                calcCvaResidue.value = '-';
+            }
+        }
+
+        // 监听相关输入框的修改事件，实现数据联动
+        [crudeWeight, contentCvc, contentCvaResidue].forEach(el => {
+            if (el) el.addEventListener('input', updateCalculatedWeights);
+        });
+
+        // 页面加载完毕时初始化计算一次 (应对编辑页面的数据回显)
+        updateCalculatedWeights();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends "production/procedure/base_procedure.html" %}
+{% load static %}
+
+{% block title %}工单：CVA合成{% endblock %}
+
+{% block process_details %}
+    <div class="row g-3">
+
+        <div class="col-12">
+            <label class="small text-primary fw-bold text-uppercase mb-2">
+                📥 投入与辅料 (Inputs & Materials)
+            </label>
+            {% include "production/procedure/partials/_batch_source_input.html" %}
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <label class="form-label small text-muted">投入-盐酸(kg)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.raw_hcl }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small text-muted">投入-液碱(kg)</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.raw_alkali }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-light rounded p-3 mt-3 border border-light">
+                <label class="small text-muted fw-bold text-uppercase mb-2">
+                    <i class="bi bi-calculator me-1"></i> 精前组份汇总 (CVN精品透传)
+                </label>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">投入CVN精品总重</label>
+                        <div class="input-group input-group-sm" >
+                            <input type="text" class="form-control bg-white text-primary fw-bold" readonly
+                                value="{{ form.instance.input_total_cvc_dis_weight|default:0 }}" id="input_total_cvc_dis_weight">
+                            <span class="input-group-text bg-light text-muted">kg</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">CVN含量</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_content_cvn }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">DCB含量</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_content_dcb }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">己二腈(ADN)</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.pre_content_adn }}
+                            <span class="input-group-text bg-light">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <div class="col-12">
+            <label class="small text-success fw-bold text-uppercase mb-2">
+                🎯 产出与质检 (Output & QC)
+            </label>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small">CVA粗品重量</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.cva_crude_weight }}
+                        <span class="input-group-text bg-light">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">CVA含量</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.content_cva }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">CVN残留</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.content_cvn }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">水分</label>
+                    <div class="input-group input-group-sm">
+                        {{ form.content_water }}
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row g-2 mt-1">
+                <div class="col-md-3 offset-md-3">
+                    <div class="input-group input-group-sm opacity-75">
+                        <span class="input-group-text bg-transparent border-0 small text-muted pe-1">约</span>
+                        <input type="text" class="form-control form-control-sm border-0 bg-transparent text-success text-end px-1 font-monospace" readonly placeholder="-" id="calc_out_cva">
+                        <span class="input-group-text bg-transparent border-0 small text-muted ps-1">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm opacity-75">
+                        <span class="input-group-text bg-transparent border-0 small text-muted pe-1">约</span>
+                        <input type="text" class="form-control form-control-sm border-0 bg-transparent text-danger text-end px-1 font-monospace" readonly placeholder="-" id="calc_out_cvn_residue">
+                        <span class="input-group-text bg-transparent border-0 small text-muted ps-1">kg</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm opacity-75">
+                        <span class="input-group-text bg-transparent border-0 small text-muted pe-1">约</span>
+                        <input type="text" class="form-control form-control-sm border-0 bg-transparent text-info text-end px-1 font-monospace" readonly placeholder="-" id="calc_out_water">
+                        <span class="input-group-text bg-transparent border-0 small text-muted ps-1">kg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+    <script src="{% static 'js/production/partials/qc_pre_content_calculator.js' %}"></script>
+<script>
+    // 实时计算产出中各成分的具体重量
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取Django生成的表单Input的ID
+        const outWeight = document.getElementById('id_cva_crude_weight');
+        const outCva = document.getElementById('id_content_cva');
+        const outCvn = document.getElementById('id_content_cvn');
+        const outWater = document.getElementById('id_content_water');
+
+        // 获取用于显示的只读计算框
+        const calcCva = document.getElementById('calc_out_cva');
+        const calcCvnResidue = document.getElementById('calc_out_cvn_residue');
+        const calcWater = document.getElementById('calc_out_water');
+
+        function updateCalculatedWeights() {
+            const weight = parseFloat(outWeight?.value) || 0;
+            const cvaPercent = parseFloat(outCva?.value) || 0;
+            const cvnPercent = parseFloat(outCvn?.value) || 0;
+            const waterPercent = parseFloat(outWater?.value) || 0;
+
+            if (weight > 0) {
+                calcCva.value = (weight * cvaPercent / 100).toFixed(1);
+                calcCvnResidue.value = (weight * cvnPercent / 100).toFixed(1);
+                calcWater.value = (weight * waterPercent / 100).toFixed(1);
+            } else {
+                calcCva.value = '-';
+                calcCvnResidue.value = '-';
+                calcWater.value = '-';
+            }
+        }
+
+        // 监听所有相关输入框的修改事件
+        [outWeight, outCva, outCvn, outWater].forEach(el => {
+            if (el) el.addEventListener('input', updateCalculatedWeights);
+        });
+
+        // 页面加载完毕时初始化计算一次 (应对编辑页面的数据回显)
+        updateCalculatedWeights();
+    });
+</script>
+{% endblock %}
