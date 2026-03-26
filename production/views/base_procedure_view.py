@@ -58,15 +58,13 @@ class BaseProcedureView:
                 batch_no=obj.batch_no
             )
 
-        if self.require_source_batches:
-            # 获取当前实例（如果是新建页面，self.object 可能为 None）
-            current_instance = getattr(self, 'object', None)
-
-            # 核心改动：将 instance 传给 Service
-            context['bom_data'] = self.service_class.get_production_context(
-                instance=current_instance,
-                require_source_batches=self.require_source_batches
-            )
+        # 获取当前实例（如果是新建页面，self.object 可能为 None）
+        current_instance = getattr(self, 'object', None)
+        # 核心改动：将 instance 传给 Service
+        context['bom_data'] = self.service_class.get_production_context(
+            instance=current_instance,
+            require_source_batches=self.require_source_batches
+        )
         return context
 
     def get_success_url(self):
