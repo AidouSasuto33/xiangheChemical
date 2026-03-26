@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}数据大盘 (Dashboard){% endblock %}
+
+{% block extra_css %}
+    <style>
+        /* 优化内嵌 Pills 的样式，使其看起来更像工业软件的次级菜单 */
+        .sub-nav-pills .nav-link {
+            color: #6c757d;
+            border-radius: 20px;
+            padding: 0.25rem 1rem;
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .sub-nav-pills .nav-link.active {
+            background-color: #e9ecef;
+            color: #0d6efd;
+            font-weight: 600;
+        }
+
+        .chart-wrapper {
+            transition: transform 0.2s;
+        }
+
+        .chart-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .05);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid px-0">
+
+        <ul class="nav nav-tabs mb-4" id="mainDashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#tab-yield" type="button">
+                    📊 产量监控
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab-cost" type="button">💰
+                    成本核算
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab-quality" type="button">🛡️
+                    质量扫描
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="mainDashboardTabsContent">
+
+            <div class="tab-pane fade show active" id="tab-yield" role="tabpanel">
+
+                <ul class="nav nav-pills sub-nav-pills mb-4" id="yieldPills" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pill-yield-overview">
+                            总览
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pill-yield-cvn">CVN 粗蒸
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pill-yield-cvn-dis">CVN 精馏
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pill-yield-cva">CVA 合成
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pill-yield-cvc">CVC 粗蒸
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pill-yield-cvc-exp">CVC 外销
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+
+                    <div class="tab-pane fade show active" id="pill-yield-overview" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-xl-6 col-lg-12 chart-wrapper">
+                                {% include "production/charts/partials/_chart_card.html" with id="cvn_batch_trend" dataset="cvn_production" title="CVN 投产批次走势" metric_field="id" metric_func="COUNT" chart_type="line" default_unit="week" default_intervals=12 %}
+                            </div>
+
+                            <div class="col-xl-6 col-lg-12 chart-wrapper">
+                                {% include "production/charts/partials/_chart_card.html" with id="cvn_yield_trend" dataset="cvn_production" title="CVN 粗品产量" metric_field="cvn_syn_crude_weight" metric_func="SUM" chart_type="line" default_unit="week" default_intervals=12 %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="pill-yield-cvn" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-xl-6 col-lg-12 chart-wrapper">
+                                {% include "production/charts/partials/_chart_card.html" with id="cvn_batch_trend" dataset="cvn_production" title="CVN 投产批次走势" metric_field="id" metric_func="COUNT" chart_type="line" default_unit="week" default_intervals=12 %}
+                            </div>
+
+                            <div class="col-xl-6 col-lg-12 chart-wrapper">
+                                {% include "production/charts/partials/_chart_card.html" with id="cvn_yield_trend" dataset="cvn_production" title="CVN 粗品产量" metric_field="cvn_syn_crude_weight" metric_func="SUM" chart_type="line" default_unit="week" default_intervals=12 %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="tab-cost" role="tabpanel">
+                <div class="text-muted p-5 text-center">
+                    <h5>成本引擎接入中...</h5>
+                    <p>（等待后端对接 CostConfig 模型）</p>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="tab-quality" role="tabpanel">
+                <div class="text-muted p-5 text-center">质量饼图开发中...</div>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/echarts.min.js' %}"></script>
+    <script src="{% static 'js/production/charts/chart_renderer.js' %}"></script>
+{% endblock %}

@@ -4,3 +4,4 @@ from .cvn_distillation_view import CVNDistillationCreateView, CVNDistillationUpd
 from .cva_synthesis_view import CVASynthesisCreateView, CVASynthesisUpdateView, CVASynthesisListView
 from .cvc_synthesis_view import CVCSynthesisCreateView, CVCSynthesisUpdateView, CVCSynthesisListView
 from .cvc_export_view import CVCExportCreateView, CVCExportUpdateView, CVCExportListView
+from .chats_api_view import ChartAPIView

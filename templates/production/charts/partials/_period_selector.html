@@ -1,0 +1,39 @@
+<div class="period-selector d-flex flex-wrap align-items-center gap-3">
+
+    <div class="d-flex align-items-center gap-1">
+        <span class="small text-muted">图形:</span>
+        <select class="form-select form-select-sm select-chart-type" style="width: 85px;">
+            <option value="line" {% if chart_type == 'line' or not chart_type %}selected{% endif %}>折线</option>
+            <option value="bar" {% if chart_type == 'bar' %}selected{% endif %}>柱状</option>
+            <option value="pie" {% if chart_type == 'pie' %}selected{% endif %}>饼图</option>
+        </select>
+    </div>
+
+    <div class="d-flex align-items-center gap-1">
+        <span class="small text-muted">单位:</span>
+        <select class="form-select form-select-sm select-unit" style="width: 75px;">
+            <option value="day" {% if default_unit == 'day' %}selected{% endif %}>日</option>
+            <option value="week" {% if default_unit == 'week' or not default_unit %}selected{% endif %}>周</option>
+            <option value="month" {% if default_unit == 'month' %}selected{% endif %}>月</option>
+            <option value="quarter" {% if default_unit == 'quarter' %}selected{% endif %}>季</option>
+            <option value="year" {% if default_unit == 'year' %}selected{% endif %}>年</option>
+        </select>
+    </div>
+
+    <div class="input-group input-group-sm" style="width: 110px;">
+        <span class="input-group-text">数量</span>
+        <input type="number" class="form-control input-intervals"
+               value="{{ default_intervals|default:12 }}" min="1" max="100">
+    </div>
+
+    <div class="d-flex align-items-center gap-3 border-start ps-3">
+        <div class="form-check form-switch mb-0">
+            <input class="form-check-input check-pop" type="checkbox" id="pop-{{ id }}">
+            <label class="form-check-label small" for="pop-{{ id }}">环比</label>
+        </div>
+        <div class="form-check form-switch mb-0">
+            <input class="form-check-input check-yoy" type="checkbox" id="yoy-{{ id }}">
+            <label class="form-check-label small" for="yoy-{{ id }}">同比</label>
+        </div>
+    </div>
+</div>

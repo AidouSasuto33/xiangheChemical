@@ -1,0 +1,19 @@
+<div class="card h-100 chart-card-container"
+     id="container-{{ id }}"
+     data-dataset="{{ dataset }}"
+     data-metric-field="{{ metric_field }}"
+     data-metric-name="{{ title }}"
+     data-metric-func="{{ metric_func|default:'SUM' }}"
+     data-chart-type="{{ chart_type|default:'line' }}"
+     data-is-stacked="{{ is_stacked|default:'false' }}">
+
+    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+        <h6 class="card-title mb-0 fw-bold">{{ title }}</h6>
+        {% include "production/charts/partials/_period_selector.html" %}
+    </div>
+
+    <div class="card-body p-2">
+        <div class="echart-canvas" style="width: 100%; height: 300px;" id="chart-{{ id }}"></div>
+    </div>
+
+</div>

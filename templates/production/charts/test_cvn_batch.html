@@ -1,0 +1,81 @@
+{% load static %}
+<script src="{% static 'js/echarts.min.js' %}"></script>
+
+<div id="cvn-batch-chart" style="width: 100%; height: 400px;"></div>
+
+<script>
+async function renderCvnBatchChart() {
+    const chartDom = document.getElementById('cvn-batch-chart');
+    const myChart = echarts.init(chartDom);
+
+    // 构造我们要演示的“CVN投产批次”请求参数
+    const payload = {
+        dataset: "cvn_production", // 对应注册表里的 key
+        unit: "day",             // 周期：周
+        intervals: 12,             // 周期数：12周
+        metrics: [
+            {
+                key: "batch_count",
+                name: "投产批次",
+                func: "COUNT",      // 使用计数功能
+                field: "id",        // 对 ID 进行计数即为批次数
+                type: "line"         // 柱状图展示
+            }
+        ]
+    };
+
+    try {
+        // 调用你的 ChartAPIView 接口
+        const response = await fetch( window.location.pathname, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') // Django 的 CSRF 安全校验
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.code === 200) {
+            const data = result.data.chart_data;
+
+            // 核心渲染逻辑：直接透传后端给出的 xAxis 和 series
+            const option = {
+                title: { text: result.data.title || 'CVN投产批次走势' },
+                tooltip: { trigger: 'axis' },
+                legend: { data: data.series.map(s => s.name) },
+                xAxis: {
+                    type: 'category',
+                    data: data.xAxis // 后端算好的 ['03-01', '03-08'...]
+                },
+                yAxis: { type: 'value' },
+                series: data.series // 后端拼好的 [{name: '投产批次', data: [...], type: 'bar'}]
+            };
+
+            myChart.setOption(option);
+        }
+    } catch (error) {
+        console.error("图表加载失败:", error);
+    }
+}
+
+// 辅助函数：获取 CSRF Token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 页面加载完成后执行
+document.addEventListener('DOMContentLoaded', renderCvnBatchChart);
+</script>

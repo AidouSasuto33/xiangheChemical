@@ -8,7 +8,7 @@ from production.views import \
     CVNDistillationCreateView, CVNDistillationUpdateView, CVNDistillationListView, \
     CVASynthesisCreateView, CVASynthesisUpdateView, CVASynthesisListView, \
     CVCSynthesisCreateView, CVCSynthesisUpdateView, CVCSynthesisListView, \
-    CVCExportCreateView, CVCExportUpdateView, CVCExportListView
+    CVCExportCreateView, CVCExportUpdateView, CVCExportListView, ChartAPIView
 from .views.partial.attachment_view import AttachmentUploadView, AttachmentManageView
 
 app_name = 'production'
@@ -54,4 +54,7 @@ urlpatterns = [
     # 🔐 附件上传接口，加装上传频率限制
     path('attachment/upload/', upload_limit(AttachmentUploadView.as_view()), name='upload_attachment'),
     path('attachment/manage/', AttachmentManageView.as_view(), name='manage_attachment'), # 查看附件路径
+
+    # === 图表接口 ===
+    path('charts/', ChartAPIView.as_view(), name='charts'),
 ]
