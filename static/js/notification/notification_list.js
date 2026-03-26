@@ -105,6 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const badge = title.querySelector('.badge');
                         if (badge) badge.remove();
                     }
+
                     // 隐藏这个已读按钮，保持 UI 清爽
                     btnElement.remove();
                 }

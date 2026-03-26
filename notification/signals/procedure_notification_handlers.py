@@ -16,11 +16,17 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
         template_code = f"status_change_{new_status}"
         template = MessageTemplate.objects.filter(code=template_code).first()
 
+        if user:
+            # 按照中国姓名习惯：姓 + 名。如果没填姓名，回退到账号名
+            actor_name = f"{user.last_name}{user.first_name}" if user.last_name or user.first_name else user.username
+        else:
+            actor_name = "系统"
+
         # 定义渲染用的上下文变量
         context = {
             'batch_no': getattr(instance, 'batch_no', '未知批次'),
             'workshop': getattr(instance, 'workshop', 'CVN粗蒸车间'),
-            'actor': user.username if user else '系统',
+            'actor': actor_name,
             'old_status': old_status,
             'new_status': getattr(instance, 'get_status_display', lambda: new_status)(),
         }
