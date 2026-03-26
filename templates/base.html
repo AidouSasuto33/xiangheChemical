@@ -130,26 +130,30 @@
 
     <div id="content">
         <nav class="main-navbar">
-            <div class="d-flex align-items-center">
-                <h5 class="ms-3 mb-0 text-secondary">{% block page_title %}{% endblock %}</h5>
-            </div>
+<div class="d-flex align-items-center">
+        <h5 class="ms-3 mb-0 text-secondary">{% block page_title %}{% endblock %}</h5>
+    </div>
 
-            <div class="d-flex align-items-center">
-                <span class="me-3">
-                    欢迎您, <strong>
-                        {% if request.user.last_name or request.user.first_name %}
-                            {{ request.user.last_name }}{{ request.user.first_name }}
-                        {% else %}
-                            {{ request.user.username }}
-                        {% endif %}
-                    </strong>!
-                {% include 'notification/partials/_notification_modal.html' %}
-                </span>
-                <form action="{% url 'logout' %}" method="post" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger btn-sm">退出登录</button>
-                </form>
-            </div>
+    <div class="d-flex align-items-center">
+        <div class="me-2" style="list-style: none; display: flex; align-items: center;">
+            {% include 'notification/partials/_notification_modal.html' %}
+        </div>
+
+        <span class="me-4 text-dark">
+            欢迎您, <strong>
+                {% if request.user.last_name or request.user.first_name %}
+                    {{ request.user.last_name }}{{ request.user.first_name }}
+                {% else %}
+                    {{ request.user.username }}
+                {% endif %}
+            </strong>!
+        </span>
+
+        <form action="{% url 'logout' %}" method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm shadow-sm">退出登录</button>
+        </form>
+    </div>
         </nav>
 
         <div class="container-fluid p-4">
