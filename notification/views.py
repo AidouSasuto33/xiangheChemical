@@ -1,5 +1,6 @@
 # notification/views.py
 from django.http import JsonResponse
+from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -52,7 +53,7 @@ def mark_all_read(request):
     """
     一键清空：将当前用户的所有未读消息标记为已读
     """
-    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True, read_at=timezone.now())
     return JsonResponse({'status': 'success', 'message': '已全部标为已读'})
 
 
@@ -64,9 +65,11 @@ def mark_as_read_and_redirect(request, pk):
     # TODO 跳转时保存已读时间，主页上添加已读时间显示。
     notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
 
+    # if not notif.is_read:
+    #     notif.is_read = True
+    #     notif.save(update_fields=['is_read'])
     if not notif.is_read:
-        notif.is_read = True
-        notif.save(update_fields=['is_read'])
+        notif.mark_as_read()
 
     raw_url = getattr(notif, 'target_url', getattr(notif, 'url', '#'))
 
@@ -104,7 +107,7 @@ def mark_single_read(request):
     """API: 标记单条消息为已读"""
     data = json.loads(request.body)
     notif_id = data.get('id')
-    Notification.objects.filter(id=notif_id, recipient=request.user).update(is_read=True)
+    Notification.objects.filter(id=notif_id, recipient=request.user).update(is_read=True, read_at=timezone.now())
     return JsonResponse({'status': 'success'})
 
 

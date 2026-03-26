@@ -19,10 +19,10 @@
             <div class="card shadow-sm border-0 rounded-3">
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush" id="main-notification-list">
-                        
+
                         {% for notif in notifications %}
                         <div class="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center border-start border-4 {% if not notif.is_read %}border-primary bg-light{% else %}border-transparent{% endif %}" id="notif-item-{{ notif.id }}">
-                            
+
                             <div class="d-flex align-items-start text-decoration-none w-100" style="cursor: pointer;" onclick="window.location.href='{% url 'notification:read_and_redirect' notif.id %}'">
                                 <div class="me-3 mt-1">
                                     {% if notif.notice_type == 'warning' %}
@@ -35,7 +35,7 @@
                                         <i class="bi bi-info-circle-fill text-primary fs-4"></i>
                                     {% endif %}
                                 </div>
-                                
+
                                 <div>
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1 {% if not notif.is_read %}fw-bold text-dark{% else %}text-muted{% endif %}">
@@ -46,9 +46,15 @@
                                         </h6>
                                     </div>
                                     <p class="mb-1 text-muted small" style="font-size: 0.85rem;">{{ notif.content|default:"暂无详细内容" }}</p>
-                                    <small class="text-secondary" style="font-size: 0.75rem;">
-                                        <i class="bi bi-clock me-1"></i>{{ notif.created_at|date:"Y-m-d H:i" }}
-                                    </small>
+<small class="text-secondary" style="font-size: 0.75rem;">
+    <i class="bi bi-clock me-1" title="发送时间"></i>{{ notif.created_at|date:"Y-m-d H:i" }}
+
+    {% if notif.is_read and notif.read_at %}
+        <span class="ms-3 text-muted">
+            <i class="bi bi-eye-fill me-1" title="阅读时间"></i>{{ notif.read_at|date:"Y-m-d H:i" }}
+        </span>
+    {% endif %}
+</small>
                                 </div>
                             </div>
 
@@ -58,7 +64,7 @@
                                     <i class="bi bi-check2-circle"></i>
                                 </button>
                                 {% endif %}
-                                
+
                                 <button class="btn btn-sm btn-light text-danger border rounded-pill btn-delete-notif" data-id="{{ notif.id }}" title="删除消息">
                                     <i class="bi bi-trash3"></i>
                                 </button>
@@ -86,11 +92,11 @@
                     {% else %}
                     <li class="page-item disabled"><span class="page-link">上一页</span></li>
                     {% endif %}
-                    
+
                     <li class="page-item active" aria-current="page">
                         <span class="page-link bg-primary border-primary">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
                     </li>
-                    
+
                     {% if page_obj.has_next %}
                     <li class="page-item">
                         <a class="page-link text-primary" href="?page={{ page_obj.next_page_number }}">下一页</a>
