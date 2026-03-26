@@ -102,7 +102,8 @@ def _get_slice_label(unit, dt, is_current):
     if unit == UNIT_DAY:
         return dt.strftime('%m-%d')
     elif unit == UNIT_WEEK:
-        return f"W{dt.strftime('%V')}"  # ISO 周号
+        # 修改：不再使用 W11，改为显示周一的日期，如 03-09
+        return dt.strftime('%Y-%m-%d')
     elif unit == UNIT_MONTH:
         return dt.strftime('%Y-%m')
     elif unit == UNIT_QUARTER:

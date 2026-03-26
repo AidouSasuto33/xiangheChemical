@@ -22,7 +22,6 @@ class ChartAPIView(View):
         try:
             # 1. 解析前端传递的动态参数
             payload = json.loads(request.body)
-            print(payload)
             dataset_key = payload.get('dataset')  # 如 'cvn_production'
             unit = payload.get('unit', 'week')  # 周期 (日/周/月/季)
             intervals = int(payload.get('intervals', 12))  # 周期数
