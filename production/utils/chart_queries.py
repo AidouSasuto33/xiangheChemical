@@ -7,7 +7,7 @@ class BaseChartQuery:
     负责将业务 Model、时间切片与聚合指标转化为 ECharts 标准格式
     """
 
-    def __init__(self, model, base_filters=None, time_field='created_at'):
+    def __init__(self, model, base_filters=None, time_field='start_time'):
         """
         :param model: Django Model 类 (如 ProductionLog)
         :param base_filters: 字典，基础过滤条件 (如 {'process_type': 'CVN', 'is_valid': True})

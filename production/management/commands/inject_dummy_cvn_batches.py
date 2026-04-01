@@ -9,6 +9,7 @@ class Command(BaseCommand):
     help = '为 xiangheChemical 演示生成 10 万条 CVN 模拟数据 (修正字段名版)'
 
     def handle(self, *args, **options):
+        CVNSynthesis.objects.all().delete()
         total_records = 100000
         start_date = datetime(2010, 1, 1)
         end_date = datetime(2026, 3, 26)
@@ -73,10 +74,11 @@ class Command(BaseCommand):
                 )
 
                 # 构造批次号
-                batch.batch_no = f"{current_date.strftime('%Y%m%d')}-{batch.kettle_id:03d}-{i:02d}"
+                batch.batch_no = f"CVN-SYN-{current_date.strftime('%Y%m%d')}-{batch.kettle_id:03d}-{i:02d}"
 
                 batches.append(batch)
                 records_count += 1
+            current_date = current_date + timedelta(days=1)
 
             if len(batches) >= 5000:
                 # bulk_create 可以写入带有 auto_now_add=True 的字段值
@@ -84,7 +86,6 @@ class Command(BaseCommand):
                 batches = []
                 self.stdout.write(f"已处理 {records_count} 条...")
 
-            current_date += timedelta(days=1)
 
         if batches:
             CVNSynthesis.objects.bulk_create(batches)

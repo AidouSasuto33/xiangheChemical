@@ -6,12 +6,12 @@ DATASET_REGISTRY = {
     'cvn_production': {
         'model': CVNSynthesis,
         'base_filters': {'status': 'completed'},
-        'time_field': 'created_at'
+        'time_field': 'start_time'
     },
     'cva_quality': {
         'model': CVASynthesis,
         'base_filters': {'process_type': 'cvasynthesis'},
-        'time_field': 'created_at'
+        'time_field': 'start_time'
     },
     # 未来加新业务，只需在这里加一行配置，无需改动任何核心代码
 }
