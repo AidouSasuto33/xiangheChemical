@@ -99,8 +99,8 @@ class BaseProcedureForm(forms.ModelForm):
             # Case 'running': 生产中，锁定开工投入信息，防止篡改
             self._disable_fields(self.get_input_group())
 
-        elif status == 'completed':
-            # Case 'completed': 结束生产，锁定所有核心输入输出信息
+        elif status == 'completed' or status == 'abnormal':
+            # Case 'completed': 结束生产/工单异常时锁定所有核心输入输出信息
             self._disable_fields(self.get_input_group() + self.get_output_group())
 
     def get_input_group(self):
@@ -120,7 +120,7 @@ class BaseProcedureForm(forms.ModelForm):
         start_time = self.cleaned_data.get('start_time')
         end_time = self.cleaned_data.get('end_time')
         test_time = self.cleaned_data.get('test_time')
-        expeceted_time = self.cleaned_data.get('expected_time')
+        expected_time = self.cleaned_data.get('expected_time')
         status = getattr(self.instance, 'status', 'new')
 
         if status == 'running':
@@ -134,7 +134,7 @@ class BaseProcedureForm(forms.ModelForm):
 
         elif status == 'new':
             # 规则 3: 预计完成时间 >= 开始时间
-            if not is_time_sequence_valid(start_time, expeceted_time):
+            if not is_time_sequence_valid(start_time, expected_time):
                 self.add_error('expected_time', "预计完成时间不能早于开始时间。")
 
     def clean(self):
