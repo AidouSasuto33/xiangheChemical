@@ -79,13 +79,15 @@ class BaseProcedureService:
             ProcedureStateService.process_action(instance, action)
 
             # 3. 执行特定动作的副作用钩子（如扣库存、记录工时快照）
-            if action == ProcedureAction.START_PRODUCTION:
+            if action == ProcedureAction.START_PRODUCTION and instance.status == ProcedureState.NEW:
                 cls._process_start(instance, user)
-            elif action == ProcedureAction.FINISH_PRODUCTION:
+            elif action == ProcedureAction.FINISH_PRODUCTION and (instance.status == ProcedureState.RUNNING or instance.status == ProcedureState.DELAYED):
                 cls._process_finish(instance, user)
+            elif action == ProcedureAction.PAUSE_ABNORMAL_PRODUCTION and instance.status == ProcedureState.RUNNING:
+                cls._report_abnormal(instance, user)
 
 
-
+    @staticmethod
     def _process_start(cls, instance, user):
         """标准投产流程：防守校验 -> 双擎库存扣减 -> 状态机接管"""
         if instance.status != ProcedureState.NEW:
@@ -95,7 +97,7 @@ class BaseProcedureService:
             # 1. 执行双擎库存扣减 (辅料直扣 + 前置批次溯源扣减)
             cls._execute_inventory_deduction(instance, user)
 
-
+    @staticmethod
     def _process_finish(cls, instance, user):
         """标准完工流程：防守校验 -> QC与平衡底线拦截 -> 产出入库 -> 状态机接管"""
         if instance.status not in [ProcedureState.RUNNING, ProcedureState.DELAYED]:
@@ -116,6 +118,21 @@ class BaseProcedureService:
             # 2. 执行产出物料自动入库
             cls._execute_inventory_addition(instance, user)
 
+    @staticmethod
+    def _report_abnormal(cls, instance, user):
+        # TODO 实现强行要求上传附件逻辑
+        pass
+
+    @staticmethod
+    def _resume_running(cls, instance, user):
+        # 似乎无需做什么
+        pass
+
+    @staticmethod
+    def _mark_delayed(cls, instance, user):
+        # TODO 自动对比预计时间与现在时间，如果超出预计时间则标记成delay状态
+        # 似乎需要增加新的signal
+        pass
 
 
 

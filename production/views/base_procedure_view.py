@@ -129,7 +129,22 @@ class BaseProcedureUpdateView(LoginRequiredMixin, BaseProcedureView, UpdateView)
         try:
             with transaction.atomic():
                 # 无条件先保存工单页面的基础信息和记录
+                # TODO 工单页面保存交还给service去保存
                 form.save()
+
+                # TODO 在此处将self.request.POST中的人工记录剥离成labor_data
+                # View 层的预处理逻辑（示意）
+                # labor_data = []
+                # # 假设你前端有隐藏的 labor_ids[], worker_counts[] 等并行数组
+                # for i in range(len(worker_counts)):
+                #     labor_data.append({
+                #         'id': labor_ids[i] if labor_ids[i] else None,  # 关键点：提取ID
+                #         'worker_count': worker_counts[i],
+                #         'work_hours': work_hours[i],
+                #         'cost_config_id': config_ids[i],
+                #         # ... 其他字段
+                #     })
+
 
                 # 1. 投产 (Start)
                 if action == ProcedureAction.START_PRODUCTION and current_status == ProcedureState.NEW:
