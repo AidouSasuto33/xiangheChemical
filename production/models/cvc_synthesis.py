@@ -40,7 +40,7 @@ class CVCSynthesis(BaseProductionStep):
 
     @property
     def status_label(self):
-        if self.cvc_syn_crude_weight <= 0:
+        if self.cvc_syn_crude_weight < 0:
             return "异常批次"
         if self.consumed_weight <= 0:
             return "🟢 全新待领"

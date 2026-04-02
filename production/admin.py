@@ -60,14 +60,14 @@ class CVASynthesisAdmin(BaseProductionAdmin):
 
 @admin.register(CVCSynthesis)
 class CVCSynthesisAdmin(BaseProductionAdmin):
-    list_display = ['batch_no', 'status_badge', 'cvc_syn_crude_weight', 'remaining_weight', 'created_at']
+    list_display = ['batch_no', 'status_badge', 'input_total_cva_weight','cvc_syn_crude_weight', 'remaining_weight']
     # CVC 成品主要看剩余量，状态次要
     search_fields = ['batch_no']
 
 
 @admin.register(CVCExport)
 class CVCExportAdmin(BaseProductionAdmin):
-    list_display = ['batch_no', 'status_badge', 'input_total_cvc_weight', 'cvc_dis_crude_weight', 'created_at']
+    list_display = ['batch_no', 'status_badge', 'input_total_cvc_weight', 'cvc_dis_crude_weight', 'remaining_weight']
     search_fields = ['batch_no']
 
 
