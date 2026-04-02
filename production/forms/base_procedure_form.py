@@ -10,6 +10,7 @@ from production.models.kettle import Kettle
 # 引入项目验证工具函数
 from production.utils.qc_utils import validate_qc_sum_100
 from production.utils.output_validator import validate_output_balance
+from xiangheChemical.utils.time_utils import is_time_sequence_valid
 class BaseProcedureForm(forms.ModelForm):
     """
     生产工序基础 Form 基类
@@ -115,9 +116,33 @@ class BaseProcedureForm(forms.ModelForm):
                 self.fields[field].disabled = True
                 self.fields[field].required = False
 
+    def _validate_input_time(self):
+        start_time = self.cleaned_data.get('start_time')
+        end_time = self.cleaned_data.get('end_time')
+        test_time = self.cleaned_data.get('test_time')
+        expeceted_time = self.cleaned_data.get('expected_time')
+        status = getattr(self.instance, 'status', 'new')
+
+        if status == 'running':
+            # 规则 2: 完成时间 >= 开始时间 (严格大于)
+            if not is_time_sequence_valid(start_time, end_time):
+                self.add_error('end_time', "完成时间必须晚于开始时间。")
+
+            # 规则 1: 送检时间 >= 完成时间
+            if not is_time_sequence_valid(end_time, test_time):
+                self.add_error('expected_time', "送检时间不能早于完成时间。")
+
+        elif status == 'new':
+            # 规则 3: 预计完成时间 >= 开始时间
+            if not is_time_sequence_valid(start_time, expeceted_time):
+                self.add_error('expected_time', "预计完成时间不能早于开始时间。")
+
     def clean(self):
         cleaned_data = super().clean()
         action = self.action_type
+
+        # 先检查时间输入是否正确
+        self._validate_input_time()
 
         # === 动态投入批次解析校验，并注入前置工艺产品投入总量到cleaned_data ===
         if self.HAS_DYNAMIC_INPUTS:

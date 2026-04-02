@@ -30,3 +30,13 @@ def format_duration(start_time, end_time):
         delta = end_time - start_time
         return round(delta.total_seconds() / 3600, 1)
     return 0
+
+def is_time_sequence_valid(earlier_time, later_time):
+    """
+    检查时间先后顺序。如果其中一个时间为空，则返回 True（由字段自身的 blank/null 约束处理）。
+    """
+    # 部分工艺没有test_time所以无法比较
+    if not earlier_time or not later_time:
+        return True
+
+    return earlier_time <= later_time
