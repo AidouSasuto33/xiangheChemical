@@ -69,35 +69,30 @@ class BaseProcedureService:
     # 核心公共接口 (Template Methods)
     # ==========================================
     @classmethod
-    def handle_action(cls, instance, action, user, labor_data=None):
+    def handle_action(cls, instance, action, user):
         with transaction.atomic():
-            # 1. 只要有人工数据就进行保存
-            if not labor_data is None:
-                LaborRecordService.save_labor_records(instance, labor_data)
+
+            # 1. 执行特定动作的副作用钩子（如扣库存、记录工时快照）
+            if action == ProcedureAction.START_PRODUCTION:
+                cls._process_start(instance, user)
+            elif action == ProcedureAction.FINISH_PRODUCTION:
+                cls._process_finish(instance, user)
+            elif action == ProcedureAction.PAUSE_ABNORMAL_PRODUCTION:
+                cls._report_abnormal(instance, user)
 
             # 2. 执行状态扭转
             ProcedureStateService.process_action(instance, action)
 
-            # 3. 执行特定动作的副作用钩子（如扣库存、记录工时快照）
-            if action == ProcedureAction.START_PRODUCTION and instance.status == ProcedureState.NEW:
-                cls._process_start(instance, user)
-            elif action == ProcedureAction.FINISH_PRODUCTION and (instance.status == ProcedureState.RUNNING or instance.status == ProcedureState.DELAYED):
-                cls._process_finish(instance, user)
-            elif action == ProcedureAction.PAUSE_ABNORMAL_PRODUCTION and instance.status == ProcedureState.RUNNING:
-                cls._report_abnormal(instance, user)
 
-
-    @staticmethod
+    @classmethod
     def _process_start(cls, instance, user):
         """标准投产流程：防守校验 -> 双擎库存扣减 -> 状态机接管"""
         if instance.status != ProcedureState.NEW:
             raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法执行投产操作。")
 
-        with transaction.atomic():
-            # 1. 执行双擎库存扣减 (辅料直扣 + 前置批次溯源扣减)
-            cls._execute_inventory_deduction(instance, user)
+        cls._execute_inventory_deduction(instance, user)
 
-    @staticmethod
+    @classmethod
     def _process_finish(cls, instance, user):
         """标准完工流程：防守校验 -> QC与平衡底线拦截 -> 产出入库 -> 状态机接管"""
         if instance.status not in [ProcedureState.RUNNING, ProcedureState.DELAYED]:
@@ -114,82 +109,24 @@ class BaseProcedureService:
         if not is_bal_valid:
             raise ValidationError(f"完工拦截 (平衡异常)：{bal_msg}")
 
-        with transaction.atomic():
-            # 2. 执行产出物料自动入库
-            cls._execute_inventory_addition(instance, user)
+        cls._execute_inventory_addition(instance, user)
 
-    @staticmethod
+    @classmethod
     def _report_abnormal(cls, instance, user):
         # TODO 实现强行要求上传附件逻辑
         pass
 
-    @staticmethod
+    @classmethod
     def _resume_running(cls, instance, user):
         # 似乎无需做什么
         pass
 
-    @staticmethod
+    @classmethod
     def _mark_delayed(cls, instance, user):
         # TODO 自动对比预计时间与现在时间，如果超出预计时间则标记成delay状态
         # 似乎需要增加新的signal
         pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    @classmethod
-    def process_start(cls, instance, user, post_data=None):
-        """标准投产流程：防守校验 -> 双擎库存扣减 -> 状态机接管"""
-        if instance.status != ProcedureState.NEW:
-            raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法执行投产操作。")
-
-        with transaction.atomic():
-            # 1. 执行双擎库存扣减 (辅料直扣 + 前置批次溯源扣减)
-            cls._execute_inventory_deduction(instance, user)
-
-            ProcedureStateService.process_action(instance, ProcedureAction.START_PRODUCTION, user=user)
-            # TODO 为所有后续状态扭转函数添加save_labor方法
-            LaborRecordService.save_labor_records(instance, post_data)
-
-    @classmethod
-    def process_finish(cls, instance, user, post_data=None):
-        """标准完工流程：防守校验 -> QC与平衡底线拦截 -> 产出入库 -> 状态机接管"""
-        if instance.status not in [ProcedureState.RUNNING, ProcedureState.DELAYED]:
-            raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法执行完工操作。")
-
-        # 1. 强制底线校验：转化为字典交由 Utils 验证
-        data_dict = {field.name: getattr(instance, field.name) for field in instance._meta.fields}
-
-        is_qc_valid, qc_msg = validate_qc_sum_100(cls.PROCEDURE_KEY, data_dict)
-        if not is_qc_valid:
-            raise ValidationError(f"完工拦截 (质检异常)：{qc_msg}")
-
-        is_bal_valid, bal_msg = validate_output_balance(cls.PROCEDURE_KEY, data_dict)
-        if not is_bal_valid:
-            raise ValidationError(f"完工拦截 (平衡异常)：{bal_msg}")
-
-        with transaction.atomic():
-            # 2. 执行产出物料自动入库
-            cls._execute_inventory_addition(instance, user)
-
-            ProcedureStateService.process_action(instance, ProcedureAction.FINISH_PRODUCTION, user=user)
-            # TODO 为所有后续状态扭转函数添加save_labor方法
-            LaborRecordService.save_labor_records(instance, post_data)
-
-    # TODO 添加save_draft等状态机方法，不然人工记录、备注等信息无法保存
+  
     @classmethod
     def get_production_context(cls, instance=None, require_source_batches=False):
         """为前端渲染提供工艺上下文 (利用内存级 BOM 缓存与前置可用批次)。"""

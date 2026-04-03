@@ -1,1 +1,2 @@
 from .attachment_view import AttachmentUploadView, AttachmentManageView
+from .labor_record_view import LaborUpdateView, LaborDeleteView

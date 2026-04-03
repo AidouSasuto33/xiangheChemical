@@ -6,12 +6,13 @@ from django.shortcuts import redirect
 from django.db import transaction
 from django.contrib import messages
 
-from core.constants import ProcedureState, ProcedureAction
+from core.constants import ProcedureState
 from production.signals import post_procedure_state_change
 from production.utils.batch_generator import generate_batch_number
 
 from inventory.models import CostConfig
 from production.models import LaborRecord
+from production.services.partial.labor_record_service import LaborRecordService
 
 
 # ========================================================
@@ -73,6 +74,36 @@ class BaseProcedureView:
             raise NotImplementedError("子类必须提供 reverse_str 变量以便重定向。")
         return reverse(self.reverse_str, kwargs={'pk': self.object.pk})
 
+    def get_labor_data(self):
+        """
+        从 POST 请求中提取人工组件的并行数组，并转化为结构化字典。
+        """
+        post = self.request.POST
+
+        # 2. 提取并行数组
+        # 注意：这些数组的长度在前端是同步增减的，一一对应
+        record_ids = post.getlist('labor_record_id')
+        config_ids = post.getlist('labor_config_id')
+        counts = post.getlist('worker_count')
+        hours = post.getlist('work_hours')
+        dates = post.getlist('record_date')
+
+        records = []
+        # 使用 zip 将并行的数组打包，形成一行行数据
+        # 这样 Service 就不再需要处理 post 对象，只处理 Python 原生 List[Dict]
+        for r_id, c_id, count, hour, date in zip(record_ids, config_ids, counts, hours, dates):
+            records.append({
+                'id': r_id if r_id else None,  # 空字符串转为 None，方便 Service 判断是否为新建
+                'cost_config_id': c_id,
+                'worker_count': count,
+                'work_hours': hour,
+                'record_date': date,
+            })
+
+        return {
+            'records': records,
+        }
+
 
 # ========================================================
 # 2. 开单视图基类 (Create View Base)
@@ -107,6 +138,12 @@ class BaseProcedureCreateView(LoginRequiredMixin, BaseProcedureView, CreateView)
             new_status=self.object.status,
             user=self.request.user
         )
+
+        # 6. 保存人工成本记录
+        labor_data = self.get_labor_data()
+        if labor_data:
+            LaborRecordService.save_labor_records(form.instance, labor_data)
+
         messages.success(self.request, f"生产单 {batch_no} 已创建，请确认无误后点击“确认投产”。")
         return response
 
@@ -119,50 +156,30 @@ class BaseProcedureUpdateView(LoginRequiredMixin, BaseProcedureView, UpdateView)
     通用的工艺流转视图。
     负责：调度 Service 层处理投产与完工逻辑、执行事务管控与异常拦截。
     """
+
     def form_valid(self, form):
         action = self.request.POST.get('action')
-        current_status = form.instance.status
+        labor_data = self.get_labor_data()
 
         if not self.service_class:
             raise NotImplementedError("UpdateView 子类必须提供 service_class 以处理业务逻辑。")
 
         try:
+            # 平行调用 A：无论有没有 Action，只要传了人工数据就存
+            # 这解决了“完工后补录”的问题：此时 action 为 None，但数据依然能存
+            if labor_data:
+                LaborRecordService.save_labor_records(form.instance, labor_data)
+            import logging
+            logger = logging.getLogger()
+            logger.warning(f"labor_data: {labor_data}")
             with transaction.atomic():
-                # 无条件先保存工单页面的基础信息和记录
-                # TODO 工单页面保存交还给service去保存
-                form.save()
-
-                # TODO 在此处将self.request.POST中的人工记录剥离成labor_data
-                # View 层的预处理逻辑（示意）
-                # labor_data = []
-                # # 假设你前端有隐藏的 labor_ids[], worker_counts[] 等并行数组
-                # for i in range(len(worker_counts)):
-                #     labor_data.append({
-                #         'id': labor_ids[i] if labor_ids[i] else None,  # 关键点：提取ID
-                #         'worker_count': worker_counts[i],
-                #         'work_hours': work_hours[i],
-                #         'cost_config_id': config_ids[i],
-                #         # ... 其他字段
-                #     })
-
-
-                # 1. 投产 (Start)
-                if action == ProcedureAction.START_PRODUCTION and current_status == ProcedureState.NEW:
-                    self.service_class.process_start(form.instance, self.request.user, post_data=self.request.POST)
-                    messages.success(self.request, f"批次 {form.instance.batch_no} 已投产！原料/粗品库存已扣减。")
-
-                # 2. 完工 (Finish)
-                elif action == ProcedureAction.FINISH_PRODUCTION and current_status == ProcedureState.RUNNING:
-                    self.service_class.process_finish(form.instance, self.request.user, post_data=self.request.POST)
-                    messages.success(self.request, f"批次 {form.instance.batch_no} 已完工！产出已记录，设备已释放。")
-
-                # 3. 统一的数据保存
-                elif action == ProcedureAction.SAVE_DRAFT:
-                    messages.info(self.request, "工单信息及记录已成功保存。")
-
-                # 4. 异常兜底
+                # 平行调用 B：只有点击了“投产/完工”等按钮，才执行状态机逻辑
+                if action:
+                    self.service_class.handle_action(form.instance, action, self.request.user)
                 else:
-                    messages.warning(self.request, f"执行了未知的操作指令 '{action}'，数据已默认保存。")
+                    # 如果只是普通保存修改（NEW状态下），form.save() 已经由 UpdateView 完成
+                    form.save()
+
 
         except Exception as e:
             # 捕获服务层抛出的 ValidationError 或 ValueError 并回滚事务

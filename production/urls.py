@@ -10,6 +10,7 @@ from production.views import \
     CVCSynthesisCreateView, CVCSynthesisUpdateView, CVCSynthesisListView, \
     CVCExportCreateView, CVCExportUpdateView, CVCExportListView, ChartAPIView
 from .views.partial.attachment_view import AttachmentUploadView, AttachmentManageView
+from .views.partial.labor_record_view import LaborUpdateView, LaborDeleteView # 假设你将异步视图放在这里
 
 app_name = 'production'
 
@@ -54,6 +55,10 @@ urlpatterns = [
     # 🔐 附件上传接口，加装上传频率限制
     path('attachment/upload/', upload_limit(AttachmentUploadView.as_view()), name='upload_attachment'),
     path('attachment/manage/', AttachmentManageView.as_view(), name='manage_attachment'), # 查看附件路径
+
+    # 人工投入组件的异步接口 - 单条修改与删除
+    path('labor-record/single-async/', LaborUpdateView.as_view(), name='labor_sync_async'),
+    path('labor-record/delete-async/', LaborDeleteView.as_view(), name='labor_delete_async'),
 
     # === 图表接口 ===
     path('charts/', ChartAPIView.as_view(), name='charts'),
