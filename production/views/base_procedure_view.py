@@ -169,9 +169,7 @@ class BaseProcedureUpdateView(LoginRequiredMixin, BaseProcedureView, UpdateView)
             # 这解决了“完工后补录”的问题：此时 action 为 None，但数据依然能存
             if labor_data:
                 LaborRecordService.save_labor_records(form.instance, labor_data)
-            import logging
-            logger = logging.getLogger()
-            logger.warning(f"labor_data: {labor_data}")
+
             with transaction.atomic():
                 # 平行调用 B：只有点击了“投产/完工”等按钮，才执行状态机逻辑
                 if action:

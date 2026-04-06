@@ -14,10 +14,10 @@ from .views.partial.labor_record_view import LaborUpdateView, LaborDeleteView # 
 
 app_name = 'production'
 
-# 定义生产开单限流器：防恶意刷单和重复提交，限制单个用户每分钟只能提交 3 次 POST 请求
-strict_limit = ratelimit(key='user', rate='60/m', method='POST', block=True)
+# 定义生产开单限流器：防恶意刷单和重复提交，限制单个用户每分钟只能提交 POST 请求次数
+strict_limit = ratelimit(key='user', rate='15/m', method='POST', block=True)
 # 定义一个防刷接口的限流器（例如每分钟最多上传 20 张图）
-upload_limit = ratelimit(key='user', rate='20/m', method='POST', block=True)
+upload_limit = ratelimit(key='user', rate='10/m', method='POST', block=True)
 
 urlpatterns = [
     # === 看板 (Dashboard) ===
@@ -57,7 +57,7 @@ urlpatterns = [
     path('attachment/manage/', AttachmentManageView.as_view(), name='manage_attachment'), # 查看附件路径
 
     # 人工投入组件的异步接口 - 单条修改与删除
-    path('labor-record/single-async/', LaborUpdateView.as_view(), name='labor_sync_async'),
+    path('labor-record/single-async/', LaborUpdateView.as_view(), name='labor_single_async'),
     path('labor-record/delete-async/', LaborDeleteView.as_view(), name='labor_delete_async'),
 
     # === 图表接口 ===

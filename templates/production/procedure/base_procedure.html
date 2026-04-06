@@ -60,7 +60,7 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
                         {% with status=form.instance.status|default:'new' %}
-                            <h6 class="form-section-title">
+                            <h6 class="form-section-title"><i class="bi bi-measuring-cup"></i>
                                 {% if status == 'new' %}
                                     Step 1. 选择生产设备 (Select Equipment)
                                 {% elif status == 'running' or status == 'abnormal' %}
@@ -85,7 +85,7 @@
             <div class="col-lg-8">
                 <div class="card shadow-sm h-100 border-left-info">
                     <div class="card-body">
-                        <h6 class="form-section-title">Step 2. 关键工艺参数与投入</h6>
+                        <h6 class="form-section-title"><i class="bi bi-calculator"></i>Step 2. 关键工艺参数与投入</h6>
                         {% block process_details %}
                             <div class="alert alert-warning">
                                 开发提示：请在子模板中覆盖 <code>block process_details</code> 以显示具体工艺字段。
@@ -100,12 +100,12 @@
             <div class="card-body">
                 <div class="row g-4">
                     <div class="col-md-7 border-end pe-lg-4">
-                        <h6 class="form-section-title">Step 3. 操作备注与异常说明</h6>
+                        <h6 class="form-section-title"><i class="bi bi-book"></i>Step 3. 操作备注与异常说明</h6>
                         <textarea name="remarks" class="form-control" rows="6" placeholder="记录生产过程中的异常情况、设备问题等...">{{ form.instance.remarks|default:'' }}</textarea>
                     </div>
 
                     <div class="col-md-5 ps-lg-4">
-                        <h6 class="form-section-title">Step 4. 工单操作台</h6>
+                        <h6 class="form-section-title"><i class="bi bi-image"></i>Step 4. 工单操作台</h6>
 
                         <div class="mb-4">
                             {% with s=form.instance.status|default:'new' %}
@@ -201,7 +201,7 @@
 
         <div class="card shadow-sm mt-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold text-secondary"><i class="bi bi-people"></i> Step 5. 人工投入 (Labor)</h6>
+                <h6 class="mb-0 fw-bold form-section-title"><i class="bi bi-people"></i> Step 5. 人工投入 (Labor)</h6>
                 <button type="button" class="btn btn-sm btn-outline-success" id="add-labor-btn" style="display:none;">
                     <i class="bi bi-plus"></i> 添加工种
                 </button>
