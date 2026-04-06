@@ -6,7 +6,7 @@ from .base_procedure_form import BaseProcedureForm
 
 class CVCSynthesisForm(BaseProcedureForm):
     # === 1. 基础流程配置 ===
-    PROCEDURE_KEY = 'cvc_synthesis'
+    PROCEDURE_KEY = 'cvcsynthesis'
     MAIN_OUTPUT_FIELD = 'cvc_syn_crude_weight'
 
     # 包含辅料二氯亚砜

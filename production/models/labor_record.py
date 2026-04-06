@@ -18,7 +18,7 @@ class LaborRecord(models.Model):
         help_text="关联具体工单的批号，用于钻取明细"
     )
 
-    procedure_type = models.CharField(
+    procedure_key = models.CharField(
         "工艺类别",
         max_length=17,
         db_index=True,

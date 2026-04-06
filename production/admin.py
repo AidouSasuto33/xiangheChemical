@@ -105,12 +105,12 @@ class LaborRecordAdmin(SimpleHistoryAdmin):
     """
     # 列表页展示字段：批号、工艺、工种、人数、工时、计算后的总金额、记录日期
     list_display = [
-        'batch_no', 'procedure_type', 'cost_config',
+        'batch_no', 'procedure_key', 'cost_config',
         'worker_count', 'work_hours', 'record_date'
     ]
 
     # 右侧筛选器：支持按工艺类别、日期、工种进行快速过滤
-    list_filter = ['procedure_type', 'record_date', 'cost_config']
+    list_filter = ['procedure_key', 'record_date', 'cost_config']
 
     # 搜索框：支持按批号或工种名称模糊搜索
     search_fields = ['batch_no', 'cost_config__label']

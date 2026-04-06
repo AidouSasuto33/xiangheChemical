@@ -23,15 +23,15 @@ class LaborRecordService:
             return
 
         # 确定工艺类别标识
-        procedure_type = getattr(procedure_instance, 'PROCEDURE_KEY', procedure_instance.__class__.__name__.lower())
+        procedure_key = getattr(procedure_instance, 'PROCEDURE_KEY', procedure_instance.__class__.__name__.lower())
 
         records = labor_data.get('records', [])
         for item in records:
             # 这里的 item 结构需符合: {'id': xxx, 'cost_config_id': xxx, ...}
-            cls.update_single_record(batch_no, procedure_type, item)
+            cls.update_single_record(batch_no, procedure_key, item)
 
     @classmethod
-    def update_single_record(cls, batch_no, procedure_type, item):
+    def update_single_record(cls, batch_no, procedure_key, item):
         """
         同步单条记录（Ajax 与 批量同步共用的核心逻辑）。
         """
@@ -63,7 +63,7 @@ class LaborRecordService:
             # 【场景 B】 创建全新记录
             new_record = LaborRecord.objects.create(
                 batch_no=batch_no,
-                procedure_type=procedure_type,
+                procedure_key=procedure_key,
                 cost_config=config_obj,
                 worker_count=worker_count,
                 work_hours=work_hours,

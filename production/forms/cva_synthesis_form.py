@@ -5,7 +5,7 @@ from .base_procedure_form import BaseProcedureForm
 
 class CVASynthesisForm(BaseProcedureForm):
     # === 1. 基础流程配置 ===
-    PROCEDURE_KEY = 'cva_synthesis'
+    PROCEDURE_KEY = 'cvasynthesis'
     MAIN_OUTPUT_FIELD = 'cva_crude_weight'
 
     # 加入了合成工艺特有的辅料投入

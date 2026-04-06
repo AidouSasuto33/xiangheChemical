@@ -1,111 +1,267 @@
-<div class="table-responsive">
-    <table class="table table-hover align-middle mb-0" id="labor-table">
-        <thead class="table-light text-secondary">
-            <tr>
-                <th style="width: 25%">工种 / 费用项</th>
-                <th style="width: 12%" class="text-center">人数</th>
-                <th style="width: 15%" class="text-center">耗时 (H)</th>
-                <th style="width: 15%" class="text-center">金额 (元)</th>
-                <th style="width: 15%">记录日期</th>
-                <th style="width: 18%" class="text-center">操作</th>
-            </tr>
-        </thead>
-        <tbody id="labor-tbody">
-            {% for record in labor_records %}
-            <tr class="labor-row is-locked">
-                <input type="hidden" name="labor_record_id" value="{{ record.id }}">
-                <td>
-                    <select name="labor_config_id" class="form-select bg-light labor-calc-trigger" style="pointer-events: none;">
-                        <option value="{{ record.cost_config.id }}" data-price="{{ record.cost_snapshot }}" selected>{{ record.cost_config.label }}</option>
-                        {% for config in labor_cost_configs %}<option value="{{ config.id }}" data-price="{{ config.price }}">{{ config.label }}</option>{% endfor %}
-                    </select>
-                </td>
-                <td><input type="number" name="worker_count" class="form-control text-center bg-light labor-calc-trigger" value="{{ record.worker_count }}" readonly></td>
-                <td><input type="number" step="0.5" name="work_hours" class="form-control text-center bg-light labor-calc-trigger" value="{{ record.work_hours }}" readonly></td>
-                <td class="text-center"><span class="fw-bold text-slate-700 row-amount">¥ {{ record.total_cost }}</span></td>
-                <td><input type="date" name="record_date" class="form-control bg-light" value="{{ record.record_date|date:'Y-m-d' }}" readonly></td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-link text-primary p-0 me-2 btn-edit-row"><i class="bi bi-pencil-square fs-5"></i></button>
-                    <button type="button" class="btn btn-sm btn-link text-success p-0 me-2 btn-lock-row" style="display: none;"><i class="bi bi-check2-square fs-5"></i></button>
-                    <button type="button" class="btn btn-sm btn-link text-info p-0 me-2 view-history-btn" data-id="{{ record.id }}"><i class="bi bi-clock-history fs-5"></i></button>
-                    <button type="button" class="btn btn-sm btn-link text-danger p-0 delete-labor-row"><i class="bi bi-trash fs-5"></i></button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card shadow-sm" id="labor-component-root"
+     data-batch-no="{{ instance.batch_no|default:'' }}"
+     data-procedure-key="{{ procedure_key|default:'' }}">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold form-section-title"><i class="bi bi-people"></i> Step 5. 人工投入 (Labor)</h6>
+        <button type="button" class="btn btn-sm btn-outline-success" id="add-labor-btn">
+            <i class="bi bi-plus"></i> 添加工种
+        </button>
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="labor-table">
+                <thead class="table-light text-secondary">
+                    <tr>
+                        <th style="width: 25%">工种 / 费用项</th>
+                        <th style="width: 12%" class="text-center">人数</th>
+                        <th style="width: 15%" class="text-center">耗时 (H)</th>
+                        <th style="width: 15%" class="text-center">金额 (元)</th>
+                        <th style="width: 15%">记录状态</th>
+                        <th style="width: 18%" class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="labor-tbody">
+                    {% for record in labor_records %}
+                    <tr class="labor-row" data-record-id="{{ record.id }}">
+                        <td>
+                            <select name="cost_config_id" class="form-select labor-calc-trigger" disabled>
+                                <option value="{{ record.cost_config.id }}" data-price="{{ record.cost_snapshot }}" selected>{{ record.cost_config.label }}</option>
+                                {% for config in labor_cost_configs %}
+                                    {% if config.id != record.cost_config.id %}
+                                        <option value="{{ config.id }}" data-price="{{ config.price }}">{{ config.label }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td><input type="number" name="worker_count" class="form-control text-center labor-calc-trigger" value="{{ record.worker_count }}" min="1" readonly></td>
+                        <td><input type="number" name="work_hours" class="form-control text-center labor-calc-trigger" value="{{ record.work_hours }}" step="0.1" min="0.1" readonly></td>
+                        <td class="text-center fw-bold row-total text-success">
+                            {{ record.total_cost|default:"0.00" }}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary status-badge">已保存</span>
+                        </td>
+                        <td class="text-center action-btns">
+                            <button type="button" class="btn btn-sm btn-outline-primary btn-edit-row"><i class="bi bi-pencil"></i></button>
+                            <button type="button" class="btn btn-sm btn-success btn-save-row" style="display:none;"><i class="bi bi-check-lg"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-row"><i class="bi bi-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr id="no-labor-placeholder">
+                        <td colspan="6" class="text-center text-muted py-3">暂无人工投入记录，请点击上方添加</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <input type="hidden" name="pending_labor_records" id="pending_labor_records" value="[]">
+
+    <datalist id="labor-config-options">
+        <option value="" data-price="0" disabled selected>请选择工种...</option>
+        {% for config in labor_cost_configs %}
+            <option value="{{ config.id }}" data-price="{{ config.price }}">{{ config.label }}</option>
+        {% endfor %}
+    </datalist>
 </div>
 
-<table style="display: none;">
-    <tbody id="labor-row-template">
-        <tr class="labor-row border-start border-success border-3 shadow-sm bg-white">
-            <input type="hidden" name="labor_record_id" value="">
-            <td>
-                <select name="labor_config_id" class="form-select border-success-subtle labor-calc-trigger">
-                    <option value="" data-price="0">-- 选择工种 --</option>
-                    {% for config in labor_cost_configs %}
-                    <option value="{{ config.id }}" data-price="{{ config.price }}">{{ config.label }} (¥{{ config.price }})</option>
-                    {% endfor %}
-                </select>
-            </td>
-            <td><input type="number" name="worker_count" class="form-control text-center labor-calc-trigger" value="1"></td>
-            <td><input type="number" step="0.5" name="work_hours" class="form-control text-center labor-calc-trigger" value="1.0"></td>
-            <td class="text-center"><span class="fw-bold text-success row-amount">¥ 0.00</span></td>
-            <td><input type="date" name="record_date" class="form-control" value="{% now 'Y-m-d' %}"></td>
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-link text-success p-0 me-2 btn-lock-row"><i class="bi bi-check2-square fs-5"></i></button>
-                <button type="button" class="btn btn-sm btn-link text-danger p-0 delete-labor-row"><i class="bi bi-trash fs-5"></i></button>
-            </td>
-        </tr>
-    </tbody>
-</table>
-
 <script>
-    // JS 逻辑保持不变，但增加防呆判断
-    document.addEventListener("DOMContentLoaded", function () {
-        const tbody = document.getElementById('labor-tbody');
-        const template = document.getElementById('labor-row-template').querySelector('tr');
-        const addBtn = document.getElementById('add-labor-btn');
+document.addEventListener("DOMContentLoaded", function () {
+    const tbody = document.getElementById('labor-tbody');
+    const addBtn = document.getElementById('add-labor-btn');
+    const rootComponent = document.getElementById('labor-component-root');
+    const batchNo = rootComponent.dataset.batchNo;
+    const procedureKey = rootComponent.dataset.procedureKey;
+    const configOptionsHTML = document.getElementById('labor-config-options').innerHTML;
+    const placeholder = document.getElementById('no-labor-placeholder');
 
-        if (tbody && tbody.querySelectorAll('.labor-row').length === 0) addNewRow(false);
-        if (addBtn) { addBtn.style.display = 'inline-block'; addBtn.onclick = () => addNewRow(true); }
+    // 对齐后端 urls.py 中定义的路由
+    const UPDATE_API_URL = '/production/labor-record/single-async/';
+    const DELETE_API_URL = '/production/labor-record/delete-async/';
+    // 获取 CSRF Token
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
 
-        function addNewRow(animate) {
-            const newRow = template.cloneNode(true);
-            tbody.appendChild(newRow);
-            if (animate) { newRow.classList.add('animate__animated', 'animate__fadeInDown'); }
+    // 1. 动态计算单行金额
+    function calculateRowTotal(row) {
+        const count = parseFloat(row.querySelector('[name="worker_count"]').value) || 0;
+        const hours = parseFloat(row.querySelector('[name="work_hours"]').value) || 0;
+        const select = row.querySelector('[name="cost_config_id"]');
+        const price = parseFloat(select.options[select.selectedIndex]?.dataset.price) || 0;
+
+        const total = (count * hours * price).toFixed(2);
+        row.querySelector('.row-total').textContent = total;
+    }
+
+    // 2. 标记行为“脏数据”
+    function markRowAsDirty(row) {
+        if (!row.classList.contains('is-dirty')) {
+            row.classList.add('is-dirty');
+            row.querySelector('.btn-edit-row').style.display = 'none';
+            row.querySelector('.btn-save-row').style.display = 'inline-block';
+
+            const badge = row.querySelector('.status-badge');
+            badge.className = 'badge bg-warning text-dark status-badge';
+            badge.textContent = '待保存';
         }
+    }
 
-        tbody.addEventListener('click', function(e) {
-            const btn = e.target.closest('button'); if (!btn) return;
-            const row = btn.closest('tr');
-            if (btn.classList.contains('btn-lock-row')) toggleRowState(row, true);
-            else if (btn.classList.contains('btn-edit-row')) toggleRowState(row, false);
-            else if (btn.classList.contains('delete-labor-row')) {
-                if (tbody.querySelectorAll('.labor-row').length > 1) row.remove();
-                else alert("请至少保留一行人工投入记录。");
-            }
-        });
+    // 3. 切换行的锁定/编辑状态
+    function toggleRowLock(row, isLocked) {
+        row.querySelectorAll('input').forEach(input => input.readOnly = isLocked);
+        const select = row.querySelector('select');
+        select.disabled = isLocked;
 
-        tbody.addEventListener('input', e => { if (e.target.classList.contains('labor-calc-trigger')) calculate(e.target.closest('tr')); });
-        tbody.addEventListener('change', e => { if (e.target.tagName === 'SELECT') calculate(e.target.closest('tr')); });
+        if (!isLocked) markRowAsDirty(row);
+    }
 
-        function toggleRowState(row, lock) {
-            row.querySelectorAll('input, select').forEach(i => {
-                i.readOnly = lock;
-                if(i.tagName==='SELECT') i.style.pointerEvents = lock ? 'none' : 'auto';
-                lock ? i.classList.add('bg-light') : i.classList.remove('bg-light');
-            });
-            row.querySelector('.btn-edit-row') && (row.querySelector('.btn-edit-row').style.display = lock ? 'inline-block' : 'none');
-            row.querySelector('.btn-lock-row').style.display = lock ? 'none' : 'inline-block';
-        }
-
-        function calculate(row) {
-            const c = parseFloat(row.querySelector('[name=worker_count]').value) || 0;
-            const h = parseFloat(row.querySelector('[name=work_hours]').value) || 0;
-            const s = row.querySelector('select');
-            const p = parseFloat(s.options[s.selectedIndex]?.dataset.price) || 0;
-            row.querySelector('.row-amount').textContent = '¥ ' + (c * h * p).toFixed(2);
+    // 4. 事件委托：处理表格内的变化和点击
+    tbody.addEventListener('input', e => {
+        const row = e.target.closest('tr');
+        if (e.target.classList.contains('labor-calc-trigger')) {
+            calculateRowTotal(row);
+            markRowAsDirty(row);
         }
     });
+
+    tbody.addEventListener('click', async e => {
+        const target = e.target.closest('button');
+        if (!target) return;
+
+        const row = target.closest('tr');
+        const recordId = row.dataset.recordId;
+
+        // 编辑按钮
+        if (target.classList.contains('btn-edit-row')) {
+            toggleRowLock(row, false);
+        }
+
+        // 删除按钮
+        if (target.classList.contains('btn-delete-row')) {
+            if (!recordId) {
+                row.remove(); // 尚未保存到后端，直接移除 DOM
+            } else {
+                if (confirm('确认删除该条人工记录吗？此操作不可撤销。')) {
+                    try {
+                        const formData = new FormData();
+                        formData.append('id', recordId);
+                        formData.append('batch_no', batchNo);
+
+                        const response = await fetch(DELETE_API_URL, {
+                            method: 'POST', // Django view 接收 POST
+                            headers: { 'X-CSRFToken': getCSRFToken() },
+                            body: formData
+                        });
+
+                        if (response.ok) row.remove();
+                        else alert('删除失败，请稍后重试。');
+                    } catch (error) {
+                        console.error('Delete error:', error);
+                    }
+                }
+            }
+        }
+
+        // 单行异步保存按钮
+        if (target.classList.contains('btn-save-row')) {
+            const configId = row.querySelector('[name="cost_config_id"]').value;
+            const count = row.querySelector('[name="worker_count"]').value;
+            const hours = row.querySelector('[name="work_hours"]').value;
+
+            if (!configId) return alert('请选择工种');
+
+            // 构造 FormData 以匹配后端的 request.POST.get()
+            const formData = new FormData();
+            if (recordId) formData.append('id', recordId); // 如果存在则更新，不存在则创建
+            formData.append('cost_config_id', configId);
+            formData.append('worker_count', count);
+            formData.append('work_hours', hours);
+            formData.append('batch_no', batchNo);
+            if (procedureKey) formData.append('procedure_key', procedureKey);
+
+            try {
+                target.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                target.disabled = true;
+
+                const response = await fetch(UPDATE_API_URL, {
+                    method: 'POST', // Django view 接收 POST
+                    headers: {
+                        'X-CSRFToken': getCSRFToken()
+                        // 留意：使用 FormData 时，不要手动设置 Content-Type，浏览器会自动设置 boundary
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (!recordId && data.record_id) row.dataset.recordId = data.record_id; // 新建后回填ID
+
+                    row.classList.remove('is-dirty');
+                    toggleRowLock(row, true);
+
+                    const badge = row.querySelector('.status-badge');
+                    badge.className = 'badge bg-success status-badge';
+                    badge.textContent = '已保存';
+
+                    target.style.display = 'none';
+                    row.querySelector('.btn-edit-row').style.display = 'inline-block';
+                } else {
+                    alert('保存失败，请检查输入数据。');
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+            } finally {
+                target.innerHTML = '<i class="bi bi-check-lg"></i>';
+                target.disabled = false;
+            }
+        }
+    });
+
+    // 5. 添加新行
+    addBtn.addEventListener('click', () => {
+        if (placeholder) placeholder.style.display = 'none';
+
+        const tr = document.createElement('tr');
+        tr.className = 'labor-row is-dirty';
+        tr.innerHTML = `
+            <td><select name="cost_config_id" class="form-select labor-calc-trigger">${configOptionsHTML}</select></td>
+            <td><input type="number" name="worker_count" class="form-control text-center labor-calc-trigger" value="1" min="1"></td>
+            <td><input type="number" name="work_hours" class="form-control text-center labor-calc-trigger" value="1.0" step="0.1" min="0.1"></td>
+            <td class="text-center fw-bold row-total text-success">0.00</td>
+            <td><span class="badge bg-warning text-dark status-badge">新建待存</span></td>
+            <td class="text-center action-btns">
+                <button type="button" class="btn btn-sm btn-outline-primary btn-edit-row" style="display:none;"><i class="bi bi-pencil"></i></button>
+                <button type="button" class="btn btn-sm btn-success btn-save-row"><i class="bi bi-check-lg"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-row"><i class="bi bi-trash"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // 6. 拦截主表单提交，打包脏数据
+    const mainForm = document.getElementById('productionForm');
+    if (mainForm) {
+        mainForm.addEventListener('submit', function() {
+            const dirtyRows = document.querySelectorAll('#labor-tbody .is-dirty');
+            const pendingData = [];
+
+            dirtyRows.forEach(row => {
+                pendingData.push({
+                    id: row.dataset.recordId || null,
+                    cost_config_id: row.querySelector('[name="cost_config_id"]').value,
+                    worker_count: row.querySelector('[name="worker_count"]').value,
+                    work_hours: row.querySelector('[name="work_hours"]').value
+                });
+                // 禁用元素防止原生表单将其提交
+                row.querySelectorAll('input, select').forEach(el => el.disabled = true);
+            });
+
+            document.getElementById('pending_labor_records').value = JSON.stringify(pendingData);
+        });
+    }
+});
 </script>

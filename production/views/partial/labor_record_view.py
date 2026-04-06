@@ -15,10 +15,10 @@ class LaborUpdateView(LoginRequiredMixin, View):
             'record_date': request.POST.get('record_date'),
         }
         batch_no = request.POST.get('batch_no')
-        procedure_type = request.POST.get('procedure_type')
+        procedure_key = request.POST.get('procedure_key')
 
         try:
-            record_id = LaborRecordService.update_single_record(batch_no, procedure_type, data)
+            record_id = LaborRecordService.update_single_record(batch_no, procedure_key, data)
             return JsonResponse({'status': 'success', 'record_id': record_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
