@@ -1,4 +1,5 @@
 # production/views/base_procedure_view.py
+import json
 from django.views.generic import CreateView, UpdateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
@@ -74,31 +75,60 @@ class BaseProcedureView:
             raise NotImplementedError("子类必须提供 reverse_str 变量以便重定向。")
         return reverse(self.reverse_str, kwargs={'pk': self.object.pk})
 
+    # def get_labor_data(self):
+    #     """
+    #     从 POST 请求中提取人工组件的并行数组，并转化为结构化字典。
+    #     """
+    #     post = self.request.POST
+    #
+    #     # 2. 提取并行数组
+    #     # 注意：这些数组的长度在前端是同步增减的，一一对应
+    #     record_ids = post.getlist('labor_record_id')
+    #     config_ids = post.getlist('labor_config_id')
+    #     counts = post.getlist('worker_count')
+    #     hours = post.getlist('work_hours')
+    #     dates = post.getlist('record_date')
+    #
+    #     records = []
+    #     # 使用 zip 将并行的数组打包，形成一行行数据
+    #     # 这样 Service 就不再需要处理 post 对象，只处理 Python 原生 List[Dict]
+    #     for r_id, c_id, count, hour, date in zip(record_ids, config_ids, counts, hours, dates):
+    #         records.append({
+    #             'id': r_id if r_id else None,  # 空字符串转为 None，方便 Service 判断是否为新建
+    #             'cost_config_id': c_id,
+    #             'worker_count': count,
+    #             'work_hours': hour,
+    #             'record_date': date,
+    #         })
+    #
+    #     return {
+    #         'records': records,
+    #     }
     def get_labor_data(self):
         """
-        从 POST 请求中提取人工组件的并行数组，并转化为结构化字典。
+        从 POST 请求中提取前端打包的人工组件 JSON 数据。
         """
         post = self.request.POST
+        # 提取前端打包的 JSON 字符串，默认为空数组字符串
+        pending_data_str = post.get('pending_labor_records', '[]')
 
-        # 2. 提取并行数组
-        # 注意：这些数组的长度在前端是同步增减的，一一对应
-        record_ids = post.getlist('labor_record_id')
-        config_ids = post.getlist('labor_config_id')
-        counts = post.getlist('worker_count')
-        hours = post.getlist('work_hours')
-        dates = post.getlist('record_date')
+        try:
+            raw_records = json.loads(pending_data_str)
+        except json.JSONDecodeError:
+            raw_records = []
 
         records = []
-        # 使用 zip 将并行的数组打包，形成一行行数据
-        # 这样 Service 就不再需要处理 post 对象，只处理 Python 原生 List[Dict]
-        for r_id, c_id, count, hour, date in zip(record_ids, config_ids, counts, hours, dates):
+        for item in raw_records:
             records.append({
-                'id': r_id if r_id else None,  # 空字符串转为 None，方便 Service 判断是否为新建
-                'cost_config_id': c_id,
-                'worker_count': count,
-                'work_hours': hour,
-                'record_date': date,
+                'id': item.get('id'),  # 前端的 null 会被 json.loads 自动转化为 Python 的 None
+                'cost_config_id': item.get('cost_config_id'),
+                'worker_count': item.get('worker_count'),
+                'work_hours': item.get('work_hours'),
+                # 留意：前端 JS 目前没有打包 record_date，
+                # 但 labor_record_service.py 中已经写好了兜底逻辑（若无则取 timezone.now().date()），所以这里不传也是安全的。
             })
+        print("records:")
+        print(records)
 
         return {
             'records': records,
