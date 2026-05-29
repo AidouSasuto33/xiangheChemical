@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -18,6 +19,8 @@ class LaborUpdateView(LoginRequiredMixin, View):
         procedure_key = request.POST.get('procedure_key')
 
         try:
+            if not batch_no:
+                raise Exception("工单未创建，无法保存人工记录！")
             record_id = LaborRecordService.update_single_record(batch_no, procedure_key, data)
             return JsonResponse({'status': 'success', 'record_id': record_id})
         except Exception as e:

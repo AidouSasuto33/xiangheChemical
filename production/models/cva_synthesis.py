@@ -11,7 +11,7 @@ class CVASynthesis(BaseProductionStep):
     逻辑：投入CVN精品(Step 2) + 酸碱 -> 反应 -> 脱水 -> CVA粗品
     """
     workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cva_synthesis',
-                                 verbose_name="工单所属车间", default=3)  # 3是cva_syn车间id
+                                 verbose_name="工单所属车间", default=lambda: Workshop.objects.get(code='CVA_SYN'))  # 3是cva_syn车间id
     # 投入
     input_total_cvc_dis_weight = models.FloatField("投入CVN精品总重(kg)", default=0)
     # 辅料

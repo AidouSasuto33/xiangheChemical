@@ -28,6 +28,7 @@ class BaseProductionStep(models.Model):
         #TODO 项目正式上线时，将返回的domain放在DJango Site中去。
         return "127.0.0.1:8000" + reverse(f"production:{getattr(self, 'url_name_base')}", kwargs={'pk': self.pk})
 
+
     # --- 1. 核心追踪 ---
     batch_no = models.CharField("生产批号", max_length=50, unique=True)
     

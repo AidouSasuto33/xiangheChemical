@@ -196,8 +196,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     body: formData
                 });
 
+                const data = await response.json();
                 if (response.ok) {
-                    const data = await response.json();
                     if (!recordId && data.record_id) row.dataset.recordId = data.record_id; // 新建后回填ID
 
                     row.classList.remove('is-dirty');
@@ -210,7 +210,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     target.style.display = 'none';
                     row.querySelector('.btn-edit-row').style.display = 'inline-block';
                 } else {
-                    alert('保存失败，请检查输入数据。');
+                    alert(data.message);
                 }
             } catch (error) {
                 console.error('Save error:', error);

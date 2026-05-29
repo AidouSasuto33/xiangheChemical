@@ -64,7 +64,7 @@ class LaborRecord(models.Model):
         ordering = ['-record_date', '-id']
 
     def __str__(self):
-        return f"[{self.procedure_type}] {self.batch_no} - {self.cost_config.label} ({self.worker_count}人*{self.work_hours}H)"
+        return f"[{self.procedure_key}] {self.batch_no} - {self.cost_config.label} ({self.worker_count}人*{self.work_hours}H)"
 
     @property
     def total_cost(self):

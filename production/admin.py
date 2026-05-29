@@ -118,7 +118,7 @@ class LaborRecordAdmin(SimpleHistoryAdmin):
     # 详情页字段分组
     fieldsets = (
         ('核心关联', {
-            'fields': ('batch_no', 'procedure_type', 'record_date')
+            'fields': ('batch_no', 'procedure_key', 'record_date')
         }),
         ('投入明细', {
             'fields': ('cost_config', 'worker_count', 'work_hours', 'cost_snapshot')

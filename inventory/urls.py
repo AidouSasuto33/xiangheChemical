@@ -5,7 +5,7 @@ from inventory.views import InventoryListView, InventoryActionView, InventoryHis
 app_name = 'inventory'
 
 # 定义库存核心限流器：防连击并发，限制单个用户每 10 秒只能提交 1 次 POST 请求
-anti_double_click = ratelimit(key='user', rate='1/10s', method='POST', block=True)
+anti_double_click = ratelimit(key='user', rate='10/60s', method='POST', block=True)
 
 urlpatterns = [
     # 访问路径: /inventory/ (列表查询，暂不限制 POST，且 GET 不受限)

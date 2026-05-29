@@ -11,7 +11,7 @@ class CVNSynthesis(BaseProductionStep):
     Step 1: CVN 合成
     逻辑：投入原料 -> 产出粗品 -> (部分用于精馏)
     """
-    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvn_synthesis', verbose_name="工单所属车间", default=1) # 1是CVN_SYN车间id
+    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvn_synthesis', verbose_name="工单所属车间", default=lambda: Workshop.objects.get(code='CVN_SYN')) # 1是CVN_SYN车间id
     # =========================================================
     # 1. 投入原料 (Input)
     # =========================================================
