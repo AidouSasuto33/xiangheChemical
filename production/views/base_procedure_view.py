@@ -1,5 +1,7 @@
 # production/views/base_procedure_view.py
 import json
+
+from django.core.exceptions import ValidationError
 from django.views.generic import CreateView, UpdateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
@@ -75,35 +77,7 @@ class BaseProcedureView:
             raise NotImplementedError("子类必须提供 reverse_str 变量以便重定向。")
         return reverse(self.reverse_str, kwargs={'pk': self.object.pk})
 
-    # def get_labor_data(self):
-    #     """
-    #     从 POST 请求中提取人工组件的并行数组，并转化为结构化字典。
-    #     """
-    #     post = self.request.POST
-    #
-    #     # 2. 提取并行数组
-    #     # 注意：这些数组的长度在前端是同步增减的，一一对应
-    #     record_ids = post.getlist('labor_record_id')
-    #     config_ids = post.getlist('labor_config_id')
-    #     counts = post.getlist('worker_count')
-    #     hours = post.getlist('work_hours')
-    #     dates = post.getlist('record_date')
-    #
-    #     records = []
-    #     # 使用 zip 将并行的数组打包，形成一行行数据
-    #     # 这样 Service 就不再需要处理 post 对象，只处理 Python 原生 List[Dict]
-    #     for r_id, c_id, count, hour, date in zip(record_ids, config_ids, counts, hours, dates):
-    #         records.append({
-    #             'id': r_id if r_id else None,  # 空字符串转为 None，方便 Service 判断是否为新建
-    #             'cost_config_id': c_id,
-    #             'worker_count': count,
-    #             'work_hours': hour,
-    #             'record_date': date,
-    #         })
-    #
-    #     return {
-    #         'records': records,
-    #     }
+
     def get_labor_data(self):
         """
         从 POST 请求中提取前端打包的人工组件 JSON 数据。
@@ -127,8 +101,6 @@ class BaseProcedureView:
                 # 留意：前端 JS 目前没有打包 record_date，
                 # 但 labor_record_service.py 中已经写好了兜底逻辑（若无则取 timezone.now().date()），所以这里不传也是安全的。
             })
-        print("records:")
-        print(records)
 
         return {
             'records': records,
@@ -186,7 +158,6 @@ class BaseProcedureUpdateView(LoginRequiredMixin, BaseProcedureView, UpdateView)
     通用的工艺流转视图。
     负责：调度 Service 层处理投产与完工逻辑、执行事务管控与异常拦截。
     """
-
     def form_valid(self, form):
         action = self.request.POST.get('action')
         labor_data = self.get_labor_data()
@@ -195,23 +166,27 @@ class BaseProcedureUpdateView(LoginRequiredMixin, BaseProcedureView, UpdateView)
             raise NotImplementedError("UpdateView 子类必须提供 service_class 以处理业务逻辑。")
 
         try:
-            # 平行调用 A：无论有没有 Action，只要传了人工数据就存
-            # 这解决了“完工后补录”的问题：此时 action 为 None，但数据依然能存
-            if labor_data:
-                LaborRecordService.save_labor_records(form.instance, labor_data)
-
             with transaction.atomic():
-                # 平行调用 B：只有点击了“投产/完工”等按钮，才执行状态机逻辑
+                # 无论有没有 action，都必须先 save()！
+                # 这一步会将主表和动态投入子表（_save_inputs）写入数据库
+                self.object = form.save()
+
+                # 如果有人员数据，落库
+                if labor_data:
+                    LaborRecordService.save_labor_records(self.object, labor_data)
+
+                # 如果有操作动作，Service 层基于刚刚落库的【最新数据】进行最终防线校验与状态流转
                 if action:
-                    self.service_class.handle_action(form.instance, action, self.request.user)
-                else:
-                    # 如果只是普通保存修改（NEW状态下），form.save() 已经由 UpdateView 完成
-                    form.save()
+                    self.service_class.handle_action(self.object, action, self.request.user)
 
-
+        # 捕获 Service 层的校验错误，并桥接给 Form
+        except ValidationError as e:
+            # transaction.atomic() 会自动回滚刚才的 form.save()，保证数据库干净
+            form.add_error(None, e)
+            return self.form_invalid(form)
         except Exception as e:
-            # 捕获服务层抛出的 ValidationError 或 ValueError 并回滚事务
-            messages.error(self.request, f"操作失败: {str(e)}")
+            # 只有发生代码级或不可预知的系统异常时，才使用 messages.error
+            messages.error(self.request, f"系统异常: {str(e)}")
             return self.form_invalid(form)
 
         return redirect(self.get_success_url())

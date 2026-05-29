@@ -110,10 +110,9 @@ def update_single_inventory(key, change_amount, note, user):
         return False
 
 
-def check_batch_availability(requirements):
+def check_materials_availability(requirements):
     """
-    批量库存预检 (Pre-flight Check)
-    :procedure_name: 所有模型的产出都是crude_weight, 需要工艺名确定
+    批量基础物料库存预检 (Pre-flight Check for basic materials)
     :param requirements: list of (inventory_key, amount_needed, display_name)
     :return: (is_valid, error_messages_list)
     """

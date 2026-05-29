@@ -14,7 +14,7 @@ class CVNDistillation(BaseProductionStep):
     核心逻辑：多批次领料 -> 混合精馏 -> 产出精品 + 釜残
     """
 
-    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvn_distillation', verbose_name="工单所属车间", default=2) # 2是cvn_dis车间id
+    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvn_distillation', verbose_name="工单所属车间", default=lambda: Workshop.objects.get(code='CVN_DIS')) # 2是cvn_dis车间id
     # 投入cvn粗品批次
     input_total_cvn_weight = models.FloatField("投入总重量(kg)", default=0, help_text="应等于来源明细重量之和")
 

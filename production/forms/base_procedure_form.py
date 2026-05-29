@@ -189,6 +189,7 @@ class BaseProcedureForm(forms.ModelForm):
             raise ValidationError("请至少添加一条原料投入明细。")
 
         parsed_inputs = []
+        insufficient_errors = []
         total_weight = 0.0
         seen_batches = set()
 
@@ -216,6 +217,12 @@ class BaseProcedureForm(forms.ModelForm):
             except self.SOURCE_BATCH_MODEL.DoesNotExist:
                 raise ValidationError(f"系统内未找到原料批号：[{batch_no}]，请检查拼写。")
 
+            # 【核心改动 2】：发现超领时绝不立刻 raise，而是塞进错误弹框池
+            if weight > source_batch.remaining_weight:
+                insufficient_errors.append(
+                    f"批号 [{batch_no}] 结余不足 (需 {weight}kg, 存 {source_batch.remaining_weight}kg)"
+                )
+
             parsed_inputs.append({
                 'source_batch': source_batch,
                 'use_weight': weight
@@ -224,6 +231,9 @@ class BaseProcedureForm(forms.ModelForm):
 
         if not parsed_inputs:
             raise ValidationError("请添加有效的原料投入明细。")
+        if insufficient_errors:
+            # Django 的 ValidationError 完美支持传入一个错误列表
+            raise ValidationError(insufficient_errors)
 
         # 将干净数据暂存在 Form 实例中，供 save() 和子类的 clean() 业务逻辑使用
         self.parsed_inputs = parsed_inputs

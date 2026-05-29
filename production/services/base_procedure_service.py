@@ -7,7 +7,7 @@ from core.constants import KettleState
 from core.constants.procedure_status import ProcedureState, ProcedureAction
 from production.models import Kettle
 from production.services.partial.procedure_state_service import ProcedureStateService
-from inventory.services.inventory_service import update_single_inventory
+from inventory.services.inventory_service import update_single_inventory, check_materials_availability
 from production.utils.bom_utils import get_procedure_bom_info
 from production.utils.qc_utils import validate_qc_sum_100
 from production.utils.output_validator import validate_output_balance
@@ -157,42 +157,123 @@ class BaseProcedureService:
     # ==========================================
     # 内部引擎与钩子 (Hooks & Engines)
     # ==========================================
+    # @classmethod
+    # def _execute_inventory_deduction(cls, instance, user):
+    #     """双擎库存扣减引擎 (含预检)"""
+    #     # --- 阶段一：全面预检 (Pre-flight Check) ---
+    #     pre_flight_errors = []
+    #     material_requirements = []
+    #
+    #     for field, name in zip(cls.INPUT_FIELDS, cls.INPUT_NAMES):
+    #         # 引擎 B 预检: 前置批次
+    #         if field.startswith('input_total_'):
+    #             if not cls.SOURCE_BATCH_MODEL:
+    #                 raise ValidationError(
+    #                     f"系统配置错误：物料 {name} 触发了前置批次溯源逻辑，但未配置 SOURCE_BATCH_MODEL。")
+    #
+    #             inputs_qs = getattr(instance, cls.INPUTS_RELATED_NAME).all()
+    #             if not inputs_qs.exists():
+    #                 pre_flight_errors.append(f"未找到 {name} 投入明细。")
+    #                 continue
+    #
+    #             for item in inputs_qs:
+    #                 source_batch = cls.SOURCE_BATCH_MODEL.objects.get(pk=item.source_batch_id)
+    #                 if item.use_weight > source_batch.remaining_weight:
+    #                     pre_flight_errors.append(
+    #                         f"前置批次 {source_batch.batch_no} 结余不足 "
+    #                         f"(需 {item.use_weight}kg, 存 {source_batch.remaining_weight}kg)"
+    #                     )
+    #
+    #         # 引擎 A 预检收集: 标准辅料
+    #         else:
+    #             qty = getattr(instance, field, 0)
+    #             if qty and float(qty) > 0:
+    #                 material_requirements.append((field, float(qty), name))
+    #
+    #     # 批量预检基础物料并合并错误
+    #     if material_requirements:
+    #         is_valid, mat_errors = check_materials_availability(material_requirements)
+    #         if not is_valid:
+    #             pre_flight_errors.extend(mat_errors)
+    #
+    #     # 拦截：如果发现任何不足，一次性报错
+    #     if pre_flight_errors:
+    #         error_message = "投产失败，库存不足：\n" + "\n".join(pre_flight_errors)
+    #         raise ValidationError(error_message)
+    #
+    #
+    #     # --- 阶段二：执行扣减 (Execution) ---
+    #     for field, name in zip(cls.INPUT_FIELDS, cls.INPUT_NAMES):
+    #         # 引擎 B: 扣减前置批次及其全局镜像
+    #         if field.startswith('input_total_'):
+    #             total_use_weight = 0
+    #             inputs_qs = getattr(instance, cls.INPUTS_RELATED_NAME).all()
+    #
+    #             for item in inputs_qs:
+    #                 # 获取悲观锁执行真实扣减
+    #                 source_batch = cls.SOURCE_BATCH_MODEL.objects.select_for_update().get(pk=item.source_batch_id)
+    #                 source_batch.consumed_weight += item.use_weight
+    #                 source_batch.save(update_fields=['consumed_weight'])
+    #                 total_use_weight += item.use_weight
+    #
+    #             # 扣减镜像的全局库存
+    #             if total_use_weight > 0:
+    #                 global_key = cls.SOURCE_GLOBAL_INVENTORY_KEY or field
+    #                 cls._update_single_stock(global_key, -total_use_weight,
+    #                                          f"{name}溯源扣减 - 单号: {instance.batch_no}", user)
+    #
+    #         # 引擎 A: 直扣基础物料全局库存
+    #         else:
+    #             qty = getattr(instance, field, 0)
+    #             if qty and float(qty) > 0:
+    #                 cls._update_single_stock(field, -qty, f"投料: {name} - 单号: {instance.batch_no}", user)
+
     @classmethod
     def _execute_inventory_deduction(cls, instance, user):
-        """双擎库存扣减引擎"""
-        for field, name in zip(cls.INPUT_FIELDS, cls.INPUT_NAMES):
-            # 引擎 B: 前置多批次溯源扣减规则 (约定以 'input_total_' 开头)
-            if field.startswith('input_total_'):
-                if not cls.SOURCE_BATCH_MODEL:
-                    raise ValidationError(
-                        f"系统配置错误：物料 {name} 触发了前置批次溯源逻辑，但未配置 SOURCE_BATCH_MODEL。")
+        """双擎库存扣减引擎 (精简版：Form负责用户友好提示，Service在锁内行使终极防御)"""
 
+        # 1. 辅料预检（由于基础辅料通常不走多批次悲观锁，可保留批量预检）
+        material_requirements = []
+        for field, name in zip(cls.INPUT_FIELDS, cls.INPUT_NAMES):
+            if not field.startswith('input_total_'):
+                qty = getattr(instance, field, 0)
+                if qty and float(qty) > 0:
+                    material_requirements.append((field, float(qty), name))
+
+        if material_requirements:
+            is_valid, mat_errors = check_materials_availability(material_requirements)
+            if not is_valid:
+                raise ValidationError("投产失败，基础物料库存不足：\n" + "\n".join(mat_errors))
+
+        # 2. 执行扣减（在锁内同时进行终极防守与扣减）
+        for field, name in zip(cls.INPUT_FIELDS, cls.INPUT_NAMES):
+
+            # 引擎 B: 扣减前置批次
+            if field.startswith('input_total_'):
                 total_use_weight = 0
                 inputs_qs = getattr(instance, cls.INPUTS_RELATED_NAME).all()
 
-                if not inputs_qs.exists():
-                    raise ValidationError(f"未找到 {name} 投入明细，无法投产。")
-
                 for item in inputs_qs:
-                    # 加锁防并发超领
+                    # 【核心锁内防御】：获取悲观锁，此时数据绝对安全可靠
                     source_batch = cls.SOURCE_BATCH_MODEL.objects.select_for_update().get(pk=item.source_batch_id)
+
+                    # 终极底线拦截：防范高并发下的超领
                     if item.use_weight > source_batch.remaining_weight:
                         raise ValidationError(
-                            f"并发冲突：前置批次 {source_batch.batch_no} 剩余可用量不足！"
-                            f"试图领用 {item.use_weight}kg，当前仅剩 {source_batch.remaining_weight}kg。"
+                            f"【并发冲突拦截】前置批次 {source_batch.batch_no} 刚刚被其他工单占用，剩余额度不足！"
+                            f"(需 {item.use_weight}kg, 实际仅剩 {source_batch.remaining_weight}kg)"
                         )
+
                     source_batch.consumed_weight += item.use_weight
                     source_batch.save(update_fields=['consumed_weight'])
                     total_use_weight += item.use_weight
 
-                # 同步扣减全局代表该前置产物总量的库存
                 if total_use_weight > 0:
-                    # 优先使用配置的真实全局库存键，若未配置则降级使用 BOM 字段名
                     global_key = cls.SOURCE_GLOBAL_INVENTORY_KEY or field
                     cls._update_single_stock(global_key, -total_use_weight,
                                              f"{name}溯源扣减 - 单号: {instance.batch_no}", user)
 
-            # 引擎 A: 标准辅料全局直扣规则
+            # 引擎 A: 直扣基础物料
             else:
                 qty = getattr(instance, field, 0)
                 if qty and float(qty) > 0:
