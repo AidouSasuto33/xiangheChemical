@@ -29,7 +29,7 @@
                                 <option value="{{ record.cost_config.id }}" data-price="{{ record.cost_snapshot }}" selected>{{ record.cost_config.label }}</option>
                                 {% for config in labor_cost_configs %}
                                     {% if config.id != record.cost_config.id %}
-                                        <option value="{{ config.id }}" data-price="{{ config.price }}">{{ config.label }}</option>
+                                        <option value="{{ config.id }}" data-price="{{ config.cost_price }}">{{ config.label }}</option>
                                     {% endif %}
                                 {% endfor %}
                             </select>
@@ -63,7 +63,7 @@
     <datalist id="labor-config-options">
         <option value="" data-price="0" disabled selected>请选择工种...</option>
         {% for config in labor_cost_configs %}
-            <option value="{{ config.id }}" data-price="{{ config.price }}">{{ config.label }}</option>
+            <option value="{{ config.id }}" data-price="{{ config.cost_price }}">{{ config.label }}</option>
         {% endfor %}
     </datalist>
 </div>

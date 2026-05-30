@@ -50,7 +50,7 @@ class BaseProcedureView:
         context = super().get_context_data(**kwargs)
         # 1. 注入工种配置
         # TODO 添加save_draft等状态机方法后记得调用，不然人工记录、备注等信息无法保存
-        context['labor_cost_configs'] = CostConfig.objects.filter(category='labor').order_by('label')
+        context['labor_cost_configs'] = CostConfig.objects.filter(category__contains=['labor']).order_by('label')
 
         # 2. 安全获取实例对象 (防御 ListView/CreateView 崩溃)
         # getattr 用于安全获取属性，如果不存在则返回 None

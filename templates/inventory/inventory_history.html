@@ -12,7 +12,7 @@
                 <span class="text-primary">{{ current_item.name }}</span> 
                 <span class="text-muted fs-6">({{ current_item.key }})</span>
             </h4>
-            <p class="text-muted mb-0">当前实时库存: <strong>{{ current_item.quantity }} {{ current_item.unit }}</strong></p>
+            <p class="text-muted mb-0">当前库存: <strong>{{ current_item.quantity }} {{ current_item.unit }}</strong></p>
         </div>
         <div>
             <div class="btn-group me-2">
@@ -68,11 +68,11 @@
         </div>
     </div>
 
-    <!-- 第一部分：实物库存变动记录 (上方卡片) -->
+    <!-- 第一部分：库存变动记录 (上方卡片) -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 custom-collapse-trigger" style="cursor: pointer;" data-target="#collapseQuantity">
             <h5 class="mb-0">
-                📦 实物库存变动记录 <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count|default:logs.count }}条</span>
+                📦 库存变动记录 <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count|default:logs.count }}条</span>
             </h5>
             {% if is_paginated %}
             <div class="d-flex align-items-center">
@@ -174,11 +174,11 @@
         </div>
     </div>
 
-    <!-- 第二部分：属性与物价变更审计 (下方卡片) -->
+    <!-- 第二部分：物价变更审计 (下方卡片) -->
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 custom-collapse-trigger" style="cursor: pointer;" data-target="#collapsePrice">
             <h5 class="mb-0">
-                💰 属性与物价变更审计 <span class="badge bg-secondary ms-2">{{ price_logs|length }}条</span>
+                💰 物价变更审计 <span class="badge bg-secondary ms-2">{{ price_logs|length }}条</span>
             </h5>
         </div>
         <div id="collapsePrice" class="collapse show">
