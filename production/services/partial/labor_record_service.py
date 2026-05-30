@@ -56,7 +56,7 @@ class LaborRecordService:
                 worker_count=worker_count,
                 work_hours=work_hours,
                 record_date=record_date,
-                cost_snapshot=config_obj.price  # 重新保存时按最新配置更新快照
+                cost_snapshot=config_obj.cost_price  # 重新保存时按最新配置更新快照
             )
             return record_id
         else:
@@ -68,7 +68,7 @@ class LaborRecordService:
                 worker_count=worker_count,
                 work_hours=work_hours,
                 record_date=record_date,
-                cost_snapshot=config_obj.price
+                cost_snapshot=config_obj.cost_price
             )
             return new_record.id
 

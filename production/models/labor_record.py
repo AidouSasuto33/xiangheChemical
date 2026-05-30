@@ -31,7 +31,7 @@ class LaborRecord(models.Model):
         'inventory.CostConfig',
         on_delete=models.PROTECT,
         verbose_name="工种/费用项",
-        limit_choices_to={'category': 'labor'}
+        limit_choices_to={'category__contains': ['labor']}
     )
 
     # --- 3. 投入明细 ---
