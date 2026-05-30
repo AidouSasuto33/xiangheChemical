@@ -7,6 +7,7 @@ from django.db.models import Q
 
 # 引入你的 models 和 services
 from inventory.models import Inventory, InventoryLog
+from inventory.models.audit import CostConfigLog
 from inventory.services.inventory_service import handle_inventory_action, update_item_cost_config
 
 
@@ -171,6 +172,12 @@ class InventoryHistoryView(LoginRequiredMixin, ListView):
                 if not prev_item:
                     prev_item = Inventory.objects.order_by('-id').first()
                 context['prev_item'] = prev_item
+
+                # 提取独立的物价与属性审计日志，按时间倒序截取最新20条（免分页）
+                price_logs = CostConfigLog.objects.filter(
+                    config__key=current_item.key
+                ).select_related('operator').order_by('-changed_at')[:15]
+                context['price_logs'] = price_logs
                 
             except Inventory.DoesNotExist:
                 pass

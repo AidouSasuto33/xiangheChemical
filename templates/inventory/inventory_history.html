@@ -68,83 +68,200 @@
         </div>
     </div>
 
+    <!-- 第一部分：实物库存变动记录 (上方卡片) -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 custom-collapse-trigger" style="cursor: pointer;" data-target="#collapseQuantity">
+            <h5 class="mb-0">
+                📦 实物库存变动记录 <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count|default:logs.count }}条</span>
+            </h5>
+            {% if is_paginated %}
+            <div class="d-flex align-items-center">
+                <ul class="pagination pagination-sm justify-content-center mb-0 me-2 no-collapse">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?id={{ current_item.id }}&page={{ page_obj.previous_page_number }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.date_start %}&date_start={{ request.GET.date_start }}{% endif %}{% if request.GET.date_end %}&date_end={{ request.GET.date_end }}{% endif %}">上一页</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
+                    {% endif %}
+
+                    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?id={{ current_item.id }}&page={{ page_obj.next_page_number }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.date_start %}&date_start={{ request.GET.date_start }}{% endif %}{% if request.GET.date_end %}&date_end={{ request.GET.date_end }}{% endif %}">下一页</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">下一页</a></li>
+                    {% endif %}
+                </ul>
+                <form method="GET" class="d-inline-flex no-collapse" style="width: 130px;">
+                    <input type="hidden" name="id" value="{{ current_item.id }}">
+                    {% if request.GET.action %}<input type="hidden" name="action" value="{{ request.GET.action }}">{% endif %}
+                    {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+                    {% if request.GET.date_start %}<input type="hidden" name="date_start" value="{{ request.GET.date_start }}">{% endif %}
+                    {% if request.GET.date_end %}<input type="hidden" name="date_end" value="{{ request.GET.date_end }}">{% endif %}
+                    <div class="input-group input-group-sm">
+                        <input type="number" name="page" class="form-control text-center" min="1" max="{{ page_obj.paginator.num_pages }}" placeholder="页码" required>
+                        <button type="submit" class="btn btn-outline-secondary">跳转</button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        <div id="collapseQuantity" class="collapse show">
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                            <tr>
+                                <th class="ps-4" style="width: 20%;">操作时间</th>
+                                <th style="width: 15%;">类型</th>
+                                <th style="width: 15%;">变动数量</th>
+                                <th style="width: 15%;">变动后结存</th>
+                                <th style="width: 10%;">操作人</th>
+                                <th class="text-muted">备注 / 关联单据</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td class="ps-4 text-muted font-monospace">
+                                    {{ log.created_at|date:"Y-m-d H:i:s" }}
+                                </td>
+                                <td>
+                                    {% if log.action_type == 'purchase' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">购入入库</span>
+                                    {% elif log.action_type == 'sale' %}
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">销售/领用</span>
+                                    {% elif log.action_type == 'production' %}
+                                        <span class="badge bg-info text-dark bg-opacity-10 border border-info border-opacity-25">生产消耗</span>
+                                    {% elif log.action_type == 'safe_stock' %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">预警线调整</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark bg-opacity-10 border border-warning border-opacity-25">盘点修正</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.change_amount > 0 %}
+                                        <span class="text-success fw-bold">+{{ log.change_amount|floatformat:2 }}</span>
+                                    {% elif log.change_amount < 0 %}
+                                        <span class="text-danger fw-bold">{{ log.change_amount|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                    <small class="text-muted">{{ current_item.unit }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ log.quantity_after|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ log.operator.last_name|default:"" }}{{ log.operator.first_name|default:log.operator.username }}
+                                    </span>
+                                </td>
+                                <td class="text-muted small text-truncate" style="max-width: 200px;" title="{{ log.note }}">
+                                    {{ log.note|default:"-" }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    该时间段内无变动记录。
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第二部分：属性与物价变更审计 (下方卡片) -->
     <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4" style="width: 20%;">操作时间</th>
-                        <th style="width: 15%;">类型</th>
-                        <th style="width: 15%;">变动数量</th>
-                        <th style="width: 15%;">变动后结存</th>
-                        <th style="width: 10%;">操作人</th>
-                        <th class="text-muted">备注 / 关联单据</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in logs %}
-                    <tr>
-                        <td class="ps-4 text-muted font-monospace">
-                            {{ log.created_at|date:"Y-m-d H:i:s" }}
-                        </td>
-                        <td>
-                            {% if log.action_type == 'purchase' %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">购入入库</span>
-                            {% elif log.action_type == 'sale' %}
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">销售/领用</span>
-                            {% elif log.action_type == 'production' %}
-                                <span class="badge bg-info text-dark bg-opacity-10 border border-info border-opacity-25">生产消耗</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark bg-opacity-10 border border-warning border-opacity-25">盘点修正</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if log.change_amount > 0 %}
-                                <span class="text-success fw-bold">+{{ log.change_amount|floatformat:2 }}</span>
-                            {% elif log.change_amount < 0 %}
-                                <span class="text-danger fw-bold">{{ log.change_amount|floatformat:2 }}</span>
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                            <small class="text-muted">{{ current_item.unit }}</small>
-                        </td>
-                        <td>
-                            <strong>{{ log.quantity_after|floatformat:2 }}</strong>
-                        </td>
-                        <td>
-                            <span class="badge bg-light text-dark border">
-                                {{ log.operator.last_name }}{{ log.operator.first_name }}
-                            </span>
-                        </td>
-                        <td class="text-muted small text-truncate" style="max-width: 200px;" title="{{ log.note }}">
-                            {{ log.note|default:"-" }}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
-                            该时间段内无变动记录。
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 custom-collapse-trigger" style="cursor: pointer;" data-target="#collapsePrice">
+            <h5 class="mb-0">
+                💰 属性与物价变更审计 <span class="badge bg-secondary ms-2">{{ price_logs|length }}条</span>
+            </h5>
         </div>
-        
-        {% if is_paginated %}
-        <div class="card-footer bg-white py-2">
-            <ul class="pagination pagination-sm justify-content-center mb-0">
-                {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?id={{ current_item.id }}&page={{ page_obj.previous_page_number }}&action={{ request.GET.action }}&q={{ request.GET.q }}&date_start={{ request.GET.date_start }}&date_end={{ request.GET.date_end }}">上一页</a></li>
-                {% endif %}
-                <li class="page-item disabled"><span class="page-link">第 {{ page_obj.number }} 页</span></li>
-                {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?id={{ current_item.id }}&page={{ page_obj.next_page_number }}&action={{ request.GET.action }}&q={{ request.GET.q }}&date_start={{ request.GET.date_start }}&date_end={{ request.GET.date_end }}">下一页</a></li>
-                {% endif %}
-            </ul>
+        <div id="collapsePrice" class="collapse show">
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 50vh; overflow-y: auto;">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                            <tr>
+                                <th class="ps-4" style="width: 20%;">变更时间</th>
+                                <th style="width: 15%;">操作人</th>
+                                <th style="width: 30%;">成本价调整</th>
+                                <th style="width: 30%;">售价调整</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in price_logs %}
+                            <tr>
+                                <td class="ps-4 text-muted font-monospace">
+                                    {{ log.changed_at|date:"Y-m-d H:i" }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{  log.operator.first_name|default:log.operator.username |default:"系统" }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if log.old_cost_price != log.new_cost_price %}
+                                        <span class="text-muted text-decoration-line-through">{{ log.old_cost_price }}</span> ➔
+                                        <strong class="text-primary">{{ log.new_cost_price }}</strong>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.old_sale_price != log.new_sale_price %}
+                                        <span class="text-muted text-decoration-line-through">{{ log.old_sale_price }}</span> ➔
+                                        <strong class="text-success">{{ log.new_sale_price }}</strong>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    该物料暂无价格与属性变更记录。
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-        {% endif %}
     </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const collapseHeaders = document.querySelectorAll('.custom-collapse-trigger');
+
+    collapseHeaders.forEach(header => {
+        header.addEventListener('click', function(e) {
+            // 核心防御：如果点击的源头是输入框、按钮、超链接，或者是带有 .no-collapse 的容器内部元素，则不触发折叠
+            if (e.target.tagName === 'INPUT' ||
+                e.target.tagName === 'BUTTON' ||
+                e.target.tagName === 'A' ||
+                e.target.closest('.no-collapse')) {
+                return;
+            }
+
+            // 手动接管 Bootstrap Collapse API
+            const targetSelector = this.getAttribute('data-target');
+            const targetElement = document.querySelector(targetSelector);
+
+            if (targetElement) {
+                // 获取已有的实例或创建新实例，然后执行 toggle
+                const collapseInstance = bootstrap.Collapse.getInstance(targetElement) || new bootstrap.Collapse(targetElement, { toggle: false });
+                collapseInstance.toggle();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
