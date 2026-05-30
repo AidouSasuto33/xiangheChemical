@@ -1,0 +1,92 @@
+<div class="modal fade" id="inventoryItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{% url 'inventory:update_cost_config' %}">
+                {% csrf_token %}
+
+                <input type="hidden" name="inventory_id" id="modal_item_inventory_id">
+                <input type="hidden" name="key" id="modal_item_key">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">
+                        <span>配置物料属性</span> -
+                        <span id="modal_item_name" class="fw-bold"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-1">物理物料代码 (Key)</label>
+                        <div id="modal_item_key_display" class="form-control bg-light fw-monospace text-secondary" style="font-size: 0.9rem;"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold mb-2">费用类别属性 (可多选)</label>
+                        <div class="p-3 border rounded bg-light">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input modal-item-cat-checkbox" type="checkbox" name="category" value="material" id="item_cat_material">
+                                        <label class="form-check-label fw-semibold text-dark" for="item_cat_material">
+                                            原料成本 (material)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input modal-item-cat-checkbox" type="checkbox" name="category" value="product" id="item_cat_product">
+                                        <label class="form-check-label fw-semibold text-dark" for="item_cat_product">
+                                            产品/产值 (product)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input modal-item-cat-checkbox" type="checkbox" name="category" value="labor" id="item_cat_labor">
+                                        <label class="form-check-label fw-semibold text-dark" for="item_cat_labor">
+                                            人工成本 (labor)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input modal-item-cat-checkbox" type="checkbox" name="category" value="waste" id="item_cat_waste">
+                                        <label class="form-check-label fw-semibold text-dark" for="item_cat_waste">
+                                            环保/排污 (waste)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-text text-muted small mt-1">
+                            ℹ️ 勾选对应的品类属性后，系统核算模块将自动挂载相应的财务核算链条。
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-2">
+                        <div class="col-6">
+                            <label for="modal_item_cost_price" class="form-label fw-bold">成本指导价 (元)</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" min="0" name="cost_price" id="modal_item_cost_price" class="form-control form-control-lg text-end" required>
+                                <span class="input-group-text modal-item-unit-display">/ kg</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label for="modal_item_sale_price" class="form-label fw-bold">销售/产值单价 (元)</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" min="0" name="sale_price" id="modal_item_sale_price" class="form-control form-control-lg text-end" required>
+                                <span class="input-group-text modal-item-unit-display">/ kg</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-dark">保存配置变更</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

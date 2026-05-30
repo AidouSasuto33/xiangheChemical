@@ -1,9 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block title %}实时库存 - 相和化工{% endblock %}
-{% block page_title %}实时库存管理{% endblock %}
-
+{% block page_title %}库存管理{% endblock %}
 {% block extra_css %}
 <style>
     /* 库存页面的微调样式 */
@@ -24,9 +22,6 @@
     }
 </style>
 {% endblock %}
-
-
-
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -95,7 +90,21 @@
                                 </td>
 
                                 <td>
-                                    <strong>{{ item.name }}</strong>
+                                    <a href="javascript:void(0);"
+                                       class="text-decoration-none fw-bold text-dark"
+                                       title="点击配置物料属性与价格"
+                                       onclick="openItemModal(
+                                           '{{ item.id }}',
+                                           '{{ item.name|escapejs }}',
+                                           '{{ item.key|escapejs }}',
+                                           '{{ item.get_unit_display|default:item.unit|escapejs }}',
+                                           '{{ item.cost_config.cost_price|default:0 }}',
+                                           '{{ item.cost_config.sale_price|default:0 }}',
+                                           '{{ item.cost_config.category|join:',' }}'
+                                       )">
+                                        {{ item.name }}
+                                        <i class="bi bi-pencil-square text-muted ms-1" style="font-size: 0.8rem;"></i>
+                                    </a>
                                     <br>
                                     <small class="text-muted font-monospace">{{ item.key }}</small>
                                 </td>
@@ -176,47 +185,8 @@
     </div>
 </div>
 
-<div class="modal fade" id="inventoryActionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form method="post" action="{% url 'inventory:inventory_action' %}">
-                {% csrf_token %}
-
-                <input type="hidden" name="inventory_id" id="modal_inventory_id">
-                <input type="hidden" name="action_type" id="modal_action_type">
-
-                <div class="modal-header text-white" id="modal_header_bg">
-                    <h5 class="modal-title">
-                        <span id="modal_action_label">操作</span> -
-                        <span id="modal_item_name" class="fw-bold"></span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label for="modal_amount" class="form-label fw-bold" id="modal_amount_label">数量</label>
-                        <div class="input-group">
-                            <input type="number" step="0.01" name="amount" id="modal_amount" class="form-control form-control-lg" required>
-                            <span class="input-group-text" id="modal_unit_display">kg</span>
-                        </div>
-                        <div class="form-text" id="modal_help_text"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="modal_note" class="form-label">备注 / 原因</label>
-                        <textarea name="note" id="modal_note" class="form-control" rows="2" placeholder="可选：填写更改库存警戒线理由 "></textarea>
-                    </div>
-                </div>
-
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-primary" id="modal_submit_btn">确认提交</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+{% include 'inventory/_inventory_action_modal.html' %}
+{% include 'inventory/_inventory_item_modal.html' %}
 
 {% endblock %}
 
@@ -248,7 +218,7 @@
             btnClass: 'btn-warning',
             helpText: '⚠️ 请输入盘点后的真实数量，系统将自动计算差额'
         },
-'safe_stock': {
+        'safe_stock': {
             label: '设置安全库存警戒线',
             headerClass: 'bg-info', // 使用蓝色区分
             amountLabel: '新警戒线值 (≥0)',
@@ -289,6 +259,45 @@
         setTimeout(() => {
             document.getElementById('modal_amount').focus();
         }, 500);
+    }
+
+    function openItemModal(id, name, key, unit, costPrice, salePrice, categoriesStr) {
+        // 1. 填充基础隐藏域与文本
+        document.getElementById('modal_item_inventory_id').value = id;
+        document.getElementById('modal_item_key').value = key;
+        document.getElementById('modal_item_name').innerText = name;
+        document.getElementById('modal_item_key_display').innerText = key;
+
+        // 2. 动态刷新计价单位后缀
+        const unitElements = document.querySelectorAll('.modal-item-unit-display');
+        unitElements.forEach(el => {
+            el.innerText = '/ ' + unit;
+        });
+
+        // 3. 填充基础双数值价格
+        document.getElementById('modal_item_cost_price').value = parseFloat(costPrice) || 0;
+        document.getElementById('modal_item_sale_price').value = parseFloat(salePrice) || 0;
+
+        // 4. 重置并解析类别标签，精准勾选复选框
+        const checkboxes = document.querySelectorAll('.modal-item-cat-checkbox');
+        checkboxes.forEach(cb => cb.checked = false); // 清空历史勾选
+
+        if (categoriesStr) {
+            const activeCategories = categoriesStr.split(',');
+            activeCategories.forEach(cat => {
+                const cleanCat = cat.trim();
+                if (cleanCat) {
+                    const targetCb = document.getElementById('item_cat_' + cleanCat);
+                    if (targetCb) {
+                        targetCb.checked = true;
+                    }
+                }
+            });
+        }
+
+        // 5. 唤起 Bootstrap 5 Modal
+        const itemModal = new bootstrap.Modal(document.getElementById('inventoryItemModal'));
+        itemModal.show();
     }
 </script>
 {% endblock %}

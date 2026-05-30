@@ -32,6 +32,11 @@ class Inventory(models.Model):
     def __str__(self):
         return f"{self.name} ({self.quantity} {self.unit})"
 
+    @property
+    def cost_config(self):
+        from .cost_config import CostConfig
+        return CostConfig.objects.filter(key=self.key).first()
+
     class Meta:
         verbose_name = "库存清单"
         verbose_name_plural = verbose_name

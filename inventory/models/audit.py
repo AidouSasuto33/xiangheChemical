@@ -46,8 +46,10 @@ class CostConfigLog(models.Model):
         null=True,
         verbose_name="操作人"
     )
-    old_price = models.DecimalField("原价格", max_digits=10, decimal_places=2)
-    new_price = models.DecimalField("新价格", max_digits=10, decimal_places=2)
+    old_cost_price = models.DecimalField("原成本价", max_digits=10, decimal_places=2, default=0)
+    new_cost_price = models.DecimalField("新成本价", max_digits=10, decimal_places=2, default=0)
+    old_sale_price = models.DecimalField("原销售价", max_digits=10, decimal_places=2, default=0)
+    new_sale_price = models.DecimalField("新销售价", max_digits=10, decimal_places=2, default=0)
     changed_at = models.DateTimeField("变更时间", auto_now_add=True)
 
     class Meta:

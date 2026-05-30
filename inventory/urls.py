@@ -1,6 +1,6 @@
 from django.urls import path
 from django_ratelimit.decorators import ratelimit
-from inventory.views import InventoryListView, InventoryActionView, InventoryHistoryView
+from inventory.views import InventoryListView, InventoryActionView, InventoryHistoryView, UpdateCostConfigView
 
 app_name = 'inventory'
 
@@ -17,4 +17,7 @@ urlpatterns = [
 
     # 访问路径: /inventory/history/ (历史记录查询)
     path('history/', InventoryHistoryView.as_view(), name='inventory_history'),
+    
+    # 访问路径: /inventory/cost-config/update/
+    path('cost-config/update/', UpdateCostConfigView.as_view(), name='update_cost_config'),
 ]

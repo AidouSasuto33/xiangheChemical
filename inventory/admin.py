@@ -1,14 +1,11 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models.inventory import Inventory  # 假设文件名叫 inventory.py
+from .models.inventory import Inventory
 from .models.audit import InventoryLog, CostConfigLog
 from .models.cost_config import CostConfig
 
-
-
 @admin.register(Inventory)
 class InventoryAdmin(admin.ModelAdmin):
-    # Inventory 模型中没有 updated_at 字段，已移除
     list_display = ['name', 'quantity', 'unit', 'category', 'key']
     search_fields = ['name', 'key']
     list_filter = ['category']
@@ -17,8 +14,8 @@ class InventoryAdmin(admin.ModelAdmin):
 
 @admin.register(CostConfig)
 class CostConfigAdmin(admin.ModelAdmin):
-    list_display = ['label', 'price', 'unit', 'category', 'key', 'updated_at']
-    list_editable = ['price']
+    list_display = ['label', 'cost_price', 'sale_price', 'unit', 'category', 'key', 'updated_at']
+    list_editable = ['cost_price', 'sale_price']
     search_fields = ['label', 'key']
     list_filter = ['category']
     readonly_fields = ['key']
@@ -27,15 +24,14 @@ class CostConfigAdmin(admin.ModelAdmin):
         if change:
             try:
                 old_obj = CostConfig.objects.get(pk=obj.pk)
-                old_price = old_obj.price
-                new_price = obj.price
-                if old_price != new_price:
-                    # CostConfigLog 没有 reason 字段，已移除
+                if old_obj.cost_price != obj.cost_price or old_obj.sale_price != obj.sale_price:
                     CostConfigLog.objects.create(
                         config=obj,
                         operator=request.user,
-                        old_price=old_price,
-                        new_price=new_price
+                        old_cost_price=old_obj.cost_price,
+                        new_cost_price=obj.cost_price,
+                        old_sale_price=old_obj.sale_price,
+                        new_sale_price=obj.sale_price
                     )
             except CostConfig.DoesNotExist:
                 pass
@@ -43,9 +39,7 @@ class CostConfigAdmin(admin.ModelAdmin):
 
 @admin.register(CostConfigLog)
 class CostConfigLogAdmin(admin.ModelAdmin):
-    # CostConfigLog 使用 changed_at 而不是 created_at
-    # CostConfigLog 没有 reason 字段
-    list_display = ['changed_at', 'config_label', 'old_price', 'new_price', 'operator']
+    list_display = ['changed_at', 'config_label', 'old_cost_price', 'new_cost_price', 'old_sale_price', 'new_sale_price', 'operator']
     list_filter = ['operator']
     search_fields = ['config__label']
     readonly_fields = [field.name for field in CostConfigLog._meta.fields]

@@ -7,7 +7,7 @@ from django.db.models import Q
 
 # 引入你的 models 和 services
 from inventory.models import Inventory, InventoryLog
-from inventory.services.inventory_service import handle_inventory_action
+from inventory.services.inventory_service import handle_inventory_action, update_item_cost_config
 
 
 # ==========================================
@@ -175,3 +175,25 @@ class InventoryHistoryView(LoginRequiredMixin, ListView):
             except Inventory.DoesNotExist:
                 pass
         return context
+
+class UpdateCostConfigView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        key = request.POST.get('key')
+        cost_price = request.POST.get('cost_price')
+        sale_price = request.POST.get('sale_price')
+        categories_list = request.POST.getlist('category')
+
+        success, message = update_item_cost_config(
+            user=request.user,
+            key=key,
+            categories_list=categories_list,
+            cost_price=cost_price,
+            sale_price=sale_price
+        )
+
+        if success:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+
+        return redirect(request.META.get('HTTP_REFERER', 'inventory:inventory_list'))

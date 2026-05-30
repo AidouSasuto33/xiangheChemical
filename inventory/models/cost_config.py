@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 class CostConfig(models.Model):
     """
@@ -22,16 +23,17 @@ class CostConfig(models.Model):
 
     key = models.CharField("配置代码", max_length=50, unique=True)
     label = models.CharField("配置项名称", max_length=50)
-    category = models.CharField("费用类别", max_length=20, choices=CATEGORY_CHOICES)
+    category = ArrayField(models.CharField(max_length=20, choices=CATEGORY_CHOICES), verbose_name="费用类别", default=list, blank=True)
     
-    price = models.DecimalField("单价/金额 (元)", max_digits=10, decimal_places=2, default=0)
+    cost_price = models.DecimalField("成本指导价 (元)", max_digits=10, decimal_places=2, default=0)
+    sale_price = models.DecimalField("销售/产值单价 (元)", max_digits=10, decimal_places=2, default=0)
     unit = models.CharField("计价单位", max_length=20, choices=UNIT_CHOICES, default='kg')
     
     description = models.CharField("说明", max_length=200, blank=True)
     updated_at = models.DateTimeField("最近更新", auto_now=True)
 
     def __str__(self):
-        return f"{self.label}: {self.price}元/{self.unit}"
+        return f"{self.label} | 成本:{self.cost_price} | 销售:{self.sale_price} (元/{self.unit})"
 
     class Meta:
         verbose_name = "费用/价格配置"

@@ -1,6 +1,8 @@
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from inventory.models import Inventory, InventoryLog
+from inventory.models.cost_config import CostConfig
+from inventory.models.audit import CostConfigLog
 
 
 def handle_inventory_action(user, inventory_id, action_type, amount_or_quantity, note=""):
@@ -127,8 +129,36 @@ def check_materials_availability(requirements):
             inv = Inventory.objects.get(key=key)
             if inv.quantity < amount:
                 # 记录具体缺口：需 100, 存 80
-                errors.append(f"{name} (需 {amount}{inv.unit}, 存 {inv.quantity}{inv.unit})")
+                errors.append(f"{name} (需 {amount}{inv.unit}, 库存 {inv.quantity}{inv.unit})")
         except Inventory.DoesNotExist:
             errors.append(f"{name} (未找到库存项: {key})")
             
     return (len(errors) == 0), errors
+
+def update_item_cost_config(user, key, categories_list, cost_price, sale_price):
+    try:
+        with transaction.atomic():
+            config = CostConfig.objects.select_for_update().get(key=key)
+            
+            old_cost_price = config.cost_price
+            old_sale_price = config.sale_price
+            
+            config.category = categories_list
+            config.cost_price = cost_price
+            config.sale_price = sale_price
+            config.save()
+            
+            if old_cost_price != float(cost_price) or old_sale_price != float(sale_price):
+                CostConfigLog.objects.create(
+                    config=config,
+                    operator=user,
+                    old_cost_price=old_cost_price,
+                    new_cost_price=cost_price,
+                    old_sale_price=old_sale_price,
+                    new_sale_price=sale_price
+                )
+        return True, "配置更新成功"
+    except CostConfig.DoesNotExist:
+        return False, "未找到关联的价格配置"
+    except Exception as e:
+        return False, f"系统错误: {str(e)}"
