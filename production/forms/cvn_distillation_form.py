@@ -12,10 +12,9 @@ class CVNDistillationForm(BaseProcedureForm):
 
     INPUT_GROUP = ['start_time', 'expected_time', 'kettle']
     OUTPUT_GROUP = [
-        'end_time', 'cvn_dis_crude_weight',
-        'output_content_cvn', 'output_content_dcb', 'output_content_adn',
-        'residue_weight'
+        'end_time', 'cvn_dis_crude_weight','residue_weight'
     ]
+    QC_GROUP = ['output_content_cvn', 'output_content_dcb', 'output_content_adn','test_time']
 
     # === 2. 全局防篡改字段配置 ===
     READONLY_FIELDS = ['pre_content_cvn', 'pre_content_dcb', 'pre_content_adn']

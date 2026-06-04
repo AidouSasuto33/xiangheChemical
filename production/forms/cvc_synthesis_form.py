@@ -12,10 +12,8 @@ class CVCSynthesisForm(BaseProcedureForm):
     # 包含辅料二氯亚砜
     INPUT_GROUP = ['start_time', 'expected_time', 'kettle', 'raw_socl2']
     # 产出包含了合格品与前馏份(头酒)
-    OUTPUT_GROUP = [
-        'end_time', 'cvc_syn_crude_weight', 'distillation_head_weight',
-        'content_cvc', 'content_cva'
-    ]
+    OUTPUT_GROUP = ['end_time', 'cvc_syn_crude_weight', 'distillation_head_weight']
+    QC_GROUP = ['test_time', 'content_cvc', 'content_cva']
 
     # === 2. 全局防篡改字段配置 ===
     READONLY_FIELDS = ['pre_content_cva', 'pre_content_cvn', 'pre_content_water']

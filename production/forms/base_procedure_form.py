@@ -22,6 +22,7 @@ class BaseProcedureForm(forms.ModelForm):
     MAIN_OUTPUT_FIELD = None  # 例如: 'cvn_syn_crude_weight'
     INPUT_GROUP = []
     OUTPUT_GROUP = []
+    QC_GROUP = []
     DATETIME_FIELDS = ['start_time', 'expected_time', 'end_time']
 
     # --- 动态投入及多批次物料配置 (精馏及后续工艺使用) ---

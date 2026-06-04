@@ -11,10 +11,8 @@ class CVCExportForm(BaseProcedureForm):
 
     # 仅需釜皿等基础投入，无额外辅料
     INPUT_GROUP = ['start_time', 'expected_time', 'kettle']
-    OUTPUT_GROUP = [
-        'end_time', 'cvc_dis_crude_weight',
-        'content_cvc', 'content_cva'
-    ]
+    OUTPUT_GROUP = ['end_time', 'cvc_dis_crude_weight',]
+    QC_GROUP = ['test_time', 'content_cvc', 'content_cva']
 
     # === 2. 全局防篡改字段配置 ===
     READONLY_FIELDS = ['pre_content_cvc', 'pre_content_cva']

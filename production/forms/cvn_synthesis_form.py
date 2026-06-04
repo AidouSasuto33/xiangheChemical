@@ -13,9 +13,12 @@ class CVNSynthesisForm(BaseProcedureForm):
     ]
 
     OUTPUT_GROUP = [
-        'end_time', 'test_time', 'cvn_syn_crude_weight',
-        'content_cvn', 'content_dcb', 'content_adn',
+        'end_time', 'cvn_syn_crude_weight',
         'recovered_dcb_amount', 'waste_batches'
+    ]
+    # 3. 质检闭环组 (化验室人员点击“录入质检”时必须填写的字段)
+    QC_GROUP = [
+        'test_time', 'content_cvn', 'content_dcb', 'content_adn'
     ]
 
     # 将 test_time 追加到基类的日期时间处理列表中，以便统一渲染 datetime-local 组件

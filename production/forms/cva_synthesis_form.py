@@ -10,10 +10,8 @@ class CVASynthesisForm(BaseProcedureForm):
 
     # 加入了合成工艺特有的辅料投入
     INPUT_GROUP = ['start_time', 'expected_time', 'kettle', 'raw_hcl', 'raw_alkali']
-    OUTPUT_GROUP = [
-        'end_time', 'cva_crude_weight',
-        'content_cva', 'content_cvn', 'content_water'
-    ]
+    OUTPUT_GROUP = ['end_time', 'cva_crude_weight',]
+    QC_GROUP = ['test_time', 'content_cva', 'content_cvn', 'content_water']
 
     # === 2. 全局防篡改字段配置 ===
     READONLY_FIELDS = ['pre_content_cvn', 'pre_content_dcb', 'pre_content_adn']
