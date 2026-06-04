@@ -126,6 +126,11 @@ class BaseProcedureService:
         # TODO 自动对比预计时间与现在时间，如果超出预计时间则标记成delay状态
         # 似乎需要增加新的signal
         pass
+
+    @classmethod
+    def _cancel_production(cls, instance, user):
+        # TODO 编写inventory 物料回滚逻辑并调用
+        pass
   
     @classmethod
     def get_production_context(cls, instance=None, require_source_batches=False):
@@ -205,6 +210,44 @@ class BaseProcedureService:
                 qty = getattr(instance, field, 0)
                 if qty and float(qty) > 0:
                     cls._update_single_stock(field, -qty, f"投料: {name} - 单号: {instance.batch_no}", user)
+
+    @classmethod
+    def _execute_inventory_rollback(cls, procedure, user):
+        bom_info = get_procedure_bom_info(cls.PROCEDURE_KEY)
+        if not bom_info:
+            return
+
+        # 1. 归还大宗原料
+        for input_item in bom_info.get('inputs', []):
+            field_name = input_item.get('field')
+            material_name = input_item.get('name')
+
+            if not field_name.startswith('input_total_') and hasattr(procedure, field_name):
+                consumed_amount = getattr(procedure, field_name, 0)
+                if consumed_amount and consumed_amount > 0:
+                    update_single_inventory(
+                        user=user,
+                        key=field_name,
+                        amount=consumed_amount,
+                        action_type='correction',
+                        note=f"工单取消：{procedure.batch_no} 撤销投产，归还 {material_name}"
+                    )
+
+        # 2. 释放前置批次 & 领料明细清零 (方案 B)
+        if hasattr(cls, 'INPUTS_RELATED_NAME') and cls.INPUTS_RELATED_NAME:
+            inputs_manager = getattr(procedure, cls.INPUTS_RELATED_NAME, None)
+
+            if inputs_manager:
+                for batch_input in inputs_manager.all():
+                    source_batch = batch_input.source_batch
+                    consumed_in_this_procedure = batch_input.consumed_weight
+
+                    if consumed_in_this_procedure and consumed_in_this_procedure > 0:
+                        source_batch.consumed_weight -= consumed_in_this_procedure
+                        source_batch.save()
+
+                        batch_input.use_weight = 0
+                        batch_input.save()
 
     @classmethod
     def _execute_inventory_addition(cls, instance, user):

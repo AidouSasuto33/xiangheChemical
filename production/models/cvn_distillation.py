@@ -1,6 +1,5 @@
 # Django基础ORM管理
 from django.db import models
-from system.models import Workshop
 # 引入基础模型
 from .core import BaseProductionStep, BaseMultiBatchInput
 # 引入 CVN 合成模型
@@ -13,9 +12,8 @@ class CVNDistillation(BaseProductionStep):
     Step 2: CVN 精馏
     核心逻辑：多批次领料 -> 混合精馏 -> 产出精品 + 釜残
     """
-
-    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvn_distillation', verbose_name="工单所属车间", default=lambda: Workshop.objects.get(code='CVN_DIS')) # 2是cvn_dis车间id
     # 投入cvn粗品批次
+    default_workshop_code = 'CVN_DIS'
     input_total_cvn_weight = models.FloatField("投入总重量(kg)", default=0, help_text="应等于来源明细重量之和")
 
     # =========================================================
@@ -46,7 +44,7 @@ class CVNDistillation(BaseProductionStep):
     # --- 核心属性：剩余可用量 ---
     @property
     def remaining_weight(self):
-        """批次里还剩多少精馏CVM"""
+        """批次里还剩多少精馏CVN"""
         return max(0, self.cvn_dis_crude_weight - self.consumed_weight)
 
 

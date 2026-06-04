@@ -1,6 +1,5 @@
 # Django基础ORM管理
 from django.db import models
-from system.models import Workshop
 # 表单基础模型
 from .core import BaseProductionStep
 # =========================================================
@@ -11,7 +10,7 @@ class CVNSynthesis(BaseProductionStep):
     Step 1: CVN 合成
     逻辑：投入原料 -> 产出粗品 -> (部分用于精馏)
     """
-    workshop = models.ForeignKey(Workshop, on_delete=models.PROTECT, related_name='cvn_synthesis', verbose_name="工单所属车间", default=lambda: Workshop.objects.get(code='CVN_SYN')) # 1是CVN_SYN车间id
+    default_workshop_code = 'CVN_SYN'
     # =========================================================
     # 1. 投入原料 (Input)
     # =========================================================
@@ -34,7 +33,6 @@ class CVNSynthesis(BaseProductionStep):
     content_dcb = models.FloatField("中控-DCB含量%", null=True, blank=True)
     content_adn = models.FloatField("中控-己二腈含量%", null=True, blank=True)
 
-    test_time = models.DateTimeField("送检时间", null=True, blank=True)
 
     # =========================================================
     # 3. 回收 (Recovery)

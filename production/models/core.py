@@ -6,10 +6,13 @@ from django.db.models import JSONField
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from simple_history.models import HistoricalRecords # Django数据表快照库
+
 from core.constants.procedure_status import ProcedureState
 from .kettle import Kettle
+from system.models import Workshop
 from xiangheChemical.utils.time_utils import get_default_start_time, get_default_expected_time
-from simple_history.models import HistoricalRecords # Django数据表快照库
+
 
 # ==========================================
 # 1. 抽象基类 (BaseProductionStep) - 重构版
@@ -31,6 +34,15 @@ class BaseProductionStep(models.Model):
 
     # --- 1. 核心追踪 ---
     batch_no = models.CharField("生产批号", max_length=50, unique=True)
+
+    workshop = models.ForeignKey(
+        Workshop,
+        on_delete=models.PROTECT,
+        related_name='%(class)s_related_workshop',  # 使用 %(class)s 避免反向查询冲突
+        verbose_name="所属车间",
+        null=True,
+        blank=True
+    )
     
     status = models.CharField(
         "状态",
@@ -56,6 +68,7 @@ class BaseProductionStep(models.Model):
     start_time = models.DateTimeField("开始时间", default=get_default_start_time)
     expected_time = models.DateTimeField("预计完成时间", default=get_default_expected_time)
     end_time = models.DateTimeField("结束时间", null=True, blank=True)
+    test_time = models.DateTimeField("送检时间", null=True, blank=True)
 
     # --- 4. 辅助信息 ---
     #TODO 备注与操作数据结构改为LIST，每次操作都留痕
@@ -78,6 +91,11 @@ class BaseProductionStep(models.Model):
         """
         重写 save 方法，引入乐观锁机制，防止多人同时编辑导致的相互覆盖。
         """
+        # 拦截逻辑：如果是新建（没有分配车间），且子类配置了车间代码
+        if not self.workshop_id and self.default_workshop_code:
+            workshop_obj = Workshop.objects.filter(code=self.default_workshop_code).first()
+            if workshop_obj:
+                self.workshop = workshop_obj
         if self.pk:
             # 获取数据库中当前真实的 version
             # 使用 type(self) 是为了动态获取当前的具体子类（如 CVNSynthesis）

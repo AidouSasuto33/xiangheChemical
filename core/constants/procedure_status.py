@@ -8,6 +8,7 @@ class ProcedureState(models.TextChoices):
     """
     NEW = 'new', _('新工单')
     RUNNING = 'running', _('生产中')
+    PENDING_QC = 'pending_qc', _('待质检')  # 新增：等待化验室结果
     DELAYED = 'delayed', _('已延迟')
     ABNORMAL = 'abnormal', _('异常单')
     CANCEL = 'cancel', _('已取消')
@@ -23,7 +24,8 @@ class ProcedureAction(models.TextChoices):
     SAVE_DRAFT = 'save_draft', _('保存修改')
     START_PRODUCTION = 'start_production', _('开始投产')
     FINISH_PRODUCTION = 'finish_production', _('完成生产')
+    SUBMIT_QC = 'submit_qc', _('录入质检')
     PAUSE_ABNORMAL_PRODUCTION = 'pause_abnormal_production', _('报告异常/暂停')
     RESUME_ABNORMAL_PRODUCTION = 'resume_abnormal_production', _('恢复正常生产')
     DELAYED_PRODUCTION = 'delayed_production', _('标记延迟')
-    CANCEL_PRODUCTION = 'cancel_production'
+    CANCEL_PRODUCTION = 'cancel_production', _('取消工单')  # 补充缺失路由

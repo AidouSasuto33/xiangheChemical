@@ -21,9 +21,11 @@ class ProcedureStateService:
             ProcedureAction.SAVE_DRAFT: cls.save_draft,
             ProcedureAction.START_PRODUCTION: cls.start_production,
             ProcedureAction.FINISH_PRODUCTION: cls.finish_production,
+            ProcedureAction.SUBMIT_QC: cls.submit_qc,  # 新增质检路由
             ProcedureAction.PAUSE_ABNORMAL_PRODUCTION: cls.pause_abnormal_production,
             ProcedureAction.RESUME_ABNORMAL_PRODUCTION: cls.resume_abnormal_production,
             ProcedureAction.DELAYED_PRODUCTION: cls.delayed_production,
+            ProcedureAction.CANCEL_PRODUCTION: cls.cancel_production,
         }
 
         if action not in action_map:
@@ -82,12 +84,13 @@ class ProcedureStateService:
 
     @classmethod
     def finish_production(cls, procedure, **kwargs):
-        """完成生产：只能从 生产中 或 已延迟 状态变更为 已完成"""
+        """完成生产：只能从 生产中 或 已延迟 状态变更为 待质检"""
         allowed_states = [ProcedureState.RUNNING, ProcedureState.DELAYED]
         if procedure.status not in allowed_states:
             raise ValueError(f"状态冲突：当前 {procedure.get_status_display()} 状态无法直接标记为完成")
 
-        procedure.status = ProcedureState.COMPLETED
+        # 1. 状态扭转为待质检
+        procedure.status = ProcedureState.PENDING_QC
         procedure.save()
 
         # 联动设备状态：释放设备至待清洁状态
@@ -95,6 +98,19 @@ class ProcedureStateService:
         if kettle:
             KettleStateService.release_to_clean(kettle)
 
+        return procedure
+
+    @classmethod
+    def submit_qc(cls, procedure, **kwargs):
+        """化验室出具报告，录入质检并彻底完工"""
+        if procedure.status != ProcedureState.PENDING_QC:
+            raise ValueError("只有待质检的工单可以录入质检报告")
+
+        # 1. 状态彻底扭转为已完成
+        procedure.status = ProcedureState.COMPLETED
+        procedure.save()
+
+        # 产物入库的调用可以根据需要放在此处或 BaseProcedureService 的业务层
         return procedure
 
     @classmethod
@@ -141,4 +157,21 @@ class ProcedureStateService:
         procedure.save()
 
         # 延迟状态不改变设备的物理占用和运行状态，因此无需调用 KettleStateService
+        return procedure
+
+    @classmethod
+    def cancel_production(cls, procedure, **kwargs):
+        """取消工单"""
+        allowed_states = [ProcedureState.NEW, ProcedureState.DELAYED, ProcedureState.RUNNING]
+        if procedure.status not in allowed_states:
+            raise ValueError(f"当前状态 {procedure.get_status_display()} 无法直接取消")
+
+        # 如果在生产中被取消，必须立刻释放被锁定的反应釜
+        if procedure.status == ProcedureState.RUNNING:
+            kettle = getattr(procedure, 'kettle', None)
+            if kettle:
+                KettleStateService.release_to_clean(kettle)
+
+        procedure.status = ProcedureState.CANCEL
+        procedure.save()
         return procedure
