@@ -228,7 +228,6 @@ class BaseProcedureService:
     @classmethod
     def _execute_inventory_rollback(cls, procedure, user):
         bom_info = get_procedure_bom_info(cls.PROCEDURE_KEY)
-        print(f"aaaaaaa aaaaaa\n{cls.PROCEDURE_KEY}\n{bom_info}\naaaaaa\naaaaaaaa\naaaaaaaaa\n")
         if not bom_info:
             return
 

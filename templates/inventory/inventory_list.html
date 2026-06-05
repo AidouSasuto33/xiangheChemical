@@ -142,13 +142,13 @@
                                     <div class="btn-group" role="group">
                                         <button type="button" class="btn btn-outline-success btn-icon"
                                                 onclick="openActionModal('{{ item.id }}', '{{ item.name }}', '{{ item.unit }}', 'purchase')"
-                                                title="购入/入库">
+                                                title="采购入库">
                                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
                                         </button>
 
                                         <button type="button" class="btn btn-outline-danger btn-icon"
                                                 onclick="openActionModal('{{ item.id }}', '{{ item.name }}', '{{ item.unit }}', 'sale')"
-                                                title="销售/领用">
+                                                title="销售扣库">
                                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/></svg>
                                         </button>
 
@@ -205,7 +205,7 @@
             helpText: '正数表示增加库存'
         },
         'sale': {
-            label: '销售/领用',
+            label: '销售扣库',
             headerClass: 'bg-danger',
             amountLabel: '出库数量',
             btnClass: 'btn-danger',

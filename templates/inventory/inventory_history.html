@@ -127,9 +127,9 @@
                                 </td>
                                 <td>
                                     {% if log.action_type == 'purchase' %}
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">购入入库</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">采购入库</span>
                                     {% elif log.action_type == 'sale' %}
-                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">销售/领用</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">销售扣库</span>
                                     {% elif log.action_type == 'production' %}
                                         <span class="badge bg-info text-dark bg-opacity-10 border border-info border-opacity-25">生产消耗</span>
                                     {% elif log.action_type == 'safe_stock' %}

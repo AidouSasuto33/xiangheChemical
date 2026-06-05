@@ -6,38 +6,36 @@ from system.models import Employee
 
 logger = logging.getLogger(__name__)
 
+# 将常规状态映射提取为配置字典
+STATUS_CONFIG = {
+    'new': {'level': 'info', 'type': 'status_change'},
+    'running': {'level': 'info', 'type': 'status_change'},
+    'abnormal': {'level': 'danger', 'type': 'abnormal'},
+    'cancel': {'level': 'danger', 'type': 'cancel'},
+    'delayed': {'level': 'warning', 'type': 'delayed'},
+    'completed': {'level': 'success', 'type': 'status_change'},
+}
+
 @receiver(post_procedure_state_change)
 def handle_procedure_status_change(sender, instance, old_status, new_status, user, **kwargs):
     """
     接收工单状态变更信号，渲染模板并分发通知给相关车间的人员。
     """
     try:
-
-
-        # 1. 确定模板编码 (例如: status_change_running) 与消息标识
-        template_code = f"status_change_{new_status}"
-        # 1.1 根据状态判定消息级别 (异常状态走 danger，完成走 success，其他走 info)
-        notice_type = 'status_change'
+        # 1. 优先拦截特殊的“状态转移”边界情况（异常恢复）
         if old_status == 'abnormal' and new_status == 'running':
-            level = 'info'
-            notice_type = 'resume'
-            # 1.2 特殊处理：异常状态随转RUNNING的模板code
-            template_code = "status_change_resume"
-        elif new_status in ['new', 'running']:
-            level = 'info'
-        elif new_status == 'abnormal':  # 异常通知
-            level = 'danger'
-            notice_type = 'abnormal'
-        elif new_status == 'cancel':
-            level = 'danger'
-            notice_type = 'cancel'
-        elif new_status == 'delayed':
-            level = 'warning'
-            notice_type = 'delayed'
-        elif new_status == 'completed': # 完工通知
-            level = 'success'
+            level, notice_type, template_code = 'info', 'resume', 'status_change_resume'
+        else:
+            # 3. 常规状态通过字典直接 Key-Value 获取，消除全量 if-else
+            config = STATUS_CONFIG.get(new_status, {'level': 'info', 'type': 'status_change'})
+            level = config['level']
+            notice_type = config['type']
+            template_code = f"status_change_{new_status}"
+
+        # 4. 利用 Python 的 strip() 和 or 简化用户姓名拼接
         template = MessageTemplate.objects.filter(code=template_code).first()
 
+        # 5. 搞定user的名字
         if user:
             # 按照中国姓名习惯：姓 + 名。如果没填姓名，回退到账号名
             actor_name = f"{user.last_name}{user.first_name}" if user.last_name or user.first_name else user.username
@@ -53,7 +51,8 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
             'new_status': getattr(instance, 'get_status_display', lambda: new_status)(),
         }
 
-        # 2. 准备通知的内容与级别
+        # 6. 准备通知的内容与级别
+        # TODO cancel状态可以考虑添加回滚的具体物料与数量到message中。
         if template:
             title = template.title_template.format(**context)
             content = template.content_template.format(**context)
@@ -65,7 +64,7 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
 
 
 
-        # 3. 生成工单的目标链接 (target_url)
+        # 7. 生成工单的目标链接 (target_url)
         #TODO为工艺模型添加absolute_url函数
         target_url = ""
         if hasattr(instance, 'get_absolute_url'):
@@ -74,14 +73,14 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
             # 作为占位符，后续可以在业务模型里补齐 get_absolute_url 方法
             target_url = f"/production/detail/{instance.pk}/"
 
-        # 4. 寻找接收人 (重点：利用咱们刚设计好的多对多关系)
+        # 8. 寻找接收人 (重点：利用咱们刚设计好的多对多关系)
         recipients = []
         if hasattr(instance, 'workshop') and instance.workshop:
             # 找到管辖该工单所在车间的所有员工
             employees = Employee.objects.filter(workshops=instance.workshop).select_related('user')
             recipients = [emp.user for emp in employees if emp.user]
 
-        # 5. 批量生成通知记录 (Bulk Create 提升性能)
+        # 9. 批量生成通知记录 (Bulk Create 提升性能)
         if recipients:
             notifications = [
                 Notification(
