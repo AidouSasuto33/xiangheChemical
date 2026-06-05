@@ -86,7 +86,7 @@ def handle_inventory_action(user, inventory_id, action_type, amount_or_quantity,
         return False, f"系统错误: {str(e)}"
 
 
-def update_single_inventory(key, change_amount, note, user):
+def update_single_inventory(key, action_type, change_amount, note, user):
     """
     供其他业务Service调用的原子库存更新方法。
     根据 constants KEY 更新库存，并记录日志。
@@ -99,7 +99,7 @@ def update_single_inventory(key, change_amount, note, user):
 
         InventoryLog.objects.create(
             inventory=inv,
-            action_type='production',
+            action_type=action_type,
             change_amount=change_amount,
             quantity_after=inv.quantity,
             note=note,

@@ -12,8 +12,30 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
     接收工单状态变更信号，渲染模板并分发通知给相关车间的人员。
     """
     try:
-        # 1. 动态确定模板编码 (例如: status_change_running)
+
+
+        # 1. 确定模板编码 (例如: status_change_running) 与消息标识
         template_code = f"status_change_{new_status}"
+        # 1.1 根据状态判定消息级别 (异常状态走 danger，完成走 success，其他走 info)
+        notice_type = 'status_change'
+        if old_status == 'abnormal' and new_status == 'running':
+            level = 'info'
+            notice_type = 'resume'
+            # 1.2 特殊处理：异常状态随转RUNNING的模板code
+            template_code = "status_change_resume"
+        elif new_status in ['new', 'running']:
+            level = 'info'
+        elif new_status == 'abnormal':  # 异常通知
+            level = 'danger'
+            notice_type = 'abnormal'
+        elif new_status == 'cancel':
+            level = 'danger'
+            notice_type = 'cancel'
+        elif new_status == 'delayed':
+            level = 'warning'
+            notice_type = 'delayed'
+        elif new_status == 'completed': # 完工通知
+            level = 'success'
         template = MessageTemplate.objects.filter(code=template_code).first()
 
         if user:
@@ -41,17 +63,7 @@ def handle_procedure_status_change(sender, instance, old_status, new_status, use
             title = f"工单状态更新: {context['new_status']}"
             content = f"({context['workshop']}) - 工单 {context['batch_no']}  的状态已由 {context['actor']} 更改为 {context['new_status']}。"
 
-        # 根据状态判定消息级别 (异常状态走 danger，完成走 success，其他走 info)
-        notice_type = 'status_change'
-        if new_status in ['new', 'running']:
-            level = 'info'
-        elif new_status == 'abnormal':  # 异常通知
-            level = 'danger'
-            notice_type = 'abnormal'
-        elif new_status == 'delayed':
-            level = 'warning'
-        elif new_status == 'completed': # 完工通知
-            level = 'success'
+
 
         # 3. 生成工单的目标链接 (target_url)
         #TODO为工艺模型添加absolute_url函数

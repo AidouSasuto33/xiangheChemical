@@ -30,6 +30,7 @@ class CVNSynthesisService(BaseProcedureService):
         if recovered_dcb and float(recovered_dcb) > 0:
             cls._update_single_stock(
                 key='recycled_dcb',  # 对应回流的二氯丁烷字典key
+                action_type='production',
                 amount=float(recovered_dcb),
                 note=f"批次 {instance.batch_no} 回收: DCB溶剂",
                 user=user

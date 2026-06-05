@@ -42,6 +42,9 @@ class Notification(models.Model):
         ('abnormal', '生产异常'),
         ('audit', '审核提醒'),
         ('system', '系统消息'),
+        ('cancel', '生产取消'),
+        ('resume', '恢复生产'),
+        ('delayed', '生产延误')
     )
 
     recipient = models.ForeignKey(

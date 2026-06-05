@@ -77,11 +77,14 @@ class BaseProcedureService:
                 cls._process_start(instance, user)
             elif action == ProcedureAction.FINISH_PRODUCTION:
                 cls._process_finish(instance, user)
-
+            elif action == ProcedureAction.SUBMIT_QC:
+                cls._submit_qc(instance, user)
             elif action == ProcedureAction.PAUSE_ABNORMAL_PRODUCTION:
                 cls._report_abnormal(instance, user)
             elif action == ProcedureAction.RESUME_ABNORMAL_PRODUCTION:
-                cls._resume_running()
+                cls._resume_running(instance, user)
+            elif action == ProcedureAction.CANCEL_PRODUCTION:
+                cls._cancel_production(instance, user)
 
             # 2. 执行状态扭转
             ProcedureStateService.process_action(instance, action)
@@ -124,12 +127,12 @@ class BaseProcedureService:
 
     @classmethod
     def _report_abnormal(cls, instance, user):
-        # TODO 实现强行要求上传附件逻辑
+        # TODO 实现要求上传附件逻辑, 或可要求备注
         pass
 
     @classmethod
     def _resume_running(cls, instance, user):
-        # 似乎无需做什么
+        # 似乎无需做什么， 也许加个要求备注吧
         pass
 
     @classmethod
@@ -141,6 +144,7 @@ class BaseProcedureService:
     @classmethod
     def _cancel_production(cls, instance, user):
         # TODO 编写inventory 物料回滚逻辑并调用
+        cls._execute_inventory_rollback(instance, user)
         pass
   
     @classmethod
@@ -213,35 +217,33 @@ class BaseProcedureService:
 
                 if total_use_weight > 0:
                     global_key = cls.SOURCE_GLOBAL_INVENTORY_KEY or field
-                    cls._update_single_stock(global_key, -total_use_weight,
-                                             f"{name}溯源扣减 - 单号: {instance.batch_no}", user)
+                    cls._update_single_stock(global_key, 'production', -total_use_weight, f"{name}溯源扣减 - 单号: {instance.batch_no}", user)
 
             # 引擎 A: 直扣基础物料
             else:
                 qty = getattr(instance, field, 0)
                 if qty and float(qty) > 0:
-                    cls._update_single_stock(field, -qty, f"投料: {name} - 单号: {instance.batch_no}", user)
+                    cls._update_single_stock(field, 'production', -qty, f"投料: {name} - 单号: {instance.batch_no}", user)
 
     @classmethod
     def _execute_inventory_rollback(cls, procedure, user):
         bom_info = get_procedure_bom_info(cls.PROCEDURE_KEY)
+        print(f"aaaaaaa aaaaaa\n{cls.PROCEDURE_KEY}\n{bom_info}\naaaaaa\naaaaaaaa\naaaaaaaaa\n")
         if not bom_info:
             return
 
-        # 1. 归还大宗原料
-        for input_item in bom_info.get('inputs', []):
-            field_name = input_item.get('field')
-            material_name = input_item.get('name')
+        # 1. 归还原料
+        for input_item in bom_info:
 
-            if not field_name.startswith('input_total_') and hasattr(procedure, field_name):
-                consumed_amount = getattr(procedure, field_name, 0)
+            if not input_item.startswith('input_total_'):
+                consumed_amount = getattr(procedure, input_item, 0)
                 if consumed_amount and consumed_amount > 0:
                     update_single_inventory(
                         user=user,
-                        key=field_name,
-                        amount=consumed_amount,
-                        action_type='correction',
-                        note=f"工单取消：{procedure.batch_no} 撤销投产，归还 {material_name}"
+                        key=input_item,
+                        change_amount=consumed_amount,
+                        action_type='roll_back',
+                        note=f"工单取消：{procedure.batch_no} 撤销投产，归还 {input_item}"
                     )
 
         # 2. 释放前置批次 & 领料明细清零 (方案 B)
@@ -306,9 +308,9 @@ class BaseProcedureService:
         return json.dumps(batch_list)
 
     @classmethod
-    def _update_single_stock(cls, key, amount, note, user):
+    def _update_single_stock(cls, key, action_type, amount, note, user):
         """包装调用外部 inventory_service 避免在主流程中处理繁琐的报错拼接"""
-        is_success = update_single_inventory(key=key, change_amount=amount, note=note, user=user)
+        is_success = update_single_inventory(key=key, action_type=action_type, change_amount=amount , note=note, user=user)
         if not is_success:
             action_str = "增加" if amount > 0 else "扣减"
             raise ValueError(f"系统严重错误：物料 (Key: {key}) 尝试{action_str} {abs(amount)} 失败！操作已全部回滚！")

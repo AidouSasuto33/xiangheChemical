@@ -19,6 +19,18 @@ class Command(BaseCommand):
                 "content_template": "工单 {batch_no} 已由 {actor} 启动，目前处于: '{new_status}' 阶段。"
             },
             {
+                "code": "status_change_resume",
+                "name": "工单恢复生产状态",
+                "title_template": "【生产恢复】{workshop} - {batch_no}",
+                "content_template": "工单 {batch_no} 已由 {actor} 重新启动，目前处于: '{new_status}' 阶段。"
+            },
+            {
+                "code": "status_change_delayed",
+                "name": "工单进度延误",
+                "title_template": "【生产延误】{workshop} - {batch_no}",
+                "content_template": "工单 {batch_no} 超过预期时间 已由 {actor} 自动标记延误，目前处于: '{new_status}' 阶段。"
+            },
+            {
                 "code": "status_change_completed",
                 "name": "工单生产完成",
                 "title_template": "【生产完成】{workshop} - {batch_no}",
@@ -29,6 +41,12 @@ class Command(BaseCommand):
                 "name": "工单触发异常",
                 "title_template": "【⚠️ 生产异常】{workshop} - {batch_no}",
                 "content_template": "警报：工单 {batch_no} 发生异常！操作人：{actor}。当前状态: '{new_status}'。请立即处理！"
+            },
+            {
+                "code": "status_change_cancel",
+                "name": "工单取消",
+                "title_template": "【× 计划取消】{workshop} - {batch_no}",
+                "content_template": "警报：工单 {batch_no} 生产取消！操作人：{actor}。当前状态: '{new_status}'。请悉知！"
             }
         ]
 

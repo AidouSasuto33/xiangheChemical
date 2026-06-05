@@ -14,6 +14,7 @@ class InventoryLog(models.Model):
         ('correction', '盘点/修正'),
         ('production', '生产消耗/产出'),
         ('safe_stock', '预警线调整'), # 补上之前新增的类型
+        ('roll_back', '物料回滚')
     ]
 
     inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, verbose_name="关联物料")
