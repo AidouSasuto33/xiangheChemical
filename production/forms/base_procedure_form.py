@@ -98,23 +98,6 @@ class BaseProcedureForm(forms.ModelForm):
             if 'form-control' not in existing_class:
                 field.widget.attrs['class'] = f"{existing_class} form-control".strip()
 
-    # def _apply_status_locks(self):
-    #     """基于当前实例状态，执行字段的只读锁定逻辑"""
-    #     status = getattr(self.instance, 'status', 'new')
-    #     if not status:
-    #         status = 'new'
-    #
-    #     if status == 'new':
-    #         # Case 'new': 创建中，锁定所有产出信息，防止误填
-    #         self._disable_fields(self.get_output_group())
-    #
-    #     elif status == 'running':
-    #         # Case 'running': 生产中，锁定开工投入信息，防止篡改
-    #         self._disable_fields(self.get_input_group())
-    #
-    #     elif status == 'completed' or status == 'abnormal':
-    #         # Case 'completed': 结束生产/工单异常时锁定所有核心输入输出信息
-    #         self._disable_fields(self.get_input_group() + self.get_output_group())
 
     def _apply_status_locks(self):
         """
@@ -152,15 +135,6 @@ class BaseProcedureForm(forms.ModelForm):
             if field_name in self.fields:
                 self._lock_single_field(self.fields[field_name])
 
-    # def get_input_group(self):
-    #     return self.INPUT_GROUP
-    #
-    # def get_output_group(self):
-    #     return self.OUTPUT_GROUP
-    #
-    # def get_qc_group(self):
-    #     return self.QC_GROUP
-
     def _disable_fields(self, field_list):
         """将指定列表中的字段设置为禁用并取消必填"""
         for field in field_list:
@@ -189,47 +163,6 @@ class BaseProcedureForm(forms.ModelForm):
             if not is_time_sequence_valid(start_time, expected_time):
                 self.add_error('expected_time', "预计完成时间不能早于开始时间。")
 
-    # def clean(self):
-    #     cleaned_data = super().clean()
-    #     action = self.action_type
-    #
-    #     # 先检查时间输入是否正确
-    #     self._validate_input_time()
-    #
-    #     # === 动态投入批次解析校验，并注入前置工艺产品投入总量到cleaned_data ===
-    #     if self.HAS_DYNAMIC_INPUTS:
-    #         cleaned_data = self._clean_dynamic_inputs(cleaned_data)
-    #
-    #     # === 1. 投产通用的结构性前置校验 ===
-    #     if self.action_type == 'start_production':
-    #         if 'kettle' in self.fields and not cleaned_data.get('kettle'):
-    #             self.add_error('kettle', "投产必须选择一个釜皿。")
-    #
-    #     # === 2. 完工动作校验 (Finish Validation) ===
-    #     elif action == 'finish_production':
-    #         # 动态获取主产物重量字段进行校验
-    #         if self.MAIN_OUTPUT_FIELD and self.MAIN_OUTPUT_FIELD in self.fields:
-    #             crude = cleaned_data.get(self.MAIN_OUTPUT_FIELD)
-    #             if not crude or crude <= 0:
-    #                 self.add_error(self.MAIN_OUTPUT_FIELD, "完工录入必须填写有效的产出重量。")
-    #
-    #         # 2.2 强制校验结束时间
-    #         if 'end_time' in self.fields and not cleaned_data.get('end_time'):
-    #             self.add_error('end_time', "确认完工必须录入实际结束时间。")
-    #
-    #         # 确保 procedure_key 存在时才进行组件计算与校验
-    #         if self.PROCEDURE_KEY:
-    #             # === 1. 质检百分比校验 ===
-    #             is_qc_valid, qc_msg = validate_qc_sum_100(self.PROCEDURE_KEY, cleaned_data)
-    #             if not is_qc_valid:
-    #                 self.add_error(None, qc_msg)
-    #
-    #             # === 2. 投入产出平衡校验 ===
-    #             is_bal_valid, bal_msg = validate_output_balance(self.PROCEDURE_KEY, cleaned_data)
-    #             if not is_bal_valid:
-    #                 self.add_error(None, bal_msg)
-    #
-    #     return cleaned_data
 
     def clean(self):
         cleaned_data = super().clean()
