@@ -77,8 +77,11 @@ class BaseProcedureService:
                 cls._process_start(instance, user)
             elif action == ProcedureAction.FINISH_PRODUCTION:
                 cls._process_finish(instance, user)
+
             elif action == ProcedureAction.PAUSE_ABNORMAL_PRODUCTION:
                 cls._report_abnormal(instance, user)
+            elif action == ProcedureAction.RESUME_ABNORMAL_PRODUCTION:
+                cls._resume_running()
 
             # 2. 执行状态扭转
             ProcedureStateService.process_action(instance, action)
@@ -101,15 +104,23 @@ class BaseProcedureService:
         # 1. 强制底线校验：转化为字典交由 Utils 验证
         data_dict = {field.name: getattr(instance, field.name) for field in instance._meta.fields}
 
-        is_qc_valid, qc_msg = validate_qc_sum_100(cls.PROCEDURE_KEY, data_dict)
-        if not is_qc_valid:
-            raise ValidationError(f"完工拦截 (质检异常)：{qc_msg}")
-
         is_bal_valid, bal_msg = validate_output_balance(cls.PROCEDURE_KEY, data_dict)
         if not is_bal_valid:
             raise ValidationError(f"完工拦截 (平衡异常)：{bal_msg}")
 
         cls._execute_inventory_addition(instance, user)
+
+    @classmethod
+    def _submit_qc(cls, instance, user):
+        # TODO要求上传质检照片
+        if instance.status != ProcedureState.PENDING_QC:
+            raise ValidationError(f"当前状态为 {instance.get_status_display()}，无法录入质检数据。")
+        # 1. 强制底线校验：转化为字典交由 Utils 验证
+        data_dict = {field.name: getattr(instance, field.name) for field in instance._meta.fields}
+        is_qc_valid, qc_msg = validate_qc_sum_100(cls.PROCEDURE_KEY, data_dict)
+        if not is_qc_valid:
+            raise ValidationError(f"完工拦截 (质检异常)：{qc_msg}")
+
 
     @classmethod
     def _report_abnormal(cls, instance, user):

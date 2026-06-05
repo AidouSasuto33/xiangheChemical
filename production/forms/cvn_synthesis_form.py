@@ -34,11 +34,11 @@ class CVNSynthesisForm(BaseProcedureForm):
             'recovered_dcb_amount', 'waste_batches'
         ]
 
-    def clean(self):
-
-        cleaned_data = super().clean()
-        action = self.action_type
-        if action == 'finish_production':
-            # cvn_syn工艺强制校验检测时间 (解决 test_time 允许留空问题)
-            if 'test_time' in self.fields and not cleaned_data.get('test_time'):
-                self.add_error('test_time', "确认完工必须录入质检/检测时间。")
+    # def clean(self):
+    #
+    #     cleaned_data = super().clean()
+    #     action = self.action_type
+        # if action == 'finish_production':
+        #     # cvn_syn工艺强制校验检测时间 (解决 test_time 允许留空问题)
+        #     if 'test_time' in self.fields and not cleaned_data.get('test_time'):
+        #         self.add_error('test_time', "确认完工必须录入质检/检测时间。")

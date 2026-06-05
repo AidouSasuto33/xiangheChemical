@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.core.exceptions import ValidationError
 from django.db import transaction
 # 引入项目内部模型
-from core.constants import KettleState
+from core.constants import KettleState, ProcedureState, ProcedureAction
 from production.models.kettle import Kettle
 # 引入项目验证工具函数
 from production.utils.qc_utils import validate_qc_sum_100
@@ -23,7 +23,7 @@ class BaseProcedureForm(forms.ModelForm):
     INPUT_GROUP = []
     OUTPUT_GROUP = []
     QC_GROUP = []
-    DATETIME_FIELDS = ['start_time', 'expected_time', 'end_time']
+    DATETIME_FIELDS = ['start_time', 'expected_time', 'end_time', 'test_time']
 
     # --- 动态投入及多批次物料配置 (精馏及后续工艺使用) ---
     HAS_DYNAMIC_INPUTS = False  # 是否需要处理前置投入批次
@@ -33,7 +33,7 @@ class BaseProcedureForm(forms.ModelForm):
     TOTAL_INPUT_WEIGHT_FIELD = None  # 主表中用于汇总总投入重量的字段名 (例如: 'input_total_cvn_weight')
 
     # 新增：用于前端动态质检计算引擎的映射字典，基类默认为空，子类覆盖
-    # 格式例如: {'pre_content_cvn': 'content_cvn'}
+    # 格式例: {'pre_content_cvn': 'content_cvn'}
     QC_SOURCE_MAP = {}
 
     # --- 全局防篡改字段配置 ---
@@ -46,17 +46,29 @@ class BaseProcedureForm(forms.ModelForm):
         # 将映射字典转为 JSON，挂载到实例上，供模板传递给前端计算引擎
         self.qc_source_map_json = json.dumps(self.QC_SOURCE_MAP)
 
-        self._apply_readonly_fields()
         self._setup_datetime_widgets()
         self._setup_kettle_queryset()
+        # 严格的执行顺序：基础样式 -> 绝对只读 -> 状态机锁定
         self._apply_bootstrap_styles()
+        self._apply_readonly_fields()
         self._apply_status_locks()
 
+
     def _apply_readonly_fields(self):
-        """强制锁定系统计算或流转过来的只读字段"""
-        for field in self.READONLY_FIELDS:
-            if field in self.fields:
-                self.fields[field].disabled = True
+        """全局绝对防篡改字段锁定"""
+        for field_name in getattr(self, 'READONLY_FIELDS', []):
+            if field_name in self.fields:
+                self._lock_single_field(self.fields[field_name])
+
+    def _lock_single_field(self, field):
+        """
+        原子化锁定工具：不仅赋予 readonly，还通过 CSS 切断鼠标事件，
+        彻底规避 Django 中 disabled 导致的数据丢失陷阱。
+        """
+        field.widget.attrs['readonly'] = 'readonly'
+        # pointer-events: none 是精髓，它能防住 select 框的下拉和 checkbox 的点击
+        field.widget.attrs['style'] = field.widget.attrs.get('style', '') + '; pointer-events: none;'
+        field.widget.attrs['class'] = field.widget.attrs.get('class', '') + ' bg-light text-muted'
 
     def _setup_datetime_widgets(self):
         """统一配置日期时间组件"""
@@ -86,29 +98,68 @@ class BaseProcedureForm(forms.ModelForm):
             if 'form-control' not in existing_class:
                 field.widget.attrs['class'] = f"{existing_class} form-control".strip()
 
+    # def _apply_status_locks(self):
+    #     """基于当前实例状态，执行字段的只读锁定逻辑"""
+    #     status = getattr(self.instance, 'status', 'new')
+    #     if not status:
+    #         status = 'new'
+    #
+    #     if status == 'new':
+    #         # Case 'new': 创建中，锁定所有产出信息，防止误填
+    #         self._disable_fields(self.get_output_group())
+    #
+    #     elif status == 'running':
+    #         # Case 'running': 生产中，锁定开工投入信息，防止篡改
+    #         self._disable_fields(self.get_input_group())
+    #
+    #     elif status == 'completed' or status == 'abnormal':
+    #         # Case 'completed': 结束生产/工单异常时锁定所有核心输入输出信息
+    #         self._disable_fields(self.get_input_group() + self.get_output_group())
+
     def _apply_status_locks(self):
-        """基于当前实例状态，执行字段的只读锁定逻辑"""
-        status = getattr(self.instance, 'status', 'new')
-        if not status:
-            status = 'new'
+        """
+        基于工单状态机的分段式 UI 区域动态锁定
+        设计约定：
+        1. NEW 状态：工单排产投料阶段，仅开放 INPUT_GROUP，锁死产出与质检。
+        2. RUNNING 状态：车间生产放料阶段，仅开放 OUTPUT_GROUP，锁死投料与质检。
+        3. PENDING_QC 状态：化验室结果录入阶段，仅开放 QC_GROUP，锁死投料与产出。
+        4. 其他归档/异常状态：全场锁死，单据定格。
+        """
+        # 获取当前工单的真实状态，新建单据无 PK 时默认作为 NEW 状态处理
+        status = self.instance.status if self.instance and self.instance.pk else ProcedureState.NEW
 
-        if status == 'new':
-            # Case 'new': 创建中，锁定所有产出信息，防止误填
-            self._disable_fields(self.get_output_group())
+        # 根据状态机动态计算当前阶段需要被“锁死”的字段集合
+        fields_to_lock = []
 
-        elif status == 'running':
-            # Case 'running': 生产中，锁定开工投入信息，防止篡改
-            self._disable_fields(self.get_input_group())
+        if status == ProcedureState.NEW:
+            # 1. 新工单状态：可填写的只有 input_group，必须锁死产出区和质检区
+            fields_to_lock = self.OUTPUT_GROUP + self.QC_GROUP
 
-        elif status == 'completed' or status == 'abnormal':
-            # Case 'completed': 结束生产/工单异常时锁定所有核心输入输出信息
-            self._disable_fields(self.get_input_group() + self.get_output_group())
+        elif status == ProcedureState.RUNNING:
+            # 2. 生产中状态：仅可填写 output_group，必须锁死投料区和质检区
+            fields_to_lock = self.INPUT_GROUP + self.QC_GROUP
 
-    def get_input_group(self):
-        return self.INPUT_GROUP
+        elif status == ProcedureState.PENDING_QC:
+            # 3. 待质检状态：仅可填写 qc_group，必须锁死投料区和产出区
+            fields_to_lock = self.INPUT_GROUP + self.OUTPUT_GROUP
 
-    def get_output_group(self):
-        return self.OUTPUT_GROUP
+        else:
+            # 4. 处于已完成(COMPLETED)、已取消(CANCEL)、异常(ABNORMAL)等最终归档状态，全场锁死
+            fields_to_lock = self.INPUT_GROUP + self.OUTPUT_GROUP + self.QC_GROUP
+
+        # 遍历出的锁死清单，调起单字段原子锁定防线
+        for field_name in fields_to_lock:
+            if field_name in self.fields:
+                self._lock_single_field(self.fields[field_name])
+
+    # def get_input_group(self):
+    #     return self.INPUT_GROUP
+    #
+    # def get_output_group(self):
+    #     return self.OUTPUT_GROUP
+    #
+    # def get_qc_group(self):
+    #     return self.QC_GROUP
 
     def _disable_fields(self, field_list):
         """将指定列表中的字段设置为禁用并取消必填"""
@@ -138,9 +189,51 @@ class BaseProcedureForm(forms.ModelForm):
             if not is_time_sequence_valid(start_time, expected_time):
                 self.add_error('expected_time', "预计完成时间不能早于开始时间。")
 
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #     action = self.action_type
+    #
+    #     # 先检查时间输入是否正确
+    #     self._validate_input_time()
+    #
+    #     # === 动态投入批次解析校验，并注入前置工艺产品投入总量到cleaned_data ===
+    #     if self.HAS_DYNAMIC_INPUTS:
+    #         cleaned_data = self._clean_dynamic_inputs(cleaned_data)
+    #
+    #     # === 1. 投产通用的结构性前置校验 ===
+    #     if self.action_type == 'start_production':
+    #         if 'kettle' in self.fields and not cleaned_data.get('kettle'):
+    #             self.add_error('kettle', "投产必须选择一个釜皿。")
+    #
+    #     # === 2. 完工动作校验 (Finish Validation) ===
+    #     elif action == 'finish_production':
+    #         # 动态获取主产物重量字段进行校验
+    #         if self.MAIN_OUTPUT_FIELD and self.MAIN_OUTPUT_FIELD in self.fields:
+    #             crude = cleaned_data.get(self.MAIN_OUTPUT_FIELD)
+    #             if not crude or crude <= 0:
+    #                 self.add_error(self.MAIN_OUTPUT_FIELD, "完工录入必须填写有效的产出重量。")
+    #
+    #         # 2.2 强制校验结束时间
+    #         if 'end_time' in self.fields and not cleaned_data.get('end_time'):
+    #             self.add_error('end_time', "确认完工必须录入实际结束时间。")
+    #
+    #         # 确保 procedure_key 存在时才进行组件计算与校验
+    #         if self.PROCEDURE_KEY:
+    #             # === 1. 质检百分比校验 ===
+    #             is_qc_valid, qc_msg = validate_qc_sum_100(self.PROCEDURE_KEY, cleaned_data)
+    #             if not is_qc_valid:
+    #                 self.add_error(None, qc_msg)
+    #
+    #             # === 2. 投入产出平衡校验 ===
+    #             is_bal_valid, bal_msg = validate_output_balance(self.PROCEDURE_KEY, cleaned_data)
+    #             if not is_bal_valid:
+    #                 self.add_error(None, bal_msg)
+    #
+    #     return cleaned_data
+
     def clean(self):
         cleaned_data = super().clean()
-        action = self.action_type
+        action = getattr(self, 'action_type', cleaned_data.get('action'))
 
         # 先检查时间输入是否正确
         self._validate_input_time()
@@ -149,35 +242,49 @@ class BaseProcedureForm(forms.ModelForm):
         if self.HAS_DYNAMIC_INPUTS:
             cleaned_data = self._clean_dynamic_inputs(cleaned_data)
 
-        # === 1. 投产通用的结构性前置校验 ===
-        if self.action_type == 'start_production':
+        # ==========================================
+        # 1. 投产动作校验 (Start Validation)
+        # ==========================================
+        if action == ProcedureAction.START_PRODUCTION:
             if 'kettle' in self.fields and not cleaned_data.get('kettle'):
                 self.add_error('kettle', "投产必须选择一个釜皿。")
 
-        # === 2. 完工动作校验 (Finish Validation) ===
-        elif action == 'finish_production':
-            # 动态获取主产物重量字段进行校验
+        # ==========================================
+        # 2. 完工动作校验 (Finish Validation)
+        # -> 车间放料交接：只对重量和时间负责
+        # ==========================================
+        elif action == ProcedureAction.FINISH_PRODUCTION:
+            # 2.1 动态获取主产物重量字段进行校验
             if self.MAIN_OUTPUT_FIELD and self.MAIN_OUTPUT_FIELD in self.fields:
                 crude = cleaned_data.get(self.MAIN_OUTPUT_FIELD)
                 if not crude or crude <= 0:
-                    self.add_error(self.MAIN_OUTPUT_FIELD, "完工录入必须填写有效的产出重量。")
+                    self.add_error(self.MAIN_OUTPUT_FIELD, "完工交接必须填写有效的产出重量。")
 
             # 2.2 强制校验结束时间
             if 'end_time' in self.fields and not cleaned_data.get('end_time'):
                 self.add_error('end_time', "确认完工必须录入实际结束时间。")
 
-            # 确保 procedure_key 存在时才进行组件计算与校验
+            # 2.3 投入产出平衡校验 (纯物理重量计算，由车间主任对重量偏差负责)
             if self.PROCEDURE_KEY:
-                # === 1. 质检百分比校验 ===
+                is_bal_valid, bal_msg = validate_output_balance(self.PROCEDURE_KEY, cleaned_data)
+                if not is_bal_valid:
+                    self.add_error(None, bal_msg)
+
+        # ==========================================
+        # 3. 质检闭环动作校验 (QC Validation)
+        # -> 化验室出单：只对成分指标负责
+        # ==========================================
+        elif action == ProcedureAction.SUBMIT_QC:
+            # 3.1 确保化验员填满了所有质检必填项
+            for qc_field in self.QC_GROUP:
+                if qc_field in self.fields and cleaned_data.get(qc_field) is None:
+                    self.add_error(qc_field, "闭环工单前，必须录入此质检指标。")
+
+            # 3.2 质检百分比合法性校验 (如：各项含量相加是否等于/接近100%)
+            if self.PROCEDURE_KEY:
                 is_qc_valid, qc_msg = validate_qc_sum_100(self.PROCEDURE_KEY, cleaned_data)
                 if not is_qc_valid:
                     self.add_error(None, qc_msg)
-
-                # === 2. 投入产出平衡校验 ===
-                is_bal_valid, bal_msg = validate_output_balance(self.PROCEDURE_KEY, cleaned_data)
-
-                if not is_bal_valid:
-                    self.add_error(None, bal_msg)
 
         return cleaned_data
 
