@@ -116,7 +116,7 @@ class ProcedureStateService:
     @classmethod
     def pause_abnormal_production(cls, procedure, **kwargs):
         """报告异常：中止当前生产或延迟状态"""
-        allowed_states = [ProcedureState.RUNNING, ProcedureState.DELAYED]
+        allowed_states = [ProcedureState.RUNNING, ProcedureState.DELAYED, ProcedureState.PENDING_QC]
         if procedure.status not in allowed_states:
             raise ValueError(f"状态冲突：当前 {procedure.get_status_display()} 状态无法报告异常")
 
@@ -136,6 +136,7 @@ class ProcedureStateService:
         if procedure.status != ProcedureState.ABNORMAL:
             raise ValueError(f"状态冲突：当前工单并非异常状态，无法执行恢复操作")
 
+        # TODO查看历史表，查看最早一次的状态并恢复。
         procedure.status = ProcedureState.RUNNING
         procedure.save()
 

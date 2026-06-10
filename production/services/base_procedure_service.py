@@ -237,10 +237,10 @@ class BaseProcedureService:
             if not input_item.startswith('input_total_'):
                 consumed_amount = getattr(procedure, input_item, 0)
                 if consumed_amount and consumed_amount > 0:
-                    update_single_inventory(
+                    cls._update_single_stock(
                         user=user,
                         key=input_item,
-                        change_amount=consumed_amount,
+                        amount=consumed_amount,
                         action_type='roll_back',
                         note=f"工单取消：{procedure.batch_no} 撤销投产，归还 {input_item}"
                     )
@@ -267,7 +267,7 @@ class BaseProcedureService:
         for field, name in zip(cls.OUTPUT_FIELDS, cls.OUTPUT_NAMES):
             qty = getattr(instance, field, 0)
             if qty and float(qty) > 0:
-                cls._update_single_stock(field, qty, f"产出: {name} - 单号: {instance.batch_no}", user)
+                cls._update_single_stock(field, 'production', qty, f"产出: {name} - 单号: {instance.batch_no}", user)
 
     @classmethod
     def _get_available_source_batches_json(cls, instance=None):
