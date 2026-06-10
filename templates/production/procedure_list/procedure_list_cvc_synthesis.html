@@ -166,16 +166,19 @@
 
                             <td class="text-center py-3">
                                 {% if item.status == 'new' %}
-                                    <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 px-3">新建工单</span>
+                                    <span class="badge bg-white text-primary border border-primary">{{ item.get_status_display }}</span>
                                 {% elif item.status == 'running' %}
-                                    <span class="badge rounded-pill text-bg-warning px-3 shadow-sm">
-                                        <span class="spinner-grow spinner-grow-sm me-1"
-                                              style="width: 6px; height: 6px; animation-duration: 2s;"
-                                              role="status"></span>
-                                        生产中.
-                                    </span>
+                                    <span class="badge bg-primary">{{ item.get_status_display }}</span>
+                                {% elif item.status == 'pending_qc' %}
+                                    <span class="badge bg-info text-dark">{{ item.get_status_display }}</span>
+                                {% elif item.status == 'delayed' %}
+                                    <span class="badge bg-warning text-dark">{{ item.get_status_display }}</span>
+                                {% elif item.status == 'abnormal' %}
+                                    <span class="badge bg-danger">{{ item.get_status_display }}</span>
                                 {% elif item.status == 'completed' %}
-                                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3">结束生产</span>
+                                    <span class="badge bg-success">{{ item.get_status_display }}</span>
+                                {% elif item.status == 'cancel' %}
+                                    <span class="badge bg-secondary">{{ item.get_status_display }}</span>
                                 {% endif %}
                             </td>
 
@@ -216,11 +219,21 @@
                             <td class="col-digit border-start text-muted">{{ item.content_cva|floatformat:1|default:"-" }}%</td>
 
                             <td class="text-center border-start py-3 px-2">
-                                <a href="{% url 'production:cvc_synthesis_update' item.pk %}"
-                                   class="btn btn-sm {% if item.status == 'completed' %}btn-outline-secondary{% elif item.status == 'new' %}btn-primary{% else %}btn-warning{% endif %} py-0 px-2 small shadow-sm"
-                                   style="font-size: 0.8rem;">
-                                    {% if item.status == 'completed' %}查看{% elif item.status == 'new' %}投产{% else %}处理{% endif %}
-                                </a>
+                                    {% if item.status == 'new' %}
+                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.8rem;" >投产</a>
+                                    {% elif item.status == 'running' %}
+                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-primary py-0 px-2" style="font-size: 0.8rem;">处理</a>
+                                    {% elif item.status == 'pending_qc' %}
+                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-info text-dark py-0 px-2" style="font-size: 0.8rem;">处理</a>
+                                    {% elif item.status == 'delayed' %}
+                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-warning text-dark py-0 px-2" style="font-size: 0.8rem;">处理</a>
+                                    {% elif item.status == 'abnormal' %}
+                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-danger py-0 px-2" style="font-size: 0.8rem;">处理</a>
+                                    {% elif item.status == 'completed' %}
+                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-success py-0 px-2" style="font-size: 0.8rem;">查看</a>
+                                    {% elif item.status == 'cancel' %}
+                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem;">查看</a>
+                                    {% endif %}
                             </td>
                         </tr>
                     {% empty %}
