@@ -20,17 +20,41 @@ PROCEDURE_BOM_MAPPING = {
             {'field': 'raw_alkali',         'name': '液碱'},
         ],
         'outputs': [
-            {'field': 'cvn_syn_crude_weight',       'name': 'CVN粗品'}
+            {'field': 'cvn_syn_crude_weight',       'name': 'CVN合成液'}
         ],
         'qc_fields': [
-            {'field': 'content_cvn', 'name': 'CVN含量%'},
-            {'field': 'content_dcb', 'name': 'DCB含量%'},
-            {'field': 'content_adn', 'name': 'ADN含量%'}
+            {'field': 'content_cvn', 'name': 'CVN含量%(合成液)'},
+            {'field': 'content_dcb', 'name': 'DCB含量%(合成液)'},
+            {'field': 'content_adn', 'name': '己二腈(ADN)含量%(合成液)'}
+        ]
+    },
+    # ==========================================
+    # 2 CVN 粗蒸
+    # ==========================================
+    'cvnstripping': {
+        'name': 'CVN粗蒸',
+        'inputs': [
+            {'field': 'input_total_cvn_weight', 'name': 'CVN合成粗品'}
+        ],
+        'outputs': [
+            {'field': 'cvn_str_crude_weight', 'name': 'CVN粗蒸粗品'},
+            {'field': 'recycled_dcb',                'name': '回收DCB'}
+        ],
+        'qc_fields': [
+            {'field': 'output_content_cvn', 'name': 'CVN含量%(粗蒸)'},
+            {'field': 'output_content_dcb', 'name': 'DCB含量%(粗蒸)'},
+            {'field': 'output_content_adn', 'name': '己二腈(ADN)含量%(粗蒸)'},
+            {'field': 'recycled_dcb_purity', 'name': '粗蒸工序回收DCB纯度%'}
+        ],
+        'qc_pre_fields': [
+            {'field': 'pre_content_cvn', 'name': 'CVN含量%(合成液)'},
+            {'field': 'pre_content_dcb', 'name': 'DCB含量%(合成液)'},
+            {'field': 'pre_content_adn', 'name': '己二腈(ADN)含量%(合成液)'}
         ]
     },
 
     # ==========================================
-    # 2. CVN 精馏
+    # 3. CVN 精馏
     # ==========================================
     'cvndistillation': {
         'name': 'CVN精馏',
@@ -39,23 +63,23 @@ PROCEDURE_BOM_MAPPING = {
         ],
         'outputs': [
             {'field': 'cvn_dis_crude_weight',       'name': 'CVN精品'},
-            {'field': 'residue_weight',     'name': '釜残危废'}
+            {'field': 'residue_weight',     'name': '釜残重量'}
         ],
         # 精馏特殊：有精前质检和精品质检
         'qc_fields': [
             {'field': 'output_content_cvn', 'name': 'CVN含量%(精品)'},
             {'field': 'output_content_dcb', 'name': 'DCB含量%(精品)'},
-            {'field': 'output_content_adn', 'name': 'ADN含量%(精品)'}
+            {'field': 'output_content_adn', 'name': '己二腈(ADN)含量%(精品)'}
         ],
         'qc_pre_fields': [
-            {'field': 'pre_content_cvn', 'name': 'CVN含量%(精前)'},
-            {'field': 'pre_content_dcb', 'name': 'DCB含量%(精前)'},
-            {'field': 'pre_content_adn', 'name': 'ADN含量%(精前)'}
+            {'field': 'pre_content_cvn', 'name': 'CVN含量%(粗蒸)'},
+            {'field': 'pre_content_dcb', 'name': 'DCB含量%(粗蒸)'},
+            {'field': 'pre_content_adn', 'name': '己二腈(ADN)含量%(粗蒸)'}
         ]
     },
 
     # ==========================================
-    # 3. CVA 合成及脱水
+    # 4. CVA 合成及脱水
     # ==========================================
     'cvasynthesis': {
         'name': 'CVA合成',
@@ -75,12 +99,12 @@ PROCEDURE_BOM_MAPPING = {
         'qc_pre_fields': [
             {'field': 'pre_content_cvn', 'name': 'CVN含量%(精品)'},
             {'field': 'pre_content_dcb', 'name': 'DCB含量%'},
-            {'field': 'pre_content_adn', 'name': 'ADN含量%'}
+            {'field': 'pre_content_adn', 'name': '己二腈(ADN)含量%'}
         ]
     },
 
     # ==========================================
-    # 4. CVC 合成 (内销)
+    # 5. CVC 合成 (内销)
     # ==========================================
     'cvcsynthesis': {
         'name': 'CVC合成',
@@ -104,7 +128,7 @@ PROCEDURE_BOM_MAPPING = {
     },
 
     # ==========================================
-    # 5. CVC 外销精制
+    # 6. CVC 外销精制
     # ==========================================
     'cvcexport': {
         'name': 'CVC外销',

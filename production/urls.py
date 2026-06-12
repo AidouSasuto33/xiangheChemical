@@ -5,6 +5,7 @@ from django_ratelimit.decorators import ratelimit
 from production.views import \
     KettleDashboardView, \
     CVNSynthesisCreateView, CVNSynthesisUpdateView, CVNSynthesisListView, \
+    CVNStrippingCreateView, CVNStrippingUpdateView, CVNStrippingListView, \
     CVNDistillationCreateView, CVNDistillationUpdateView, CVNDistillationListView, \
     CVASynthesisCreateView, CVASynthesisUpdateView, CVASynthesisListView, \
     CVCSynthesisCreateView, CVCSynthesisUpdateView, CVCSynthesisListView, \
@@ -30,22 +31,27 @@ urlpatterns = [
     path('update/cvn-synthesis/<int:pk>/', strict_limit(CVNSynthesisUpdateView.as_view()), name='cvn_synthesis_update'),
     path('list/cvn-synthesis/', CVNSynthesisListView.as_view(), name='cvn_synthesis_list'),
 
-    # === 2. CVN 精馏 (CVN Distillation) ===
+    # === 2. CVN 粗蒸 (CVN Stripping) ===
+    path('create/cvn-stripping/', strict_limit(CVNStrippingCreateView.as_view()), name='cvn_stripping_create'),
+    path('update/cvn-stripping/<int:pk>/', strict_limit(CVNStrippingUpdateView.as_view()), name='cvn_stripping_update'),
+    path('list/cvn-stripping/', CVNStrippingListView.as_view(), name='cvn_stripping_list'),
+
+    # === 3. CVN 精馏 (CVN Distillation) ===
     path('create/cvn-distillation/', strict_limit(CVNDistillationCreateView.as_view()), name='cvn_distillation_create'),
     path('update/cvn-distillation/<int:pk>/', strict_limit(CVNDistillationUpdateView.as_view()), name='cvn_distillation_update'),
     path('list/cvn-distillation/', CVNDistillationListView.as_view(), name='cvn_distillation_list'),
 
-    # === 3. CVA 合成 (CVA Synthesis) ===
+    # === 4. CVA 合成 (CVA Synthesis) ===
     path('create/cva-synthesis/', strict_limit(CVASynthesisCreateView.as_view()), name='cva_synthesis_create'),
     path('update/cva-synthesis/<int:pk>/', strict_limit(CVASynthesisUpdateView.as_view()), name='cva_synthesis_update'),
     path('list/cva-synthesis/', CVASynthesisListView.as_view(), name='cva_synthesis_list'),
 
-    # === 4. CVC 合成内销 (CVC Synthesis) ===
+    # === 5. CVC 合成内销 (CVC Synthesis) ===
     path('create/cvc-synthesis/', strict_limit(CVCSynthesisCreateView.as_view()), name='cvc_synthesis_create'),
     path('update/cvc-synthesis/<int:pk>/', strict_limit(CVCSynthesisUpdateView.as_view()), name='cvc_synthesis_update'),
     path('list/cvc-synthesis/', CVCSynthesisListView.as_view(), name='cvc_synthesis_list'),
 
-    # === 5. CVC 外销精制 (CVC Export) ===
+    # === 6. CVC 外销精制 (CVC Export) ===
     path('create/cvc-export/', strict_limit(CVCExportCreateView.as_view()), name='cvc_export_create'),
     path('update/cvc-export/<int:pk>/', strict_limit(CVCExportUpdateView.as_view()), name='cvc_export_update'),
     path('list/cvc-export/', CVCExportListView.as_view(), name='cvc_export_list'),

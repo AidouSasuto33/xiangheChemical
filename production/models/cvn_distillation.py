@@ -51,7 +51,7 @@ class CVNDistillation(BaseProductionStep):
     @property
     def status_label(self):
         """
-        批次生命周期状态 (针对 CVN精品)
+        批次生命周期状态 (CVN精品)
         """
         if self.cvn_dis_crude_weight < 0:
             return "异常批次"
@@ -69,7 +69,7 @@ class CVNDistillation(BaseProductionStep):
 
 
     class Meta(BaseProductionStep.Meta):
-        verbose_name = "2-CVN精馏"
+        verbose_name = "3-CVN精馏"
         verbose_name_plural = verbose_name
 
 

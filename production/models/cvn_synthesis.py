@@ -23,7 +23,7 @@ class CVNSynthesis(BaseProductionStep):
     # =========================================================
     # 2. 产出与质检 (Output & QC)
     # =========================================================
-    cvn_syn_crude_weight = models.FloatField("产出-CVN粗品重量(kg)", default=0, help_text="物理称重", blank=True, null=True)
+    cvn_syn_crude_weight = models.FloatField("产出-CVN合成液重量(kg)", default=0, help_text="人工称重", blank=True, null=True)
 
     # 库存核心字段：记录已被精馏工段领用了多少
     consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False, help_text="系统自动更新，不可手改")
@@ -59,7 +59,7 @@ class CVNSynthesis(BaseProductionStep):
     @property
     def status_label(self):
         """
-        批次生命周期状态 (针对 CVA粗品)
+        批次生命周期状态 (CVA合成液)
         """
         if self.cvn_syn_crude_weight < 0:
             return "异常批次"

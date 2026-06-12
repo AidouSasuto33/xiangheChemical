@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}CVC合成工单列表{% endblock %}
+{% block title %}CVN粗蒸工单列表{% endblock %}
 
 {% block extra_css %}
     <style>
-        /* 复用列表页成熟样式 */
+        /* 复用合成列表页的成熟样式 */
         .table-nowrap th, .table-nowrap td {
             white-space: nowrap;
             vertical-align: middle;
@@ -30,14 +30,16 @@
             padding: 0.5rem;
         }
 
-        .sticky-col-1 {
+.sticky-col-1 {
             position: sticky;
             left: 0;
             z-index: 20 !important;
             background-color: #fff;
             border-right: 1px solid #dee2e6;
-            word-break: break-word; 
-            width: 105px; 
+
+            /* 核心修复：打破全局的 nowrap 限制，允许长单号换行 */
+            word-break: break-word; /* 允许在连字符或任意位置换行 */
+            width: 105px; /* 显式指定宽度 */
             min-width: 105px;
         }
 
@@ -62,7 +64,9 @@
             font-size: 0.75rem;
         }
 
-        .batch-tag {
+        /* 批号截断展示样式 */
+.batch-tag {
+            /* 移除之前固定的 max-width，让其更灵活 */
             display: inline-block;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -76,15 +80,15 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center">
             <div class="bg-primary text-white rounded p-2 me-3 shadow-sm">
-                <i class="bi bi-fire fs-5"></i>
+                <i class="bi bi-moisture fs-5"></i>
             </div>
             <div>
-                <h1 class="h4 mb-0 text-gray-800 fw-bold">CVC合成工单 (Step 4)</h1>
-                <small class="text-muted">管理内销/普通级CVC氯化合成数据</small>
+                <h1 class="h4 mb-0 text-gray-800 fw-bold">CVN粗蒸工单 (Step 2)</h1>
+                <small class="text-muted">管理CVN合成液粗蒸数据</small>
             </div>
         </div>
-        <a href="{% url 'production:cvc_synthesis_create' %}" class="btn btn-primary shadow fw-bold px-4">
-            <i class="bi bi-plus-lg me-1"></i> 新建合成工单
+        <a href="{% url 'production:cvn_stripping_create' %}" class="btn btn-primary shadow fw-bold px-4">
+            <i class="bi bi-plus-lg me-1"></i> 新建粗蒸工单
         </a>
     </div>
 
@@ -123,46 +127,50 @@
                 <table class="table table-striped table-hover table-nowrap mb-0 align-middle">
                     <thead class="sticky-header text-center small fw-bold bg-light text-dark">
                     <tr>
-                        <th rowspan="2" class="sticky-col-1 py-3" style="min-width: 140px;">CVC合成批次</th>
+                        <th rowspan="2" class="sticky-col-1 py-3" style="min-width: 140px;">粗蒸批次号</th>
                         <th rowspan="2" style="width: 100px;">状态</th>
                         <th rowspan="2">釜皿</th>
                         <th rowspan="2">投产时间</th>
 
-                        <th colspan="3" class="border-start border-secondary border-opacity-50 text-primary">投入来源
+                        <th colspan="2" class="border-start border-secondary border-opacity-50 text-primary">投入来源
                         </th>
 
-                        <th colspan="3" class="border-start border-secondary border-opacity-50 text-primary">精前组份(CVA)
+                        <th colspan="3" class="border-start border-secondary border-opacity-50 text-primary">粗蒸前组份
                         </th>
 
-                        <th colspan="4" class="border-start border-secondary border-opacity-50 text-success">产出与质检
+                        <th colspan="4" class="border-start border-secondary border-opacity-50 text-success">粗品产出
                         </th>
-
+                        <th colspan="2" class="border-start">回收DCB</th>
                         <th rowspan="2" class="border-start" style="width: 90px;">操作</th>
                     </tr>
                     <tr>
-                        <th class="th-xs border-start text-muted fw-normal bg-light" style="min-width: 150px;">CVA来源批号</th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">CVA总重kg</th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">二氯亚砜kg</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light" style="min-width: 150px;">合成液批号</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">总重kg</th>
 
-                        <th class="th-xs border-start text-muted fw-normal bg-light">CVA%</th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">CVN残留%</th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">水分%</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">CVN%</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">DCB%</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">己二腈%</th>
 
-                        <th class="th-xs border-start text-muted fw-normal bg-light">CVC粗品kg</th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">前馏份kg</th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">CVC%</th>
-                        <th class="th-xs border-start text-muted fw-normal bg-light">CVA%</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">粗品kg</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">CVN%</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">DCB%</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">己二腈%</th>
+
+                        <th class="th-xs border-start text-muted fw-normal bg-light">回收重量</th>
+                        <th class="th-xs border-start text-muted fw-normal bg-light">回收纯度%</th>
+
                     </tr>
                     </thead>
                     <tbody class="small border-top-0">
                     {% for item in procedures %}
                         <tr>
                             <td class="sticky-col-1 fw-bold font-monospace py-3">
-                                <a href="{% url 'production:cvc_synthesis_update' item.pk %}"
+                                <a href="{% url 'production:cvn_stripping_update' item.pk %}"
                                    class="text-decoration-none text-dark">
                                     {{ item.batch_no }}
                                 </a>
                             </td>
+
 
                             <td class="text-center py-3">
                                 {% if item.status == 'new' %}
@@ -185,7 +193,7 @@
                             <td class="text-center">{{ item.kettle.name|default:"-" }}</td>
                             <td class="text-center text-muted font-monospace">{{ item.start_time|date:"m-d H:i"|default:"-" }}</td>
 
-                            <td class="border-start border-secondary border-opacity-25">
+<td class="border-start border-secondary border-opacity-25">
                                 <div class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 200px;">
                                     {% with inputs=item.inputs.all %}
                                         {% with first_input=inputs|first %}
@@ -206,39 +214,41 @@
                                     {% endwith %}
                                 </div>
                             </td>
-                            <td class="col-digit border-start text-primary fw-bold">{{ item.input_total_cva_weight|floatformat:1|default:"0" }}</td>
-                            <td class="col-digit border-start text-muted">{{ item.raw_socl2|floatformat:1|default:"0" }}</td>
+                            <td class="col-digit border-start text-primary fw-bold">{{ item.input_total_cvn_weight|floatformat:1|default:"0" }}</td>
 
-                            <td class="col-digit border-start text-muted">{{ item.pre_content_cva|floatformat:1|default:"-" }}%</td>
                             <td class="col-digit border-start text-muted">{{ item.pre_content_cvn|floatformat:1|default:"-" }}%</td>
-                            <td class="col-digit border-start text-muted">{{ item.pre_content_water|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.pre_content_dcb|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.pre_content_adn|floatformat:1|default:"-" }}%</td>
 
-                            <td class="col-digit border-start text-success fw-bold">{{ item.cvc_syn_crude_weight|floatformat:1|default:"0" }}</td>
-                            <td class="col-digit border-start text-danger">{{ item.distillation_head_weight|floatformat:1|default:"0" }}</td>
-                            <td class="col-digit border-start text-success">{{ item.content_cvc|floatformat:1|default:"-" }}%</td>
-                            <td class="col-digit border-start text-muted">{{ item.content_cva|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-success fw-bold">{{ item.cvn_dis_crude_weight|floatformat:1|default:"0" }}</td>
+                            <td class="col-digit border-start">{{ item.output_content_cvn|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.output_content_dcb|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.output_content_adn|floatformat:1|default:"-" }}%</td>
+
+                            <td class="col-digit border-start text-muted">{{ item.recycled_dcb|floatformat:1|default:"-" }}%</td>
+                            <td class="col-digit border-start text-muted">{{ item.recycled_dcb_purity|floatformat:1|default:"-" }}%</td>
 
                             <td class="text-center border-start py-3 px-2">
                                     {% if item.status == 'new' %}
-                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.8rem;" >投产</a>
+                                        <a href="{% url 'production:cvn_stripping_update' item.pk %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.8rem;" >投产</a>
                                     {% elif item.status == 'running' %}
-                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-primary py-0 px-2" style="font-size: 0.8rem;">处理</a>
+                                        <a href="{% url 'production:cvn_stripping_update' item.pk %}" class="btn btn-sm btn-primary py-0 px-2" style="font-size: 0.8rem;">处理</a>
                                     {% elif item.status == 'pending_qc' %}
-                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-info text-dark py-0 px-2" style="font-size: 0.8rem;">处理</a>
+                                        <a href="{% url 'production:cvn_stripping_update' item.pk %}" class="btn btn-sm btn-info text-dark py-0 px-2" style="font-size: 0.8rem;">处理</a>
                                     {% elif item.status == 'delayed' %}
-                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-warning text-dark py-0 px-2" style="font-size: 0.8rem;">处理</a>
+                                        <a href="{% url 'production:cvn_stripping_update' item.pk %}" class="btn btn-sm btn-warning text-dark py-0 px-2" style="font-size: 0.8rem;">处理</a>
                                     {% elif item.status == 'abnormal' %}
-                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-danger py-0 px-2" style="font-size: 0.8rem;">处理</a>
+                                        <a href="{% url 'production:cvn_stripping_update' item.pk %}" class="btn btn-sm btn-danger py-0 px-2" style="font-size: 0.8rem;">处理</a>
                                     {% elif item.status == 'completed' %}
-                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-success py-0 px-2" style="font-size: 0.8rem;">查看</a>
+                                        <a href="{% url 'production:cvn_stripping_update' item.pk %}" class="btn btn-sm btn-success py-0 px-2" style="font-size: 0.8rem;">查看</a>
                                     {% elif item.status == 'cancel' %}
-                                        <a href="{% url 'production:cvc_synthesis_update' item.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem;">查看</a>
+                                        <a href="{% url 'production:cvn_stripping_update' item.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem;">查看</a>
                                     {% endif %}
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="15" class="text-center py-5 text-muted">暂无CVC合成数据</td>
+                            <td colspan="15" class="text-center py-5 text-muted">暂无粗蒸数据</td>
                         </tr>
                     {% endfor %}
                     </tbody>

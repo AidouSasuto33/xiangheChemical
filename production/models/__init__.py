@@ -1,5 +1,6 @@
 from .core import BaseProductionStep
 from .cvn_synthesis import CVNSynthesis
+from .cvn_stripping import CVNStripping, CVNStrippingInput
 from .cvn_distillation import CVNDistillation, CVNDistillationInput
 from .cva_synthesis import CVASynthesis, CVASynthesisInput
 from .cvc_synthesis import CVCSynthesis, CVCSynthesisInput
