@@ -128,45 +128,45 @@
                                     <div class="d-flex gap-2 mb-2">
 
                                         {% if s == 'new' %}
-                                            <button type="submit" name="action" value="start_production" class="btn btn-primary fw-bold w-50 text-nowrap">
+                                            <button type="submit" name="action" value="start_production" class="btn btn-primary fw-bold flex-fill w-100 text-nowrap">
                                                 <i class="bi bi-rocket-takeoff me-1"></i> 开始投产
                                             </button>
                                         {% elif s == 'running' or s == 'delayed' %}
-                                            <button type="submit" name="action" value="finish_production" class="btn btn-primary fw-bold w-50">
+                                            <button type="submit" name="action" value="finish_production" class="btn btn-primary fw-bold flex-fill w-100 text-nowrap">
                                                 <i class="bi bi-flag-fill me-1"></i> 完成生产
                                             </button>
                                         {% elif s == 'pending_qc' %}
-                                            <button type="submit" name="action" value="submit_qc" class="btn btn-info text-dark fw-bold w-50">
+                                            <button type="submit" name="action" value="submit_qc" class="btn btn-info text-dark fw-bold flex-fill w-100 text-nowrap">
                                                 <i class="bi bi-clipboard-check me-1"></i> 录入质检
                                             </button>
                                         {% elif s == 'abnormal' %}
-                                            <button type="submit" name="action" value="resume_abnormal_production" class="btn btn-success fw-bold w-50">
+                                            <button type="submit" name="action" value="resume_abnormal_production" class="btn btn-success fw-bold flex-fill w-100 text-nowrap">
                                                 <i class="bi bi-play-circle me-1"></i> 恢复生产
                                             </button>
                                         {% endif %}
-                                        <button type="submit" name="action" value="save_draft" class="btn btn-outline-success fw-bold w-50">
+                                        <button type="submit" name="action" value="save_draft" class="btn btn-outline-success fw-bold flex-fill w-100 text-nowrap">
                                                 <i class="bi bi-save me-1"></i> 保存修改
                                         </button>
-                                        <a href="javascript:history.back()" class="btn btn-light border fw-bold flex-fill text-nowrap w-50">返回列表</a>
+                                        <a href="javascript:history.back()" class="btn btn-light border fw-bold flex-fill w-100 text-nowrap">返回列表</a>
                                     </div>
 
                                     {# --- High-Risk & General Actions --- #}
                                     <div class="d-flex gap-2 mb-2">
                                         {# General high-risk action available in most states before completion #}
                                         {% if s == 'new' or s == 'running' or s == 'delayed' or s == 'pending_qc'%}
-                                            <button type="submit" name="action" value="pause_abnormal_production" class="btn btn-danger fw-bold w-50 text-nowrap">
+                                            <button type="submit" name="action" value="pause_abnormal_production" class="btn btn-danger fw-bold flex-fill w-100 text-nowrap">
                                                 <i class="bi bi-exclamation-triangle me-1"></i> 报告异常
                                             </button>
-                                             <button type="submit" name="action" value="cancel_production" class="btn btn-outline-secondary fw-bold flex-fill px-1 text-nowrap" onclick="return confirm('警告：确定要取消并作废此工单吗？相关操作将被追踪。');">
+                                             <button type="submit" name="action" value="cancel_production" class="btn btn-outline-secondary fw-bold px-1 flex-fill w-100 text-nowrap" onclick="return confirm('警告：确定要取消并作废此工单吗？相关操作将被追踪。');">
                                                 <i class="bi bi-x-circle me-1"></i> 取消计划
                                             </button>
                                         {% endif %}
                                         {# Abnormal state specific high-risk actions #}
                                         {% if s == 'abnormal' %}
-                                            <button type="submit" name="action" value="scrap_batch" class="btn btn-outline-danger fw-bold flex-fill px-1 text-nowrap" onclick="return confirm('警告：确定要报销此批次吗？此操作不可逆！');">
+                                            <button type="submit" name="action" value="scrap_batch" class="btn btn-outline-danger fw-bold px-1 flex-fill w-100 text-nowrap" onclick="return confirm('警告：确定要报销此批次吗？此操作不可逆！');">
                                                 <i class="bi bi-trash3 me-1"></i> 报销批次
                                             </button>
-                                            <button type="submit" name="action" value="cancel_production" class="btn btn-outline-secondary fw-bold flex-fill px-1 text-nowrap" onclick="return confirm('警告：确定要取消并作废此工单吗？相关操作将被追踪。');">
+                                            <button type="submit" name="action" value="cancel_production" class="btn btn-outline-secondary fw-bold px-1 flex-fill w-100 text-nowrap" onclick="return confirm('警告：确定要取消并作废此工单吗？相关操作将被追踪。');">
                                                 <i class="bi bi-x-circle me-1"></i> 取消计划
                                             </button>
                                         {% endif %}

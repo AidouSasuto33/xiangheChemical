@@ -167,9 +167,9 @@ class BaseProcedureUpdateView(LoginRequiredMixin, BaseProcedureView, UpdateView)
 
         try:
             with transaction.atomic():
-                # 无论有没有 action，都必须先 save()！
+                # 无论有没有 action，都必须先 save()！使用commit=False，仅在orm内存级别保存数据，不进数据库。
                 # 这一步会将主表和动态投入子表（_save_inputs）写入数据库
-                self.object = form.save()
+                self.object = form.save(commit=False)
 
                 # 如果有人员数据，落库
                 if labor_data:

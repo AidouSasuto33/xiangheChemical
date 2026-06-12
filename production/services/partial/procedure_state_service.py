@@ -136,7 +136,7 @@ class ProcedureStateService:
         if procedure.status != ProcedureState.ABNORMAL:
             raise ValueError(f"状态冲突：当前工单并非异常状态，无法执行恢复操作")
 
-        # TODO查看历史表，查看最早一次的状态并恢复。
+        # TODO查看历史表，查看最早一次的状态并恢复。等save2次BUG修复后改正。
         procedure.status = ProcedureState.RUNNING
         procedure.save()
 
