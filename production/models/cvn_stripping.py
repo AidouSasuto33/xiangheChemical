@@ -47,14 +47,14 @@ class CVNStripping(BaseProductionStep):
     @property
     def remaining_weight(self):
         """批次里还剩多少粗蒸CVN"""
-        return max(0, self.cvn_dis_crude_weight - self.consumed_weight)
+        return max(0, self.cvn_str_crude_weight - self.consumed_weight)
 
     @property
     def status_label(self):
         """
         批次生命周期状态 (CVN粗品)
         """
-        if self.cvn_dis_crude_weight < 0:
+        if self.cvn_str_crude_weight < 0:
             return "异常批次"
 
         if self.consumed_weight <= 0:
@@ -73,7 +73,7 @@ class CVNStripping(BaseProductionStep):
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return f"{self.batch_id} - CVN粗蒸"
+        return f"{self.id} - CVN粗蒸"
 
 
 # =========================================================
@@ -99,6 +99,11 @@ class CVNStrippingInput(BaseMultiBatchInput):
         verbose_name="来源合成批次"
     )
 
+    def __str__(self):
+        return f"{self.stripping.batch_no} <- {self.source_batch.batch_no} ({self.use_weight}kg)"
+
     class Meta:
         verbose_name = "CVN粗蒸投料明细"
         verbose_name_plural = verbose_name
+        # 联合约束：同一个精馏单里，不能添加两次同一个粗品批号
+        unique_together = ('stripping', 'source_batch')

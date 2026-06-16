@@ -225,7 +225,6 @@ class BaseProcedureForm(forms.ModelForm):
         """解析并校验前端传来的多批次投入数组，剔除了具体的业务计算逻辑"""
         batch_nos = self.data.getlist('source_batch_no')
         use_weights = self.data.getlist('source_use_weight')
-
         if not batch_nos:
             raise ValidationError("请至少添加一条原料投入明细。")
 
@@ -259,7 +258,8 @@ class BaseProcedureForm(forms.ModelForm):
                 raise ValidationError(f"系统内未找到原料批号：[{batch_no}]，请检查拼写。")
 
             # 【核心改动 2】：发现超领时绝不立刻 raise，而是塞进错误弹框池
-            if weight > source_batch.remaining_weight:
+            # 仅在new状态下进行检验，进入running时会消耗批次雨量。若在running->pending_qc也进行检查，一定报错批量不足。
+            if self.instance.status=='new' and weight > source_batch.remaining_weight:
                 insufficient_errors.append(
                     f"批号 [{batch_no}] 结余不足 (需 {weight}kg, 存 {source_batch.remaining_weight}kg)"
                 )
@@ -311,14 +311,15 @@ class BaseProcedureForm(forms.ModelForm):
             with transaction.atomic():
                 instance.save()
                 if self.HAS_DYNAMIC_INPUTS:
-                    self._save_inputs(instance)
+                    self._save_batch_source_inputs(instance)
         return instance
 
-    def _save_inputs(self, instance):
+    def _save_batch_source_inputs(self, instance):
         """批量创建投入子表记录，并打上质量快照"""
         if hasattr(self, 'parsed_inputs') and self.INPUT_RELATION_MODEL:
             # 清理旧数据 (应对草稿多次保存的场景)
             instance.inputs.all().delete()
+
 
             new_inputs = []
             for item in self.parsed_inputs:
@@ -334,3 +335,12 @@ class BaseProcedureForm(forms.ModelForm):
                 new_inputs.append(self.INPUT_RELATION_MODEL(**kwargs))
 
             self.INPUT_RELATION_MODEL.objects.bulk_create(new_inputs)
+
+    def save_inputs(self, instance=None):
+        """
+        供外部 View 显式调用的子表独立落库方法。
+        配合 commit=False 使用，利用现有主表 PK 擦除并重建投入明细，规避主表重复保存。
+        """
+        target_instance = instance or self.instance
+        if self.HAS_DYNAMIC_INPUTS:
+            self._save_batch_source_inputs(target_instance)

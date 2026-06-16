@@ -35,5 +35,5 @@ class CVCExportForm(BaseProcedureForm):
         fields = [
             'start_time', 'expected_time', 'end_time', 'kettle',
             'pre_content_cvc', 'pre_content_cva',
-            'cvc_dis_crude_weight', 'content_cvc', 'content_cva',
+            'cvc_dis_crude_weight', 'content_cvc', 'content_cva', 'remarks'
         ]

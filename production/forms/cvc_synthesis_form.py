@@ -39,5 +39,5 @@ class CVCSynthesisForm(BaseProcedureForm):
             'raw_socl2',
             'pre_content_cva', 'pre_content_cvn', 'pre_content_water',
             'cvc_syn_crude_weight', 'distillation_head_weight',
-            'content_cvc', 'content_cva',
+            'content_cvc', 'content_cva', 'remarks'
         ]

@@ -42,6 +42,7 @@
                         <option value="purchase" {% if request.GET.action == 'purchase' %}selected{% endif %}>购入 / 入库</option>
                         <option value="sale" {% if request.GET.action == 'sale' %}selected{% endif %}>销售 / 领用</option>
                         <option value="correction" {% if request.GET.action == 'correction' %}selected{% endif %}>盘点修正</option>
+                        <option value="roll_back" {% if request.GET.action == 'correction' %}selected{% endif %}>取消回滚</option>
                     </select>
                 </div>
 
@@ -134,6 +135,8 @@
                                         <span class="badge bg-info text-dark bg-opacity-10 border border-info border-opacity-25">生产消耗</span>
                                     {% elif log.action_type == 'safe_stock' %}
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">预警线调整</span>
+                                    {% elif log.action_type == 'roll_back' %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">取消回滚</span>
                                     {% else %}
                                         <span class="badge bg-warning text-dark bg-opacity-10 border border-warning border-opacity-25">盘点修正</span>
                                     {% endif %}

@@ -37,6 +37,5 @@ class CVNStrippingForm(BaseProcedureForm):
             'start_time', 'expected_time', 'end_time', 'kettle',
             'pre_content_cvn', 'pre_content_dcb', 'pre_content_adn',
             'cvn_str_crude_weight', 'recycled_dcb', 'recycled_dcb_purity',
-            'output_content_cvn', 'output_content_dcb', 'output_content_adn', 'test_time'
-        # ,'input_total_cvn_weight'
+            'output_content_cvn', 'output_content_dcb', 'output_content_adn', 'test_time', 'remarks'
         ]

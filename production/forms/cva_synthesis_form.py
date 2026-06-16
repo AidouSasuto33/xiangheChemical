@@ -36,5 +36,5 @@ class CVASynthesisForm(BaseProcedureForm):
             'start_time', 'expected_time', 'end_time', 'test_time','kettle',
             'raw_hcl', 'raw_alkali',
             'pre_content_cvn', 'pre_content_dcb', 'pre_content_adn',
-            'cva_crude_weight', 'content_cva', 'content_cvn', 'content_water'
+            'cva_crude_weight', 'content_cva', 'content_cvn', 'content_water', 'remarks'
         ]

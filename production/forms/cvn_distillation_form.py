@@ -1,7 +1,7 @@
 # production/forms/cvn_distillation_form.py
 from django.core.exceptions import ValidationError
 from production.models.cvn_distillation import CVNDistillation, CVNDistillationInput
-from production.models.cvn_synthesis import CVNSynthesis
+from production.models.cvn_stripping import CVNStripping
 from .base_procedure_form import BaseProcedureForm
 
 
@@ -21,7 +21,7 @@ class CVNDistillationForm(BaseProcedureForm):
 
     # === 3. 动态投入及多批次物料配置 (精馏特有) ===
     HAS_DYNAMIC_INPUTS = True
-    SOURCE_BATCH_MODEL = CVNSynthesis
+    SOURCE_BATCH_MODEL = CVNStripping
     INPUT_RELATION_MODEL = CVNDistillationInput
     INPUT_RELATION_FK_NAME = 'distillation'
     TOTAL_INPUT_WEIGHT_FIELD = 'input_total_cvn_weight'
@@ -38,7 +38,7 @@ class CVNDistillationForm(BaseProcedureForm):
             'start_time', 'expected_time', 'end_time', 'kettle',
             'pre_content_cvn', 'pre_content_dcb', 'pre_content_adn',
             'cvn_dis_crude_weight', 'output_content_cvn', 'output_content_dcb', 'output_content_adn',
-            'residue_weight', 'test_time'
+            'residue_weight', 'test_time', 'remarks'
         ]
 
     # === 4. 局部特性校验 ===

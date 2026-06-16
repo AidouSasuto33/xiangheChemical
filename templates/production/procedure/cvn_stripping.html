@@ -137,44 +137,4 @@
 {% block extra_js %}
     {{ block.super }}
     <script src="{% static 'js/production/partials/qc_pre_content_calculator.js' %}"></script>
-{#    <script>#}
-{#        // 实时计算精品中各成分的具体重量#}
-{#        document.addEventListener('DOMContentLoaded', function () {#}
-{#            // 获取Django生成的表单Input的ID (需要与Form类中定义的字段名一致)#}
-{#            const outWeight = document.getElementById('id_cvn_str_crude_weight');#}
-{#            const outCvn = document.getElementById('id_output_content_cvn');#}
-{#            const outDcb = document.getElementById('id_output_content_dcb');#}
-{#            const outAdn = document.getElementById('id_output_content_adn');#}
-{##}
-{#            // 获取用于显示的只读计算框#}
-{#            const calcCvn = document.getElementById('calc_out_cvn');#}
-{#            const calcDcb = document.getElementById('calc_out_dcb');#}
-{#            const calcAdn = document.getElementById('calc_out_adn');#}
-{##}
-{#            function updateCalculatedWeights() {#}
-{#                const weight = parseFloat(outWeight?.value) || 0;#}
-{#                const cvnPercent = parseFloat(outCvn?.value) || 0;#}
-{#                const dcbPercent = parseFloat(outDcb?.value) || 0;#}
-{#                const adnPercent = parseFloat(outAdn?.value) || 0;#}
-{##}
-{#                if (weight > 0) {#}
-{#                    calcCvn.value = (weight * cvnPercent / 100).toFixed(1);#}
-{#                    calcDcb.value = (weight * dcbPercent / 100).toFixed(1);#}
-{#                    calcAdn.value = (weight * adnPercent / 100).toFixed(1);#}
-{#                } else {#}
-{#                    calcCvn.value = '-';#}
-{#                    calcDcb.value = '-';#}
-{#                    calcAdn.value = '-';#}
-{#                }#}
-{#            }#}
-{##}
-{#            // 监听所有相关输入框的修改事件#}
-{#            [outWeight, outCvn, outDcb, outAdn].forEach(el => {#}
-{#                if (el) el.addEventListener('input', updateCalculatedWeights);#}
-{#            });#}
-{##}
-{#            // 页面加载完毕时初始化计算一次 (应对编辑页面的数据回显)#}
-{#            updateCalculatedWeights();#}
-{#        });#}
-{#    </script>#}
 {% endblock %}

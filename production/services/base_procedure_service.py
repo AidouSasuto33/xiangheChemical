@@ -177,7 +177,7 @@ class BaseProcedureService:
 
     @classmethod
     def _execute_inventory_deduction(cls, instance, user):
-        """双擎库存扣减引擎 (精简版：Form负责用户友好提示，Service在锁内行使终极防御)"""
+        """库存扣减 (精简版：Form负责用户友好提示，Service在锁内行使终极防御)"""
 
         # 1. 辅料预检（由于基础辅料通常不走多批次悲观锁，可保留批量预检）
         material_requirements = []
@@ -195,7 +195,7 @@ class BaseProcedureService:
         # 2. 执行扣减（在锁内同时进行终极防守与扣减）
         for field, name in zip(cls.INPUT_FIELDS, cls.INPUT_NAMES):
 
-            # 引擎 B: 扣减前置批次
+            # B: 扣减前置批次
             if field.startswith('input_total_'):
                 total_use_weight = 0
                 inputs_qs = getattr(instance, cls.INPUTS_RELATED_NAME).all()
@@ -207,7 +207,7 @@ class BaseProcedureService:
                     # 终极底线拦截：防范高并发下的超领
                     if item.use_weight > source_batch.remaining_weight:
                         raise ValidationError(
-                            f"【并发冲突拦截】前置批次 {source_batch.batch_no} 刚刚被其他工单占用，剩余额度不足！"
+                            f"【并发冲突拦截】前置批次 {source_batch.batch_no} 剩余量不足！"
                             f"(需 {item.use_weight}kg, 实际仅剩 {source_batch.remaining_weight}kg)"
                         )
 
@@ -219,7 +219,7 @@ class BaseProcedureService:
                     global_key = cls.SOURCE_GLOBAL_INVENTORY_KEY or field
                     cls._update_single_stock(global_key, 'production', -total_use_weight, f"{name}溯源扣减 - 单号: {instance.batch_no}", user)
 
-            # 引擎 A: 直扣基础物料
+            # A: 直扣基础物料
             else:
                 qty = getattr(instance, field, 0)
                 if qty and float(qty) > 0:
@@ -263,7 +263,7 @@ class BaseProcedureService:
 
     @classmethod
     def _execute_inventory_addition(cls, instance, user):
-        """产出入库引擎"""
+        """产出入库"""
         for field, name in zip(cls.OUTPUT_FIELDS, cls.OUTPUT_NAMES):
             qty = getattr(instance, field, 0)
             if qty and float(qty) > 0:
