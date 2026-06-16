@@ -84,7 +84,7 @@ PROCEDURE_BOM_MAPPING = {
     'cvasynthesis': {
         'name': 'CVA合成',
         'inputs': [
-            {'field': 'input_total_cvc_dis_weight', 'name': 'CVN精品'},
+            {'field': 'input_total_cvn_dis_weight', 'name': 'CVN精品'},
             {'field': 'raw_hcl',                    'name': '盐酸'},
             {'field': 'raw_alkali',                 'name': '液碱'},
         ],

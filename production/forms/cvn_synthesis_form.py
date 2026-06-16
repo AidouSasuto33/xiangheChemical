@@ -30,6 +30,5 @@ class CVNSynthesisForm(BaseProcedureForm):
             'start_time', 'expected_time', 'end_time', 'kettle',
             'raw_dcb', 'recycled_dcb', 'raw_nacn', 'raw_tbab', 'raw_alkali',
             'cvn_syn_crude_weight', 'remarks',
-            'test_time', 'content_cvn', 'content_dcb', 'content_adn',
-            'recovered_dcb_amount', 'waste_batches'
+            'test_time', 'content_cvn', 'content_dcb', 'content_adn', 'waste_batches'
         ]

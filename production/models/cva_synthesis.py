@@ -11,7 +11,7 @@ class CVASynthesis(BaseProductionStep):
     """
     default_workshop_code = 'CVA_SYN'
     # 投入
-    input_total_cvc_dis_weight = models.FloatField("投入CVN精品总重(kg)", default=0)
+    input_total_cvn_dis_weight = models.FloatField("投入CVN精品总重(kg)", default=0)
     # 辅料
     raw_hcl = models.FloatField("投入-盐酸(kg)", default=0)
     raw_alkali = models.FloatField("投入-液碱(kg)", default=0)

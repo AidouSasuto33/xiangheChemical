@@ -40,14 +40,14 @@ class CVNStripping(BaseProductionStep):
     output_content_adn = models.FloatField("粗蒸-ADN含量%", null=True, blank=True)
     recycled_dcb_purity=  models.FloatField("粗蒸工序回收DCB纯度%", default=0, null=True, blank=True)
 
+    # 库存核心字段：记录已被CVA合成工段领用了多少
+    consumed_weight = models.FloatField("已领用重量(kg)", default=0, editable=False, help_text="系统自动更新，不可手改")
+
+    # --- 核心属性：剩余可用量 ---
     @property
     def remaining_weight(self):
-        """
-        剩余可领用的粗蒸粗品重量
-        """
-        if self.cvn_str_crude_weight is None:
-            return 0
-        return round(self.cvn_str_crude_weight - self.consumed_weight, 2)
+        """批次里还剩多少粗蒸CVN"""
+        return max(0, self.cvn_dis_crude_weight - self.consumed_weight)
 
     @property
     def status_label(self):

@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models.cvn_synthesis import CVNSynthesis
+from .models.cvn_stripping import CVNStripping
 from .models.cvn_distillation import CVNDistillation
 from .models.cva_synthesis import CVASynthesis
 from .models.cvc_synthesis import CVCSynthesis
@@ -45,6 +46,11 @@ class CVNSynthesisAdmin(BaseProductionAdmin):
     list_display = ['batch_no', 'status_badge', 'cvn_syn_crude_weight', 'remaining_weight', 'test_time']
     search_fields = ['batch_no']
 
+@admin.register(CVNStripping)
+class CVNStrippingAdmin(BaseProductionAdmin):
+    list_display = ['batch_no', 'status_badge', 'input_total_cvn_weight', 'cvn_str_crude_weight', 'remaining_weight']
+    search_fields = ['batch_no']
+
 
 @admin.register(CVNDistillation)
 class CVNDistillationAdmin(BaseProductionAdmin):
@@ -54,7 +60,7 @@ class CVNDistillationAdmin(BaseProductionAdmin):
 
 @admin.register(CVASynthesis)
 class CVASynthesisAdmin(BaseProductionAdmin):
-    list_display = ['batch_no', 'status_badge', 'input_total_cvc_dis_weight', 'cva_crude_weight', 'remaining_weight']
+    list_display = ['batch_no', 'status_badge', 'input_total_cvn_dis_weight', 'cva_crude_weight', 'remaining_weight']
     search_fields = ['batch_no']
 
 

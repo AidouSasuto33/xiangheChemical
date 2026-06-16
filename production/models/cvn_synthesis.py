@@ -33,14 +33,6 @@ class CVNSynthesis(BaseProductionStep):
     content_dcb = models.FloatField("中控-DCB含量%", null=True, blank=True)
     content_adn = models.FloatField("中控-己二腈含量%", null=True, blank=True)
 
-
-    # =========================================================
-    # 3. 回收 (Recovery)
-    # =========================================================
-    # 注：无需再填日期和批号，直接关联本批次
-    recovered_dcb_amount = models.FloatField("回收-DCB数量(L)", default=0, help_text="单位：升", blank=True, null=True)
-    recovered_dcb_purity = models.FloatField("回收-DCB纯度%", null=True, blank=True)
-
     # =========================================================
     # 4. 环保/排污 (Waste)
     # =========================================================

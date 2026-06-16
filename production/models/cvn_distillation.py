@@ -3,7 +3,7 @@ from django.db import models
 # 引入基础模型
 from .core import BaseProductionStep, BaseMultiBatchInput
 # 引入 CVN 合成模型
-from .cvn_synthesis import CVNSynthesis
+from .cvn_stripping import CVNStripping
 # =========================================================
 # 工艺第二步： CVN精馏
 # =========================================================
@@ -84,7 +84,7 @@ class CVNDistillationInput(BaseMultiBatchInput):
 
         # 关联来源批次 (具体关联哪个模型在子类定义)
         source_batch = models.ForeignKey(
-            'CVNSynthesis',
+            'CVNStripping',
             on_delete=models.PROTECT,
             related_name='consumed_in_distillation',
             verbose_name="粗品来源批次"
