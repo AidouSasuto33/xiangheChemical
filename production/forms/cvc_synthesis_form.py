@@ -35,7 +35,7 @@ class CVCSynthesisForm(BaseProcedureForm):
     class Meta:
         model = CVCSynthesis
         fields = [
-            'start_time', 'expected_time', 'end_time', 'kettle',
+            'start_time', 'expected_time', 'end_time', 'test_time', 'kettle',
             'raw_socl2',
             'pre_content_cva', 'pre_content_cvn', 'pre_content_water',
             'cvc_syn_crude_weight', 'distillation_head_weight',

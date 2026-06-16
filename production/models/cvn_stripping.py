@@ -30,7 +30,7 @@ class CVNStripping(BaseProductionStep):
     # 3. 产出 (Output)
     # =========================================================
     cvn_str_crude_weight = models.FloatField("CVN粗蒸粗品重量(kg)", null=True, blank=True)
-    recycled_dcb = models.FloatField("回收DCB重量(kg)", null=True, blank=True)
+    recycled_dcb = models.FloatField("回收DCB重量(kg)", default=0, null=True, blank=True)
 
     # =========================================================
     # 4. 质检结果 (QC / 粗蒸后)

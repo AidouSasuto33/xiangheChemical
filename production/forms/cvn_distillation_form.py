@@ -38,7 +38,7 @@ class CVNDistillationForm(BaseProcedureForm):
             'start_time', 'expected_time', 'end_time', 'kettle',
             'pre_content_cvn', 'pre_content_dcb', 'pre_content_adn',
             'cvn_dis_crude_weight', 'output_content_cvn', 'output_content_dcb', 'output_content_adn',
-            'residue_weight',
+            'residue_weight', 'test_time'
         ]
 
     # === 4. 局部特性校验 ===

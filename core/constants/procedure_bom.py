@@ -89,7 +89,7 @@ PROCEDURE_BOM_MAPPING = {
             {'field': 'raw_alkali',                 'name': '液碱'},
         ],
         'outputs': [
-            {'field': 'cva_crude_weight',       'name': 'CVA'}
+            {'field': 'cva_crude_weight',       'name': 'CVA合成液'}
         ],
         'qc_fields': [
             {'field': 'content_cva', 'name': 'CVA含量%'},
@@ -109,7 +109,7 @@ PROCEDURE_BOM_MAPPING = {
     'cvcsynthesis': {
         'name': 'CVC合成',
         'inputs': [
-            {'field': 'input_total_cva_weight', 'name': 'CVA'},
+            {'field': 'input_total_cva_weight', 'name': 'CVC合成液'},
             {'field': 'raw_socl2',              'name': '二氯亚砜'},
         ],
         'outputs': [
